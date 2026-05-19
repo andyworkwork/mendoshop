@@ -122,6 +122,35 @@ body {
   color: #18181b;
 }
 
+/* Miniaturas selector de fondo (panel) */
+.store-bg-preview-light {
+  background-color: #f4f4f5;
+  border: 1px solid #e4e4e7;
+}
+
+.store-bg-preview-solid {
+  background-color: #09090b;
+}
+
+.store-bg-preview-pattern {
+  background-color: #262626;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--shop-primary) 35%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 12px 12px;
+}
+
+.store-bg-preview-gradient {
+  background:
+    radial-gradient(
+      ellipse 80% 80% at 50% 0%,
+      color-mix(in srgb, var(--shop-primary) 45%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, #18181b 0%, #27272a 100%);
+}
+
 .store-header-bar {
   @apply sticky top-0 z-40 border-b border-zinc-200 bg-white shadow-sm;
 }
@@ -166,7 +195,46 @@ body {
   @apply mx-auto mb-3 max-w-md px-2 text-center text-sm leading-relaxed text-zinc-600 sm:text-base;
 }
 
-.store-whatsapp-bar {
-  @apply fixed bottom-0 left-0 right-0 z-40 border-t border-green-700/30 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.12)];
-  background-color: #25d366;
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.store-drawer-panel {
+  background-color: #fafafa;
+}
+
+.store-drawer-header {
+  background-color: var(--shop-primary);
+  color: #fff;
+}
+
+.store-drawer-close {
+  color: color-mix(in srgb, #fff 85%, transparent);
+}
+
+.store-drawer-close:hover {
+  color: #fff;
+}
+
+.store-drawer-cat-btn {
+  color: #27272a;
+}
+
+.store-drawer-cat-btn:hover {
+  background-color: color-mix(in srgb, var(--shop-accent) 14%, #fff);
+  color: var(--shop-accent);
+}
+
+.store-category-toggle {
+  background-color: color-mix(in srgb, var(--shop-primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--shop-primary) 35%, transparent);
+}
+
+.store-category-toggle[aria-expanded='true'] {
+  background-color: color-mix(in srgb, var(--shop-primary) 22%, transparent);
 }

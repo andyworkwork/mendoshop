@@ -7,17 +7,15 @@ export function StoreWhatsAppBar({ shop }: { shop: ShopRow }) {
   const msg = `Hola! Vi la tienda *${shop.name}* y quiero consultar por productos.`
 
   return (
-    <div className="store-whatsapp-bar">
-      <a
-        href={buildWhatsAppUrl(shop.whatsapp_e164, msg)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#128c7e] py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-md"
-      >
-        <WhatsAppIcon />
-        Consultar por WhatsApp
-      </a>
-    </div>
+    <a
+      href={buildWhatsAppUrl(shop.whatsapp_e164, msg)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="store-whatsapp-btn fixed bottom-4 left-4 right-4 z-40 mx-auto flex max-w-lg items-center justify-center gap-2 rounded-xl bg-[#128c7e] py-3.5 text-sm font-bold uppercase tracking-wide text-white shadow-lg md:max-w-5xl"
+    >
+      <WhatsAppIcon />
+      Consultar por WhatsApp
+    </a>
   )
 }
 

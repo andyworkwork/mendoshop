@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
@@ -14,6 +14,8 @@ import { StoreHeaderBrand } from '@/components/store-header-brand'
 import { StoreCartDrawer } from '@/components/store-cart-drawer'
 import { StoreCategoryDrawer } from '@/components/store-category-drawer'
 import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
+
+const FEATURED_COUNT = 6
 
 type Props = {
   shop: ShopRow
@@ -53,6 +55,10 @@ function flattenProducts(categories: CategoryRow[]): FlatProduct[] {
   return out
 }
 
+function productsForCategory(categories: CategoryRow[], categoryId: string): FlatProduct[] {
+  return flattenProducts(categories).filter((p) => p.categoryId === categoryId)
+}
+
 function resolveBannerUrl(shop: ShopRow): string | null {
   const custom = getPublicUrlFromPath(shop.banner_path)
   if (custom) return custom
@@ -63,16 +69,57 @@ export function Storefront({ shop, categories }: Props) {
   const { addLine, lines } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
   const showPoweredBy = PLAN_LIMITS[shop.plan].showPoweredBy
   const isLight = shop.theme.background === 'light'
+  const themeStyle = themeCssVars(shop.theme)
   const products = useMemo(() => flattenProducts(categories), [categories])
+  const featuredProducts = useMemo(() => products.slice(0, FEATURED_COUNT), [products])
   const bannerUrl = resolveBannerUrl(shop)
+
+  const toggleCategory = useCallback((categoryId: string) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) next.delete(categoryId)
+      else next.add(categoryId)
+      return next
+    })
+  }, [])
+
+  const handleSelectCategory = useCallback((categoryId: string) => {
+    setExpandedCategories((prev) => new Set(prev).add(categoryId))
+    setMenuOpen(false)
+    requestAnimationFrame(() => {
+      document.getElementById(`categoria-${categoryId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  const addProduct = useCallback(
+    (p: FlatProduct) => {
+      addLine({
+        productId: p.id,
+        name: p.name,
+        unitPrice: Number(p.price),
+        maxStock: p.stock_quantity,
+        imagePath: p.image_path,
+        categoryId: p.categoryId,
+        categoryName: p.categoryName,
+        categorySortOrder: p.categorySort,
+      })
+    },
+    [addLine],
+  )
+
+  const categoriesWithProducts = useMemo(
+    () => categories.filter((cat) => productsForCategory(categories, cat.id).length > 0),
+    [categories],
+  )
 
   return (
     <div
-      className={`min-h-screen pb-28 ${shopBackgroundClass(shop.theme)}`}
-      style={themeCssVars(shop.theme)}
+      className={`min-h-screen pb-24 ${shopBackgroundClass(shop.theme)}`}
+      style={themeStyle}
     >
       <header className={isLight ? 'store-header-bar' : 'sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur'}>
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3 md:max-w-5xl">
@@ -140,28 +187,65 @@ export function Storefront({ shop, categories }: Props) {
             </p>
           )}
 
-          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {products.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                isLight={isLight}
-                onAdd={() =>
-                  addLine({
-                    productId: p.id,
-                    name: p.name,
-                    unitPrice: Number(p.price),
-                    maxStock: p.stock_quantity,
-                    imagePath: p.image_path,
-                    categoryId: p.categoryId,
-                    categoryName: p.categoryName,
-                    categorySortOrder: p.categorySort,
-                  })
-                }
-              />
-            ))}
-          </ul>
+          {featuredProducts.length > 0 && (
+            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {featuredProducts.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  isLight={isLight}
+                  onAdd={() => addProduct(p)}
+                />
+              ))}
+            </ul>
+          )}
         </section>
+
+        {categoriesWithProducts.length > 0 && (
+          <section className="scroll-mt-20 px-4 pb-6">
+            <h2 className={`mb-3 text-center text-lg font-bold ${isLight ? 'text-zinc-900' : ''}`}>
+              Por categoría
+            </h2>
+            <div className="space-y-2">
+              {categoriesWithProducts.map((cat) => {
+                const catProducts = productsForCategory(categories, cat.id)
+                const expanded = expandedCategories.has(cat.id)
+                return (
+                  <div
+                    key={cat.id}
+                    id={`categoria-${cat.id}`}
+                    className="scroll-mt-24 overflow-hidden rounded-xl border border-zinc-200/80 dark:border-zinc-700/80"
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      onClick={() => toggleCategory(cat.id)}
+                      className={`store-category-toggle flex w-full items-center justify-between gap-2 border px-4 py-3 text-left text-sm font-semibold ${isLight ? 'text-zinc-900' : 'text-zinc-100'}`}
+                    >
+                      <span>{cat.name}</span>
+                      <span className="flex shrink-0 items-center gap-2 text-xs font-normal opacity-70">
+                        {catProducts.length} producto{catProducts.length === 1 ? '' : 's'}
+                        <ChevronIcon open={expanded} />
+                      </span>
+                    </button>
+                    {expanded && (
+                      <ul className="grid grid-cols-2 gap-3 border-t border-zinc-200/80 p-3 dark:border-zinc-700/80 md:grid-cols-3">
+                        {catProducts.map((p) => (
+                          <ProductCard
+                            key={p.id}
+                            product={p}
+                            isLight={isLight}
+                            onAdd={() => addProduct(p)}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
       </main>
 
@@ -175,7 +259,13 @@ export function Storefront({ shop, categories }: Props) {
       )}
 
       <StoreWhatsAppBar shop={shop} />
-      <StoreCategoryDrawer open={menuOpen} onClose={() => setMenuOpen(false)} categories={categories} />
+      <StoreCategoryDrawer
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        categories={categories}
+        themeStyle={themeStyle}
+        onSelectCategory={handleSelectCategory}
+      />
       <StoreCartDrawer shop={shop} open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   )
@@ -221,6 +311,21 @@ function ProductCard({
         {outOfStock ? 'Sin stock' : 'Agregar'}
       </button>
     </li>
+  )
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
   )
 }
 

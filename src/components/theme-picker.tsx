@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { THEME_TEMPLATES } from '@/lib/themes'
+import { themeCssVars, THEME_TEMPLATES, VITRINA_BACKGROUND_OPTIONS } from '@/lib/themes'
 import type { ShopTheme } from '@/types/shop'
 
 export function ThemePicker({
@@ -11,17 +11,26 @@ export function ThemePicker({
   value: ShopTheme
   onChange: (t: ShopTheme) => void
 }) {
+  const previewStyle = themeCssVars(value)
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <p className="text-sm text-zinc-400">
-        Elegí una plantilla por rubro (imagen y colores sugeridos). Podés personalizar todo después.
+        Elegí una plantilla por rubro (imagen y colores sugeridos). Podés cambiar fondo y colores
+        cuando quieras.
       </p>
-      <div className="grid max-h-[420px] gap-3 overflow-y-auto sm:grid-cols-2">
+
+      <div className="grid max-h-[360px] gap-3 overflow-y-auto sm:grid-cols-2">
         {THEME_TEMPLATES.map((tpl) => (
           <button
             key={tpl.id}
             type="button"
-            onClick={() => onChange({ ...tpl.defaults })}
+            onClick={() =>
+              onChange({
+                ...tpl.defaults,
+                background: value.background,
+              })
+            }
             className={`overflow-hidden rounded-xl border text-left transition ${
               value.templateId === tpl.id
                 ? 'border-brand ring-2 ring-brand'
@@ -63,6 +72,38 @@ export function ThemePicker({
           </button>
         ))}
       </div>
+
+      <div>
+        <p className="mb-2 text-sm font-medium text-zinc-200">Fondo de la vitrina</p>
+        <p className="mb-3 text-xs text-zinc-500">
+          Es el color de fondo detrás de los productos (no cambia la imagen del banner).
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" style={previewStyle}>
+          {VITRINA_BACKGROUND_OPTIONS.map((opt) => {
+            const selected = value.background === opt.id
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onChange({ ...value, background: opt.id })}
+                className={`rounded-xl border p-2 text-left transition ${
+                  selected
+                    ? 'border-brand ring-2 ring-brand'
+                    : 'border-zinc-700 hover:border-zinc-500'
+                }`}
+              >
+                <div
+                  className={`mb-2 h-14 w-full rounded-lg ${opt.previewClass}`}
+                  aria-hidden
+                />
+                <p className="text-xs font-semibold text-zinc-100">{opt.label}</p>
+                <p className="text-[10px] leading-tight text-zinc-500">{opt.hint}</p>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <label className="block text-sm">
         Color principal
         <input
@@ -80,24 +121,6 @@ export function ThemePicker({
           value={value.accent}
           onChange={(e) => onChange({ ...value, accent: e.target.value })}
         />
-      </label>
-      <label className="block text-sm">
-        Fondo de la vitrina
-        <select
-          className="input mt-1"
-          value={value.background}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              background: e.target.value as ShopTheme['background'],
-            })
-          }
-        >
-          <option value="light">Claro (recomendado)</option>
-          <option value="gradient">Degradado oscuro</option>
-          <option value="solid">Sólido oscuro</option>
-          <option value="pattern">Patrón</option>
-        </select>
       </label>
     </div>
   )

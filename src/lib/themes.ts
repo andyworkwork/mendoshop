@@ -42,11 +42,50 @@ export function themeCssVars(theme: ShopTheme): CSSProperties {
   } as CSSProperties
 }
 
+export type VitrinaBackgroundId = ShopTheme['background']
+
+export const VITRINA_BACKGROUND_OPTIONS: {
+  id: VitrinaBackgroundId
+  label: string
+  hint: string
+  previewClass: string
+}[] = [
+  {
+    id: 'light',
+    label: 'Claro',
+    hint: 'Gris claro, estilo app',
+    previewClass: 'store-bg-preview-light',
+  },
+  {
+    id: 'gradient',
+    label: 'Degradado',
+    hint: 'Oscuro con brillos de color',
+    previewClass: 'store-bg-preview-gradient',
+  },
+  {
+    id: 'solid',
+    label: 'Sólido oscuro',
+    hint: 'Fondo negro uniforme',
+    previewClass: 'store-bg-preview-solid',
+  },
+  {
+    id: 'pattern',
+    label: 'Patrón',
+    hint: 'Oscuro con puntos',
+    previewClass: 'store-bg-preview-pattern',
+  },
+]
+
 export function shopBackgroundClass(theme: ShopTheme): string {
   if (theme.background === 'light') return 'store-surface-light'
   if (theme.background === 'solid') return 'bg-zinc-950'
   if (theme.background === 'pattern') return 'bg-zinc-900 shop-bg-pattern'
   return 'shop-bg-gradient'
+}
+
+/** Clase de vista previa del fondo (usa --shop-primary / --shop-accent del tema). */
+export function vitrinaBackgroundPreviewClass(background: VitrinaBackgroundId): string {
+  return VITRINA_BACKGROUND_OPTIONS.find((o) => o.id === background)?.previewClass ?? 'store-bg-preview-light'
 }
 
 export function parseTheme(raw: unknown): ShopTheme {
