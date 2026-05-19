@@ -4,46 +4,96 @@ import { useMemo, useState } from 'react'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { templateBannerSrc } from '@/lib/store-templates'
 import { shopBackgroundClass, themeCssVars } from '@/lib/themes'
 import { PLAN_LIMITS } from '@/lib/plans'
-import type { CategoryRow } from '@/types/catalog'
+import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 import { MendoshopLogoLink } from '@/components/mendoshop-logo'
+import { StoreHeaderBrand } from '@/components/store-header-brand'
 import { StoreCartDrawer } from '@/components/store-cart-drawer'
-import Link from 'next/link'
+import { StoreCategoryDrawer } from '@/components/store-category-drawer'
+import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
 
 type Props = {
   shop: ShopRow
   categories: CategoryRow[]
 }
 
+type FlatProduct = ProductRow & {
+  categoryId: string
+  categoryName: string
+  categorySort: number
+}
+
+function flattenProducts(categories: CategoryRow[]): FlatProduct[] {
+  const out: FlatProduct[] = []
+  for (const cat of categories) {
+    for (const sub of cat.subcategories) {
+      for (const p of sub.products) {
+        out.push({
+          ...p,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          categorySort: cat.sort_order,
+        })
+      }
+      for (const ss of sub.subsubcategorias) {
+        for (const p of ss.products) {
+          out.push({
+            ...p,
+            categoryId: cat.id,
+            categoryName: cat.name,
+            categorySort: cat.sort_order,
+          })
+        }
+      }
+    }
+  }
+  return out
+}
+
+function resolveBannerUrl(shop: ShopRow): string | null {
+  const custom = getPublicUrlFromPath(shop.banner_path)
+  if (custom) return custom
+  return templateBannerSrc(shop.theme.templateId)
+}
+
 export function Storefront({ shop, categories }: Props) {
   const { addLine, lines } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
   const showPoweredBy = PLAN_LIMITS[shop.plan].showPoweredBy
+  const isLight = shop.theme.background === 'light'
+  const products = useMemo(() => flattenProducts(categories), [categories])
+  const bannerUrl = resolveBannerUrl(shop)
 
   return (
     <div
-      className={`min-h-screen ${shopBackgroundClass(shop.theme)}`}
+      className={`min-h-screen pb-28 ${shopBackgroundClass(shop.theme)}`}
       style={themeCssVars(shop.theme)}
     >
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold">{shop.name}</h1>
-            {shop.description && (
-              <p className="truncate text-xs text-zinc-400">{shop.description}</p>
-            )}
-          </div>
+      <header className={isLight ? 'store-header-bar' : 'sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur'}>
+        <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3 md:max-w-5xl">
+          <button
+            type="button"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-zinc-700 md:border-zinc-700 md:text-zinc-200"
+            aria-label="Abrir menú"
+            onClick={() => setMenuOpen(true)}
+          >
+            <MenuIcon />
+          </button>
+          <StoreHeaderBrand />
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="btn-primary relative shrink-0 text-sm"
+            className="btn-primary relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg p-0 text-sm"
+            aria-label="Carrito"
           >
-            Carrito
+            <CartIcon />
             {cartCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1 text-xs font-bold text-zinc-900">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-zinc-900">
                 {cartCount}
               </span>
             )}
@@ -51,115 +101,145 @@ export function Storefront({ shop, categories }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-10 px-4 py-8">
-        {categories.length === 0 && (
-          <p className="text-center text-zinc-500 py-12">Esta tienda aún no tiene productos.</p>
-        )}
-        {categories.map((cat) => (
-          <section key={cat.id} className="scroll-mt-24">
-            <h2
-              className="mb-4 text-xl font-bold border-l-4 pl-3"
-              style={{ borderColor: 'var(--shop-primary)' }}
-            >
-              {cat.name}
-            </h2>
-            {cat.subcategories.map((sub) => (
-              <div key={sub.id} className="mb-8">
-                <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-400">
-                  {sub.name}
-                </h3>
-                <ProductGrid
-                  products={sub.products}
-                  categoryId={cat.id}
-                  categoryName={cat.name}
-                  categorySort={cat.sort_order}
-                  onAdd={addLine}
-                />
-                {sub.subsubcategorias.map((ss) => (
-                  <div key={ss.id} className="mb-6 ml-2 border-l border-zinc-800 pl-4">
-                    <h4 className="mb-2 text-sm text-zinc-300">{ss.name}</h4>
-                    <ProductGrid
-                      products={ss.products}
-                      categoryId={cat.id}
-                      categoryName={cat.name}
-                      categorySort={cat.sort_order}
-                      onAdd={addLine}
-                    />
-                  </div>
-                ))}
+      <main className="mx-auto max-w-lg md:max-w-5xl">
+        {bannerUrl ? (
+          <div className={isLight ? 'store-banner-frame' : 'mx-4 mt-3 overflow-hidden rounded-2xl border border-zinc-800'}>
+            <div className="relative aspect-[3/2] w-full bg-zinc-200 sm:aspect-[21/10]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="store-banner-overlay">
+                <div className="store-banner-title-badge">
+                  <h1 className="store-banner-shop-name">{shop.name}</h1>
+                </div>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 pt-4 text-center">
+            <h1 className={`text-2xl font-bold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
+              {shop.name}
+            </h1>
+          </div>
+        )}
+
+        <section id="productos" className="scroll-mt-20 px-4 py-4">
+          <div className="mb-4 text-center">
+            {shop.description && (
+              <p className={`store-shop-tagline ${!isLight ? '!text-zinc-400' : ''}`}>
+                {shop.description}
+              </p>
+            )}
+            <h2 className={`text-lg font-bold ${isLight ? 'text-zinc-900' : ''}`}>
+              Productos destacados
+            </h2>
+          </div>
+
+          {products.length === 0 && (
+            <p className={`py-12 text-center ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
+              Esta tienda aún no tiene productos.
+            </p>
+          )}
+
+          <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {products.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                isLight={isLight}
+                onAdd={() =>
+                  addLine({
+                    productId: p.id,
+                    name: p.name,
+                    unitPrice: Number(p.price),
+                    maxStock: p.stock_quantity,
+                    imagePath: p.image_path,
+                    categoryId: p.categoryId,
+                    categoryName: p.categoryName,
+                    categorySortOrder: p.categorySort,
+                  })
+                }
+              />
             ))}
-          </section>
-        ))}
+          </ul>
+        </section>
+
       </main>
 
       {showPoweredBy && (
-        <footer className="border-t border-zinc-800 py-6 text-center text-xs text-zinc-500">
+        <footer
+          className={`py-6 text-center text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-500'} ${isLight ? 'border-t border-zinc-200' : 'border-t border-zinc-800'}`}
+        >
           <p className="mb-2">Vitrina creada con</p>
           <MendoshopLogoLink size={40} className="mx-auto" />
         </footer>
       )}
 
+      <StoreWhatsAppBar shop={shop} />
+      <StoreCategoryDrawer open={menuOpen} onClose={() => setMenuOpen(false)} categories={categories} />
       <StoreCartDrawer shop={shop} open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   )
 }
 
-function ProductGrid({
-  products,
-  categoryId,
-  categoryName,
-  categorySort,
+function ProductCard({
+  product: p,
+  isLight,
   onAdd,
 }: {
-  products: CategoryRow['subcategories'][0]['products']
-  categoryId: string
-  categoryName: string
-  categorySort: number
-  onAdd: ReturnType<typeof useCart>['addLine']
+  product: FlatProduct
+  isLight: boolean
+  onAdd: () => void
 }) {
-  if (products.length === 0) return null
+  const img = getPublicUrlFromPath(p.image_path)
+  const outOfStock = p.stock_quantity <= 0
+  const cardClass = isLight ? 'store-card' : 'card flex flex-col'
+
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {products.map((p) => {
-        const img = getPublicUrlFromPath(p.image_path)
-        const outOfStock = p.stock_quantity <= 0
-        return (
-          <li key={p.id} className="card flex flex-col">
-            {img ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={img} alt={p.name} className="mb-3 aspect-square w-full rounded-xl object-cover" />
-            ) : (
-              <div className="mb-3 aspect-square w-full rounded-xl bg-zinc-800" />
-            )}
-            <h4 className="font-medium">{p.name}</h4>
-            {p.description && <p className="mt-1 text-xs text-zinc-400 line-clamp-2">{p.description}</p>}
-            <p className="mt-2 font-semibold" style={{ color: 'var(--shop-accent)' }}>
-              {formatMoneyArs(Number(p.price))}
-            </p>
-            <button
-              type="button"
-              disabled={outOfStock}
-              className="btn-primary mt-auto pt-3 text-sm disabled:opacity-40"
-              onClick={() =>
-                onAdd({
-                  productId: p.id,
-                  name: p.name,
-                  unitPrice: Number(p.price),
-                  maxStock: p.stock_quantity,
-                  imagePath: p.image_path,
-                  categoryId,
-                  categoryName,
-                  categorySortOrder: categorySort,
-                })
-              }
-            >
-              {outOfStock ? 'Sin stock' : 'Agregar'}
-            </button>
-          </li>
-        )
-      })}
-    </ul>
+    <li className={cardClass}>
+      {img ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={img}
+          alt={p.name}
+          className="mb-2 aspect-square w-full rounded-lg object-cover"
+        />
+      ) : (
+        <div className={`mb-2 aspect-square w-full rounded-lg ${isLight ? 'bg-zinc-100' : 'bg-zinc-800'}`} />
+      )}
+      <h4 className={`text-sm font-medium leading-tight ${isLight ? 'text-zinc-900' : ''}`}>
+        {p.name}
+      </h4>
+      <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--shop-accent)' }}>
+        {formatMoneyArs(Number(p.price))}
+      </p>
+      <button
+        type="button"
+        disabled={outOfStock}
+        className="btn-primary mt-2 w-full py-2 text-xs disabled:opacity-40"
+        onClick={onAdd}
+      >
+        {outOfStock ? 'Sin stock' : 'Agregar'}
+      </button>
+    </li>
   )
 }
 
+function MenuIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  )
+}
+
+function CartIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-6-9V6a2 2 0 012-2h0a2 2 0 012 2v7"
+      />
+    </svg>
+  )
+}

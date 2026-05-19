@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "icons": "node scripts/generate-icons.mjs",
-    "hero-bg": "node scripts/prepare-hero-bg.mjs"
+    "hero-bg": "node scripts/prepare-hero-bg.mjs",
+    "import-carrusel": "node scripts/import-carrusel.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

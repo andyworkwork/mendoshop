@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { HeroMobileCarousel } from '@/components/hero-mobile-carousel'
 
 const HERO_BG_DESKTOP = '/mendoshop-hero-bg.png'
 const HERO_BG_MOBILE = '/mendoshop-hero-bg-mobile.png'
@@ -17,12 +18,7 @@ export function MendoshopPageBackground() {
       aria-hidden
       className="mendoshop-page-bg__layers pointer-events-none absolute inset-0 z-0 overflow-hidden"
     >
-      <Image
-        {...heroImageBase}
-        src={HERO_BG_MOBILE}
-        sizes="(max-width: 767px) 100vw, 0px"
-        className="mendoshop-page-bg__img md:hidden"
-      />
+      <HeroMobileCarousel />
       <Image
         {...heroImageBase}
         src={HERO_BG_DESKTOP}

@@ -115,3 +115,58 @@ body {
 .input:focus {
   border-color: var(--brand-orange);
 }
+
+/* Vitrina tipo app (plantillas light) */
+.store-surface-light {
+  background-color: #f4f4f5;
+  color: #18181b;
+}
+
+.store-header-bar {
+  @apply sticky top-0 z-40 border-b border-zinc-200 bg-white shadow-sm;
+}
+
+.store-card {
+  @apply flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm;
+}
+
+.store-banner-frame {
+  @apply mx-4 mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md;
+}
+
+.store-banner-overlay {
+  @apply absolute inset-0 flex items-center justify-center px-4;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
+}
+
+.store-banner-title-badge {
+  @apply max-w-[92%] rounded-2xl border border-white/30 px-5 py-3 text-center backdrop-blur-md;
+  background: linear-gradient(
+    145deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.38) 100%
+  );
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.store-banner-shop-name {
+  @apply text-xl font-extrabold leading-snug tracking-tight text-white sm:text-2xl;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.store-shop-tagline {
+  @apply mx-auto mb-3 max-w-md px-2 text-center text-sm leading-relaxed text-zinc-600 sm:text-base;
+}
+
+.store-whatsapp-bar {
+  @apply fixed bottom-0 left-0 right-0 z-40 border-t border-green-700/30 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.12)];
+  background-color: #25d366;
+}

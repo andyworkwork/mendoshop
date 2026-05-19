@@ -1,10 +1,11 @@
 export type ShopPlan = 'free_trial' | 'basic' | 'pro'
 
 export type ShopTheme = {
-  templateId: 'minimal' | 'bold' | 'pastel' | 'dark' | 'mendoza'
+  /** Id de plantilla (rubro) o legacy: minimal, bold, pastel, dark, mendoza */
+  templateId: string
   primary: string
   accent: string
-  background: 'gradient' | 'solid' | 'pattern'
+  background: 'gradient' | 'solid' | 'pattern' | 'light'
 }
 
 export type ShopRow = {
@@ -27,8 +28,8 @@ export type ShopRow = {
 }
 
 export const DEFAULT_THEME: ShopTheme = {
-  templateId: 'minimal',
-  primary: '#f9a825',
-  accent: '#e53935',
-  background: 'gradient',
+  templateId: 'bijuteria',
+  primary: '#c9a227',
+  accent: '#9333ea',
+  background: 'light',
 }
