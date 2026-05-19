@@ -1,5 +1,6 @@
 import { HeroFeatures } from '@/components/hero-features'
 import { HeroTypewriterTitle } from '@/components/hero-typewriter-title'
+import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { createClient } from '@/lib/supabase/server'
@@ -12,7 +13,10 @@ export default async function HomePage() {
 
   return (
     <div className="relative min-h-screen mendoshop-page-bg">
-      <SiteHeader />
+      <MendoshopPageBackground />
+      <div className="relative z-10">
+        <SiteHeader />
+      </div>
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20">
         <section className="flex flex-col items-center py-16 text-center">
           <p className="hero-text-shadow mb-2 text-sm font-medium uppercase tracking-widest text-brand">

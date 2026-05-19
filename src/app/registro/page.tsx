@@ -1,11 +1,15 @@
 import { RegisterForm } from '@/components/auth-forms'
+import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 
 export default function RegistroPage() {
   return (
-    <div className="min-h-screen mendoshop-page-bg">
-      <SiteHeader />
-      <main className="px-4 py-12">
+    <div className="relative min-h-screen mendoshop-page-bg">
+      <MendoshopPageBackground />
+      <div className="relative z-10">
+        <SiteHeader />
+      </div>
+      <main className="relative z-10 px-4 py-12">
         <RegisterForm />
       </main>
     </div>

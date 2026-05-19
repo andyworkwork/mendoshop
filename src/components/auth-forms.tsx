@@ -178,7 +178,7 @@ export function RegisterForm() {
             required
             value={slug}
             onChange={(e) => setSlug(slugify(e.target.value))}
-            pattern="[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?"
+            pattern={'[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?'}
           />
         </div>
       </label>
