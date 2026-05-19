@@ -28,7 +28,7 @@ export type ShopRow = {
 
 export const DEFAULT_THEME: ShopTheme = {
   templateId: 'minimal',
-  primary: '#0d9488',
-  accent: '#f59e0b',
+  primary: '#f9a825',
+  accent: '#e53935',
   background: 'gradient',
 }

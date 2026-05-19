@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { MendoshopLogoLink } from '@/components/mendoshop-logo'
 import { signOutAction } from '@/app/actions/shop'
 import type { ShopRow } from '@/types/shop'
 import { shopPublicUrl } from '@/lib/publicUrl'
@@ -21,9 +22,7 @@ export function DashboardShell({
     <div className="min-h-screen bg-zinc-950">
       <header className="border-b border-zinc-800">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="font-bold text-teal-400">
-            Mendoshop
-          </Link>
+          <MendoshopLogoLink size={44} />
           <nav className="flex flex-wrap gap-2 text-sm">
             {links.map((l) => (
               <Link key={l.href} href={l.href} className="rounded-lg px-3 py-1.5 hover:bg-zinc-800">
@@ -34,7 +33,7 @@ export function DashboardShell({
               href={shopPublicUrl(shop.slug)}
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg px-3 py-1.5 text-teal-400 hover:bg-zinc-800"
+              className="rounded-lg px-3 py-1.5 text-brand-accent hover:bg-zinc-800"
             >
               Ver tienda ↗
             </a>

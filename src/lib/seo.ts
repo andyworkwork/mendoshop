@@ -39,7 +39,7 @@ export function shopMetadata(shop: ShopRow): Metadata {
 }
 
 export const SITE_METADATA: Metadata = {
-  title: 'Mendoshop — Tu vitrina en Mendoza',
+  title: 'Mendoshop',
   description:
     'Creá tu tienda online en minutos. Catálogo, fotos optimizadas, plantillas y pedidos por WhatsApp.',
   openGraph: {
@@ -47,5 +47,6 @@ export const SITE_METADATA: Metadata = {
     description: 'Vitrinas para emprendedores de Mendoza',
     locale: 'es_AR',
     type: 'website',
+    images: [{ url: '/mendoshop-logo.png', width: 512, height: 512, alt: 'Mendoshop' }],
   },
 }

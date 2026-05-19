@@ -7,7 +7,7 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
     return (
       <p className="text-center text-zinc-500">
         Todavía no hay tiendas publicadas. ¡Sé la primera en{' '}
-        <Link href="/registro" className="text-teal-400 underline">
+        <Link href="/registro" className="text-brand-accent underline">
           crear la tuya
         </Link>
         !
@@ -23,7 +23,7 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
           <Link
             key={shop.id}
             href={`/tienda/${shop.slug}`}
-            className="card group transition hover:border-teal-600/50"
+            className="card group transition hover:border-brand"
           >
             <div className="flex items-start gap-3">
               {logo ? (
@@ -38,7 +38,7 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <h3 className="truncate font-semibold group-hover:text-teal-300">{shop.name}</h3>
+                <h3 className="truncate font-semibold group-hover:text-brand">{shop.name}</h3>
                 {shop.category_label && (
                   <p className="text-xs text-zinc-500">{shop.category_label}</p>
                 )}

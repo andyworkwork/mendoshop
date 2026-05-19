@@ -8,6 +8,7 @@ import { shopBackgroundClass, themeCssVars } from '@/lib/themes'
 import { PLAN_LIMITS } from '@/lib/plans'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
+import { MendoshopLogoLink } from '@/components/mendoshop-logo'
 import { StoreCartDrawer } from '@/components/store-cart-drawer'
 import Link from 'next/link'
 
@@ -94,10 +95,8 @@ export function Storefront({ shop, categories }: Props) {
 
       {showPoweredBy && (
         <footer className="border-t border-zinc-800 py-6 text-center text-xs text-zinc-500">
-          Vitrina creada con{' '}
-          <Link href="/" className="text-teal-400 hover:underline">
-            Mendoshop
-          </Link>
+          <p className="mb-2">Vitrina creada con</p>
+          <MendoshopLogoLink size={40} className="mx-auto" />
         </footer>
       )}
 

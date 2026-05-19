@@ -159,11 +159,11 @@ export function CatalogEditor({
       {categories.map((cat) => (
         <section key={cat.id} className="card space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-teal-300">{cat.name}</h2>
+            <h2 className="font-semibold text-brand">{cat.name}</h2>
             <button
               type="button"
               disabled={busy}
-              className="text-sm text-teal-400"
+              className="text-sm text-brand-accent"
               onClick={() => addSubcategory(cat.id)}
             >
               + Subcategoría
@@ -182,7 +182,7 @@ export function CatalogEditor({
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-teal-400"
+                  className="text-xs text-brand-accent"
                   onClick={() => addProduct(sub.id, null)}
                 >
                   + Producto
@@ -201,7 +201,7 @@ export function CatalogEditor({
                     <span className="text-sm text-zinc-400">{ss.name}</span>
                     <button
                       type="button"
-                      className="text-xs text-teal-400"
+                      className="text-xs text-brand-accent"
                       onClick={() => addProduct(sub.id, ss.id)}
                     >
                       + Producto
@@ -261,7 +261,7 @@ function ProductList({
                 {formatMoneyArs(Number(p.price))} · Stock {p.stock_quantity}
               </p>
             </div>
-            <label className="text-xs text-teal-400 cursor-pointer">
+            <label className="text-xs text-brand-accent cursor-pointer">
               Foto
               <input
                 type="file"

@@ -97,7 +97,7 @@ export function StoreCartDrawer({ shop, open, onClose }: Props) {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-sm">{l.name}</p>
-                  <p className="text-sm text-teal-400">{formatMoneyArs(l.unitPrice)}</p>
+                  <p className="text-sm text-brand">{formatMoneyArs(l.unitPrice)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       type="button"

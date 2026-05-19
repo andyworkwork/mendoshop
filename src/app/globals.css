@@ -1,40 +1,132 @@
 @import 'tailwindcss';
 
 :root {
-  --shop-primary: #0d9488;
-  --shop-accent: #f59e0b;
+  /* Paleta logo Mendoshop */
+  --brand-orange: #f9a825;
+  --brand-coral: #e53935;
+  --brand-ink: #1a1a1a;
+  --brand-white: #ffffff;
+
+  --shop-primary: var(--brand-orange);
+  --shop-accent: var(--brand-coral);
 }
 
 body {
-  @apply bg-zinc-950 text-zinc-100 antialiased;
+  @apply antialiased;
+  background-color: var(--brand-ink);
+  color: var(--brand-white);
+}
+
+.text-brand {
+  color: var(--brand-orange);
+}
+
+.text-brand-accent {
+  color: var(--brand-coral);
+}
+
+.border-brand {
+  border-color: color-mix(in srgb, var(--brand-orange) 45%, transparent);
+}
+
+.ring-brand {
+  --tw-ring-color: color-mix(in srgb, var(--brand-orange) 40%, transparent);
+}
+
+.mendoshop-page-bg {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--brand-ink);
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.58) 0%,
+      rgba(0, 0, 0, 0.48) 40%,
+      rgba(0, 0, 0, 0.68) 100%
+    ),
+    url('/mendoshop-hero-bg.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
+.mendoshop-page-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 70% at 50% 20%, rgba(0, 0, 0, 0.25), transparent 65%);
+}
+
+.btn-secondary-outline {
+  @apply inline-flex items-center justify-center rounded-xl border-2 px-6 py-3 text-base font-semibold text-white transition;
+  border-color: color-mix(in srgb, var(--brand-orange) 85%, transparent);
+  background-color: transparent;
+}
+
+.btn-secondary-outline:hover {
+  background-color: color-mix(in srgb, var(--brand-orange) 18%, transparent);
+  border-color: var(--brand-orange);
+}
+
+.hero-feature-card {
+  @apply rounded-2xl border border-white/15 p-6 shadow-xl backdrop-blur-lg;
+  background-color: rgba(0, 0, 0, 0.42);
+}
+
+.hero-text-shadow {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
 }
 
 .shop-bg-gradient {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--shop-primary) 35%, transparent), transparent),
-    linear-gradient(180deg, #09090b 0%, #18181b 100%);
+    radial-gradient(
+      ellipse 85% 55% at 50% -15%,
+      color-mix(in srgb, var(--brand-orange) 28%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 100% 50%,
+      color-mix(in srgb, var(--brand-coral) 12%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, var(--brand-ink) 0%, #262626 100%);
 }
 
 .shop-bg-pattern {
-  background-color: #18181b;
-  background-image: radial-gradient(color-mix(in srgb, var(--shop-primary) 18%, transparent) 1px, transparent 1px);
+  background-color: #262626;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--brand-orange) 22%, transparent) 1px,
+    transparent 1px
+  );
   background-size: 24px 24px;
 }
 
 .btn-primary {
-  @apply rounded-xl px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-50;
+  @apply rounded-xl px-4 py-2.5 font-semibold transition hover:opacity-90 disabled:opacity-50;
   background-color: var(--shop-primary);
+  color: var(--brand-ink);
 }
 
 .btn-accent {
-  @apply rounded-xl px-4 py-2.5 font-medium text-zinc-950 transition hover:opacity-90;
+  @apply rounded-xl px-4 py-2.5 font-semibold text-white transition hover:opacity-90;
   background-color: var(--shop-accent);
 }
 
 .card {
-  @apply rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg backdrop-blur-sm;
+  @apply rounded-2xl border p-4 shadow-lg backdrop-blur-md;
+  border-color: color-mix(in srgb, var(--brand-orange) 22%, #3f3f46);
+  background-color: color-mix(in srgb, var(--brand-ink) 82%, transparent);
 }
 
 .input {
-  @apply w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 outline-none focus:border-teal-500;
+  @apply w-full rounded-xl border px-3 py-2 outline-none;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 90%, #27272a);
+  color: var(--brand-white);
+}
+
+.input:focus {
+  border-color: var(--brand-orange);
 }

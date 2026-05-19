@@ -37,7 +37,7 @@ export default async function DashboardHomePage() {
       </div>
       <div className="card space-y-2">
         <p className="text-sm text-zinc-400">Tu link público</p>
-        <a href={shopPublicUrl(shop.slug)} className="text-teal-400 break-all hover:underline">
+        <a href={shopPublicUrl(shop.slug)} className="text-brand-accent break-all hover:underline">
           {shopPublicUrl(shop.slug)}
         </a>
         <div className="flex flex-wrap gap-2 pt-2">

@@ -1,12 +1,11 @@
 import Link from 'next/link'
+import { MendoshopLogoLink } from '@/components/mendoshop-logo'
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <Link href="/" className="text-xl font-bold tracking-tight text-teal-400">
-          Mendoshop
-        </Link>
+    <header className="border-b border-white/10 bg-black/45 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <MendoshopLogoLink size={48} priority />
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/#tiendas" className="text-zinc-400 hover:text-white">
             Tiendas

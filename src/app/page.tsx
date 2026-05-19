@@ -1,3 +1,5 @@
+import { HeroFeatures } from '@/components/hero-features'
+import { HeroTypewriterTitle } from '@/components/hero-typewriter-title'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { createClient } from '@/lib/supabase/server'
@@ -9,61 +11,37 @@ export default async function HomePage() {
   const shops = await fetchFeaturedShops(supabase, 24)
 
   return (
-    <div className="min-h-screen shop-bg-gradient">
+    <div className="relative min-h-screen mendoshop-page-bg">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 pb-20">
-        <section className="py-16 text-center">
-          <p className="mb-2 text-sm font-medium uppercase tracking-widest text-teal-400">
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20">
+        <section className="flex flex-col items-center py-16 text-center">
+          <p className="hero-text-shadow mb-2 text-sm font-medium uppercase tracking-widest text-brand">
             Mendoza vende online
           </p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Tu vitrina en minutos con <span className="text-teal-400">Mendoshop</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
-            Catálogo propio, fotos optimizadas, plantillas personalizables y pedidos directo al
-            WhatsApp de cada emprendedor.
+          <div className="hero-text-shadow max-w-4xl">
+            <HeroTypewriterTitle />
+          </div>
+          <p className="hero-text-shadow mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-zinc-100">
+            Catálogo propio, plantillas personalizadas, elegí tus colores y las categorías que
+            quieras!
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link href="/registro" className="btn-primary px-6 py-3 text-base">
+          <div className="mt-8 flex w-full max-w-xl flex-wrap items-center justify-center gap-4">
+            <Link href="/registro" className="btn-primary min-w-[200px] px-6 py-3 text-base">
               Crear mi tienda gratis
             </Link>
-            <Link
-              href="#tiendas"
-              className="rounded-xl border border-zinc-600 px-6 py-3 text-base hover:bg-zinc-800"
-            >
+            <Link href="#tiendas" className="btn-secondary-outline min-w-[200px]">
               Ver tiendas
             </Link>
           </div>
-        </section>
-
-        <section className="grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              title: 'Link propio',
-              text: 'Compartí mendoshop.com/tienda/tu-nombre en Instagram o con un QR.',
-            },
-            {
-              title: 'Fotos livianas',
-              text: 'Subimos WebP automático para no gastar datos ni almacenamiento de más.',
-            },
-            {
-              title: 'WhatsApp',
-              text: 'El carrito arma el mensaje con productos y total para tu número.',
-            },
-          ].map((f) => (
-            <article key={f.title} className="card">
-              <h2 className="font-semibold text-teal-300">{f.title}</h2>
-              <p className="mt-2 text-sm text-zinc-400">{f.text}</p>
-            </article>
-          ))}
+          <HeroFeatures />
         </section>
 
         <section id="tiendas" className="mt-20">
-          <h2 className="mb-6 text-2xl font-bold">Tiendas en Mendoshop</h2>
+          <h2 className="hero-text-shadow mb-6 text-2xl font-bold">Tiendas en Mendoshop</h2>
           <ShopDirectory shops={shops} />
         </section>
       </main>
-      <footer className="border-t border-zinc-800 py-8 text-center text-sm text-zinc-500">
+      <footer className="relative z-10 border-t border-white/10 py-8 text-center text-sm text-zinc-300">
         Mendoshop · Vitrinas para emprendedores de Mendoza
       </footer>
     </div>

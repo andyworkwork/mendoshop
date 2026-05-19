@@ -11,9 +11,9 @@ export type ThemeTemplate = {
 export const THEME_TEMPLATES: ThemeTemplate[] = [
   {
     id: 'minimal',
-    name: 'Minimal',
-    description: 'Limpio y profesional',
-    defaults: { templateId: 'minimal', primary: '#0d9488', accent: '#f59e0b', background: 'gradient' },
+    name: 'Mendoshop',
+    description: 'Naranja y coral (marca)',
+    defaults: { templateId: 'minimal', primary: '#f9a825', accent: '#e53935', background: 'gradient' },
   },
   {
     id: 'bold',
@@ -63,8 +63,8 @@ export function parseTheme(raw: unknown): ShopTheme {
     : 'minimal'
   return {
     templateId,
-    primary: typeof t.primary === 'string' ? t.primary : '#0d9488',
-    accent: typeof t.accent === 'string' ? t.accent : '#f59e0b',
+    primary: typeof t.primary === 'string' ? t.primary : '#f9a825',
+    accent: typeof t.accent === 'string' ? t.accent : '#e53935',
     background:
       t.background === 'solid' || t.background === 'pattern' || t.background === 'gradient'
         ? t.background

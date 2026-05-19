@@ -57,7 +57,7 @@ export function LoginForm() {
       </button>
       <p className="text-center text-sm text-zinc-500">
         ¿No tenés cuenta?{' '}
-        <Link href="/registro" className="text-teal-400">
+        <Link href="/registro" className="text-brand-accent">
           Crear tienda
         </Link>
       </p>
@@ -222,7 +222,7 @@ export function RegisterForm() {
       </button>
       <p className="text-center text-sm text-zinc-500">
         ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="text-teal-400">
+        <Link href="/login" className="text-brand-accent">
           Entrar
         </Link>
       </p>

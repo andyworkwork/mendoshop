@@ -43,7 +43,7 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
           Plan: {planLabel(shop.plan)}
           {shop.plan_until && ` · Hasta ${new Date(shop.plan_until).toLocaleDateString('es-AR')}`}
         </p>
-        <p className="text-sm text-teal-400 break-all">{shopPublicUrl(shop.slug)}</p>
+        <p className="text-sm text-brand-accent break-all">{shopPublicUrl(shop.slug)}</p>
         <label className="block text-sm">
           Nombre
           <input className="input mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -105,7 +105,7 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
         </label>
       </section>
 
-      {msg && <p className={`text-sm ${msg.includes('Error') || msg.includes('error') ? 'text-red-400' : 'text-teal-400'}`}>{msg}</p>}
+      {msg && <p className={`text-sm ${msg.includes('Error') || msg.includes('error') ? 'text-red-400' : 'text-brand'}`}>{msg}</p>}
       <button type="submit" disabled={loading} className="btn-primary">
         {loading ? 'Guardando…' : 'Guardar cambios'}
       </button>

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "icons": "node scripts/generate-icons.mjs",
+    "hero-bg": "node scripts/prepare-hero-bg.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

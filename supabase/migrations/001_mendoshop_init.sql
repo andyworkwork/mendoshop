@@ -19,7 +19,7 @@ create table public.shops (
   active boolean not null default true,
   featured boolean not null default false,
   category_label text,
-  theme jsonb not null default '{"templateId":"minimal","primary":"#0d9488","accent":"#f59e0b","background":"gradient"}'::jsonb,
+  theme jsonb not null default '{"templateId":"minimal","primary":"#f9a825","accent":"#e53935","background":"gradient"}'::jsonb,
   seo_title text,
   seo_description text,
   view_count bigint not null default 0,

@@ -21,7 +21,7 @@ export function ThemePicker({
             onClick={() => onChange({ ...tpl.defaults })}
             className={`rounded-xl border p-3 text-left transition ${
               value.templateId === tpl.id
-                ? 'border-teal-500 ring-2 ring-teal-500/30'
+                ? 'border-brand ring-2 ring-brand'
                 : 'border-zinc-700 hover:border-zinc-500'
             }`}
           >
