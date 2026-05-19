@@ -1,26 +1,40 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shop-primary: #0d9488;
+  --shop-accent: #f59e0b;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-zinc-950 text-zinc-100 antialiased;
+}
+
+.shop-bg-gradient {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, color-mix(in srgb, var(--shop-primary) 35%, transparent), transparent),
+    linear-gradient(180deg, #09090b 0%, #18181b 100%);
+}
+
+.shop-bg-pattern {
+  background-color: #18181b;
+  background-image: radial-gradient(color-mix(in srgb, var(--shop-primary) 18%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.btn-primary {
+  @apply rounded-xl px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-50;
+  background-color: var(--shop-primary);
+}
+
+.btn-accent {
+  @apply rounded-xl px-4 py-2.5 font-medium text-zinc-950 transition hover:opacity-90;
+  background-color: var(--shop-accent);
+}
+
+.card {
+  @apply rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg backdrop-blur-sm;
+}
+
+.input {
+  @apply w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 outline-none focus:border-teal-500;
 }

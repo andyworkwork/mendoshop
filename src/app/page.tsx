@@ -1,65 +1,71 @@
-import Image from "next/image";
+import { SiteHeader } from '@/components/site-header'
+import { ShopDirectory } from '@/components/shop-directory'
+import { createClient } from '@/lib/supabase/server'
+import { fetchFeaturedShops } from '@/lib/shops'
+import Link from 'next/link'
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const shops = await fetchFeaturedShops(supabase, 24)
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen shop-bg-gradient">
+      <SiteHeader />
+      <main className="mx-auto max-w-6xl px-4 pb-20">
+        <section className="py-16 text-center">
+          <p className="mb-2 text-sm font-medium uppercase tracking-widest text-teal-400">
+            Mendoza vende online
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            Tu vitrina en minutos con <span className="text-teal-400">Mendoshop</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-zinc-400">
+            Catálogo propio, fotos optimizadas, plantillas personalizables y pedidos directo al
+            WhatsApp de cada emprendedor.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/registro" className="btn-primary px-6 py-3 text-base">
+              Crear mi tienda gratis
+            </Link>
+            <Link
+              href="#tiendas"
+              className="rounded-xl border border-zinc-600 px-6 py-3 text-base hover:bg-zinc-800"
+            >
+              Ver tiendas
+            </Link>
+          </div>
+        </section>
+
+        <section className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              title: 'Link propio',
+              text: 'Compartí mendoshop.com/tienda/tu-nombre en Instagram o con un QR.',
+            },
+            {
+              title: 'Fotos livianas',
+              text: 'Subimos WebP automático para no gastar datos ni almacenamiento de más.',
+            },
+            {
+              title: 'WhatsApp',
+              text: 'El carrito arma el mensaje con productos y total para tu número.',
+            },
+          ].map((f) => (
+            <article key={f.title} className="card">
+              <h2 className="font-semibold text-teal-300">{f.title}</h2>
+              <p className="mt-2 text-sm text-zinc-400">{f.text}</p>
+            </article>
+          ))}
+        </section>
+
+        <section id="tiendas" className="mt-20">
+          <h2 className="mb-6 text-2xl font-bold">Tiendas en Mendoshop</h2>
+          <ShopDirectory shops={shops} />
+        </section>
       </main>
+      <footer className="border-t border-zinc-800 py-8 text-center text-sm text-zinc-500">
+        Mendoshop · Vitrinas para emprendedores de Mendoza
+      </footer>
     </div>
-  );
+  )
 }
