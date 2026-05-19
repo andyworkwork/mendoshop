@@ -1,7 +1,7 @@
 const features = [
   {
     title: 'Link propio',
-    text: 'Compartí mendoshop.com/tienda/tu-nombre en Instagram o con un QR.',
+    text: 'Compartí tu link /tienda/tu-nombre en Instagram o con un QR.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8" aria-hidden>
         <path

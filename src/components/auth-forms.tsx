@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
 import { slugify } from '@/lib/format'
 import Link from 'next/link'
+import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,7 +25,7 @@ export function LoginForm() {
       setError(err.message)
       return
     }
-    router.push('/dashboard')
+    router.push(redirectTo)
     router.refresh()
   }
 
@@ -170,8 +171,8 @@ export function RegisterForm() {
       </label>
       <label className="block text-sm">
         Link de tu tienda
-        <div className="mt-1 flex items-center gap-1 text-sm text-zinc-500">
-          <span>mendoshop.com/tienda/</span>
+        <div className="mt-1 flex items-center gap-1 text-sm">
+          <ShopLinkPrefix />
           <input
             className="input flex-1"
             required

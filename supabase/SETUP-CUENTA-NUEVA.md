@@ -32,7 +32,37 @@ Si ya corriste algo y falla por “already exists”, borrá el proyecto y creá
 - Para probar sin mail de confirmación: desactivá **Confirm email**.
 - **URL Configuration**: `http://localhost:3000/**` en Redirect URLs.
 
-## 4. Reiniciar la app
+## 3b. Usuario maestro (panel admin)
+
+1. Ejecutá también `supabase/migrations/002_platform_admin_access.sql` en el SQL Editor.
+2. Registrate en la app con **tu** email (`/registro` o `/login`).
+3. En SQL Editor:
+
+```sql
+insert into public.platform_admins (email) values ('tu@email.com')
+on conflict do nothing;
+```
+
+4. Entrá a **http://localhost:3000/admin** — ahí podés crear cuentas y tiendas para otros (email confirmado automáticamente).
+
+Necesitás `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` para que el admin cree usuarios.
+
+## 4. Vercel (producción)
+
+En **Project → Settings → Environment Variables** agregá:
+
+| Variable | Valor |
+|----------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Igual que local |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Igual que local |
+| `SUPABASE_SERVICE_ROLE_KEY` | Igual que local |
+| `NEXT_PUBLIC_APP_URL` | `https://mendoshop.vercel.app` (tu dominio real) |
+
+En Supabase **Authentication → URL Configuration**, agregá `https://mendoshop.vercel.app/**` en Redirect URLs.
+
+Sin `NEXT_PUBLIC_APP_URL`, la app intenta usar `VERCEL_URL` al desplegar; conviene fijar la URL igual por los QR y WhatsApp.
+
+## 5. Reiniciar la app
 
 ```bash
 npm run dev

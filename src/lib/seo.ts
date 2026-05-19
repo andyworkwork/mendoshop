@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import type { ShopRow } from '@/types/shop'
-import { getPublicUrlFromPath, shopPublicUrl } from '@/lib/publicUrl'
+import { appBaseUrl, getPublicUrlFromPath, shopPublicUrl } from '@/lib/publicUrl'
 
 /**
  * SEO = cómo Google y WhatsApp muestran tu link al compartirlo.
@@ -39,6 +39,7 @@ export function shopMetadata(shop: ShopRow): Metadata {
 }
 
 export const SITE_METADATA: Metadata = {
+  metadataBase: new URL(appBaseUrl()),
   title: 'Mendoshop',
   description:
     'Creá tu tienda online en minutos. Catálogo, fotos optimizadas, plantillas y pedidos por WhatsApp.',
