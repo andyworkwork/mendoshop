@@ -66,11 +66,13 @@ const mobileSrcH = mobileMeta.height ?? 1024
 const mobileOut = await compositeLogoBottomRight(
   MOBILE_WIDTH,
   MOBILE_HEIGHT,
-  sharp(sourceMobile).resize(MOBILE_WIDTH, MOBILE_HEIGHT, {
-    fit: 'cover',
-    position: 'center',
-    kernel: sharp.kernel.lanczos3,
-  }),
+  sharp(sourceMobile)
+    .resize(MOBILE_WIDTH, MOBILE_HEIGHT, {
+      fit: 'cover',
+      position: 'center',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .modulate({ brightness: 1.14, saturation: 1.06 }),
 )
 await mobileOut.png({ compressionLevel: 8 }).toFile(outputMobile)
 

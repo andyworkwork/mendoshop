@@ -29,8 +29,8 @@ export function MendoshopPageBackground() {
         sizes="(min-width: 768px) 100vw, 0px"
         className="mendoshop-page-bg__img hidden md:block"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/[0.58] via-black/[0.48] to-black/[0.68]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_20%,rgba(0,0,0,0.25),transparent_65%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/28 to-black/45 md:from-black/[0.58] md:via-black/[0.48] md:to-black/[0.68]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_70%_at_50%_20%,rgba(0,0,0,0.12),transparent_65%)] md:bg-[radial-gradient(ellipse_90%_70%_at_50%_20%,rgba(0,0,0,0.25),transparent_65%)]" />
     </div>
   )
 }
