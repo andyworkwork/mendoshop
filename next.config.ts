@@ -9,7 +9,8 @@ const nextConfig: NextConfig = {
     root: import.meta.dirname,
   },
   images: {
-    qualities: [75, 85],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1536, 1920, 2048],
+    qualities: [75, 85, 92],
     ...(supabaseHost
       ? {
           remotePatterns: [

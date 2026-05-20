@@ -1,7 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { templateBannerSrc } from '@/lib/store-templates'
 import { parseTheme } from '@/lib/themes'
 import type { ShopRow } from '@/types/shop'
 import { DEFAULT_THEME } from '@/types/shop'
+
+export function resolveShopBannerUrl(shop: ShopRow): string | null {
+  const custom = getPublicUrlFromPath(shop.banner_path)
+  if (custom) return custom
+  return templateBannerSrc(shop.theme.templateId)
+}
 
 export function mapShopRow(raw: Record<string, unknown>): ShopRow {
   return {

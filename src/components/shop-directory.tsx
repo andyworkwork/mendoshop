@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { resolveShopBannerUrl } from '@/lib/shops'
 import type { ShopRow } from '@/types/shop'
 
 export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
@@ -18,34 +18,41 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {shops.map((shop) => {
-        const logo = getPublicUrlFromPath(shop.logo_path)
+        const bannerUrl = resolveShopBannerUrl(shop)
         return (
           <Link
             key={shop.id}
             href={`/tienda/${shop.slug}`}
-            className="card group transition hover:border-brand"
+            className="group relative flex min-h-[7.75rem] flex-col items-center justify-center overflow-hidden rounded-2xl border border-zinc-700/80 p-4 text-center shadow-lg transition hover:border-brand"
           >
-            <div className="flex items-start gap-3">
-              {logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logo} alt="" className="h-14 w-14 rounded-xl object-cover" />
-              ) : (
-                <div
-                  className="flex h-14 w-14 items-center justify-center rounded-xl text-lg font-bold text-white"
-                  style={{ backgroundColor: shop.theme.primary }}
-                >
-                  {shop.name.slice(0, 1).toUpperCase()}
-                </div>
+            {bannerUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={bannerUrl}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/45" />
+              </>
+            ) : (
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(160deg, ${shop.theme.primary} 0%, color-mix(in srgb, ${shop.theme.primary} 40%, #18181b) 100%)`,
+                }}
+              />
+            )}
+            <div className="relative z-10 flex w-full flex-col items-center justify-center gap-1 px-1">
+              <h3 className="line-clamp-2 font-semibold text-white drop-shadow-md group-hover:text-brand">
+                {shop.name}
+              </h3>
+              {shop.category_label && (
+                <p className="text-xs font-medium text-zinc-200/90">{shop.category_label}</p>
               )}
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-semibold group-hover:text-brand">{shop.name}</h3>
-                {shop.category_label && (
-                  <p className="text-xs text-zinc-500">{shop.category_label}</p>
-                )}
-                {shop.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-400">{shop.description}</p>
-                )}
-              </div>
+              {shop.description && (
+                <p className="line-clamp-2 max-w-[28ch] text-sm text-zinc-300/95">{shop.description}</p>
+              )}
             </div>
           </Link>
         )
@@ -53,3 +60,4 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
     </div>
   )
 }
+

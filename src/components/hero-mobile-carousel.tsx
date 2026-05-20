@@ -27,8 +27,10 @@ export function HeroMobileCarousel() {
           alt={slide.alt}
           fill
           priority={i === 0}
+          fetchPriority={i === 0 ? 'high' : 'low'}
           sizes="(max-width: 767px) 100vw, 0px"
-          quality={85}
+          quality={92}
+          unoptimized
           className={`mendoshop-page-bg__img transition-opacity duration-700 ${
             i === index ? 'opacity-100' : 'opacity-0'
           }`}

@@ -1,11 +1,11 @@
 import { HeroFeatures } from '@/components/hero-features'
 import { HeroTypewriterTitle } from '@/components/hero-typewriter-title'
+import { HomeHeroCta } from '@/components/home-hero-cta'
 import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { createClient } from '@/lib/supabase/server'
 import { fetchFeaturedShops } from '@/lib/shops'
-import Link from 'next/link'
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -29,14 +29,7 @@ export default async function HomePage() {
             Catálogo propio, plantillas personalizadas, elegí tus colores y las categorías que
             quieras!
           </p>
-          <div className="mt-8 flex w-full max-w-xl flex-wrap items-center justify-center gap-4">
-            <Link href="/registro" className="btn-primary min-w-[200px] px-6 py-3 text-base">
-              Crear mi tienda gratis
-            </Link>
-            <Link href="#tiendas" className="btn-secondary-outline min-w-[200px]">
-              Ver tiendas
-            </Link>
-          </div>
+          <HomeHeroCta />
           <HeroFeatures />
         </section>
 

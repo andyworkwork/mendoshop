@@ -9,14 +9,14 @@ export type StoreTemplate = {
   defaults: ShopTheme
 }
 
-/** Plantillas por rubro (imágenes en public/store-templates y public/hero-carousel). */
+/** Plantillas por rubro (imágenes en public/store-templates y public/hero-carousel-2x). */
 export const STORE_TEMPLATES: StoreTemplate[] = [
   {
     id: 'bijuteria',
     name: 'Bijutería',
     description: 'Joyas y accesorios',
     bannerSrc: '/store-templates/bijuteria.webp',
-    carouselSrc: '/hero-carousel/bijuteria.webp',
+    carouselSrc: '/hero-carousel-2x/bijuteria.webp',
     defaults: {
       templateId: 'bijuteria',
       primary: '#c9a227',
@@ -29,7 +29,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Ropa',
     description: 'Indumentaria y moda',
     bannerSrc: '/store-templates/ropa.webp',
-    carouselSrc: '/hero-carousel/ropa.webp',
+    carouselSrc: '/hero-carousel-2x/ropa.webp',
     defaults: {
       templateId: 'ropa',
       primary: '#1e3a5f',
@@ -42,7 +42,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Plantas',
     description: 'Verde y naturaleza',
     bannerSrc: '/store-templates/plantas.webp',
-    carouselSrc: '/hero-carousel/plantas.webp',
+    carouselSrc: '/hero-carousel-2x/plantas.webp',
     defaults: {
       templateId: 'plantas',
       primary: '#15803d',
@@ -55,7 +55,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Manicura',
     description: 'Belleza y uñas',
     bannerSrc: '/store-templates/manicura.webp',
-    carouselSrc: '/hero-carousel/manicura.webp',
+    carouselSrc: '/hero-carousel-2x/manicura.webp',
     defaults: {
       templateId: 'manicura',
       primary: '#db2777',
@@ -68,7 +68,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Mascotas',
     description: 'Todo para tu mascota',
     bannerSrc: '/store-templates/mascotas.webp',
-    carouselSrc: '/hero-carousel/mascotas.webp',
+    carouselSrc: '/hero-carousel-2x/mascotas.webp',
     defaults: {
       templateId: 'mascotas',
       primary: '#ea580c',
@@ -81,7 +81,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Alimento de mascota',
     description: 'Alimentos y snacks',
     bannerSrc: '/store-templates/alimento-de-mascota.webp',
-    carouselSrc: '/hero-carousel/alimento-de-mascota.webp',
+    carouselSrc: '/hero-carousel-2x/alimento-de-mascota.webp',
     defaults: {
       templateId: 'alimento-de-mascota',
       primary: '#b45309',
@@ -94,7 +94,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Accesorios de celular',
     description: 'Fundas, cables y más',
     bannerSrc: '/store-templates/accesorios-de-celular.webp',
-    carouselSrc: '/hero-carousel/accesorios-de-celular.webp',
+    carouselSrc: '/hero-carousel-2x/accesorios-de-celular.webp',
     defaults: {
       templateId: 'accesorios-de-celular',
       primary: '#0284c7',
@@ -107,7 +107,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Producto regional',
     description: 'Sabores de Mendoza',
     bannerSrc: '/store-templates/producto-regional.webp',
-    carouselSrc: '/hero-carousel/producto-regional.webp',
+    carouselSrc: '/hero-carousel-2x/producto-regional.webp',
     defaults: {
       templateId: 'producto-regional',
       primary: '#b91c1c',
@@ -120,7 +120,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Mendoza independencia',
     description: 'Identidad local',
     bannerSrc: '/store-templates/mendoza-independencia.webp',
-    carouselSrc: '/hero-carousel/mendoza-independencia.webp',
+    carouselSrc: '/hero-carousel-2x/mendoza-independencia.webp',
     defaults: {
       templateId: 'mendoza-independencia',
       primary: '#7f1d1d',
@@ -133,7 +133,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Parque central',
     description: 'Estilo Mendoza urbano',
     bannerSrc: '/store-templates/parque-central.webp',
-    carouselSrc: '/hero-carousel/parque-central.webp',
+    carouselSrc: '/hero-carousel-2x/parque-central.webp',
     defaults: {
       templateId: 'parque-central',
       primary: '#166534',
@@ -146,7 +146,7 @@ export const STORE_TEMPLATES: StoreTemplate[] = [
     name: 'Flores de limpiapipas',
     description: 'Artesanías y manualidades',
     bannerSrc: '/store-templates/flores-de-limpiapipas.webp',
-    carouselSrc: '/hero-carousel/flores-de-limpiapipas.webp',
+    carouselSrc: '/hero-carousel-2x/flores-de-limpiapipas.webp',
     defaults: {
       templateId: 'flores-de-limpiapipas',
       primary: '#a855f7',

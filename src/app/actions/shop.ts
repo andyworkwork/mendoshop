@@ -66,7 +66,7 @@ export async function revalidateStorefront(slug: string) {
 export async function signOutAction() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/login')
+  redirect('/')
 }
 
 export async function validateSlug(slug: string): Promise<boolean> {
