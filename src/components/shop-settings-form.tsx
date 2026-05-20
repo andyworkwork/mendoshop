@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { updateShopSettings } from '@/app/actions/shop'
 import { RubroField } from '@/components/rubro-field'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
+import { ShopBannerUpload } from '@/components/shop-banner-upload'
 import { ThemePicker } from '@/components/theme-picker'
 import { shopPublicUrl } from '@/lib/publicUrl'
 import { PLAN_LIMITS } from '@/lib/plans'
@@ -137,8 +138,11 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
       </section>
 
       <section className="card space-y-1">
-        <SettingsCollapsible title="Apariencia" subtitle="Plantillas, fondo y colores" defaultOpen={false}>
-          <ThemePicker value={theme} onChange={setTheme} />
+        <SettingsCollapsible title="Apariencia" subtitle="Banner, plantillas y colores" defaultOpen={false}>
+          <div className="space-y-6">
+            <ShopBannerUpload shop={shop} />
+            <ThemePicker value={theme} onChange={setTheme} />
+          </div>
         </SettingsCollapsible>
       </section>
 

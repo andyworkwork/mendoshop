@@ -21,6 +21,7 @@ export async function updateShopSettings(
     tiktok_url?: string | null
     website_url?: string | null
     social_whatsapp_visible?: boolean
+    banner_path?: string | null
   },
 ) {
   const supabase = await createClient()
@@ -44,6 +45,7 @@ export async function updateShopSettings(
   if (data.social_whatsapp_visible !== undefined) {
     patch.social_whatsapp_visible = data.social_whatsapp_visible
   }
+  if (data.banner_path !== undefined) patch.banner_path = data.banner_path
 
   const { data: row, error } = await supabase
     .from('shops')

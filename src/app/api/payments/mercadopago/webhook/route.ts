@@ -38,6 +38,23 @@ async function syncPayment(mpPaymentId: string) {
   }
 
   if (mpPayment.status === 'approved') {
+    const { data: fullRow } = await service
+      .from('shop_plan_payments')
+      .select('amount_ars')
+      .eq('id', row.id)
+      .maybeSingle()
+
+    const expected = fullRow ? Number(fullRow.amount_ars) : null
+    const paid = mpPayment.transaction_amount
+    if (
+      expected != null &&
+      paid != null &&
+      Math.abs(paid - expected) > 0.02
+    ) {
+      console.error('mercadopago amount mismatch', { expected, paid, paymentId: row.id })
+      return
+    }
+
     await service.from('shop_plan_payments').update(patch).eq('id', row.id)
     await fulfillPlanPayment(row.id)
     revalidatePath('/dashboard/account')

@@ -1,4 +1,4 @@
-export type ImageUploadVariant = 'main' | 'thumb'
+export type ImageUploadVariant = 'main' | 'thumb' | 'banner'
 
 const PRESETS: Record<
   ImageUploadVariant,
@@ -14,12 +14,18 @@ const PRESETS: Record<
     maxBytes: 90_000,
     qualities: [0.72, 0.62, 0.52],
   },
+  banner: {
+    maxWidth: 1400,
+    maxBytes: 400_000,
+    qualities: [0.78, 0.68, 0.58, 0.48],
+  },
 }
 
 /**
  * Comprime imágenes en el navegador antes de subir (WebP).
  * - main: catálogo completo (~380 KB, 1200px)
  * - thumb: grilla de la tienda (~90 KB, 480px)
+ * - banner: portada de la tienda (~400 KB, 1400px)
  */
 export async function compressImageForUpload(
   file: File,
@@ -44,7 +50,7 @@ export async function compressImageForUpload(
   ctx.drawImage(bitmap, 0, 0, w, h)
   bitmap.close()
 
-  const suffix = variant === 'thumb' ? '-thumb' : ''
+  const suffix = variant === 'thumb' ? '-thumb' : variant === 'banner' ? '-banner' : ''
   for (const q of qualities) {
     const blob = await canvasToWebp(canvas, q)
     if (blob.size <= maxBytes || q === qualities[qualities.length - 1]) {

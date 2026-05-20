@@ -37,7 +37,7 @@ function paymentStatusLabel(status: string) {
     case 'rejected':
       return 'Rechazado'
     case 'cancelled':
-      return 'Cancelado'
+      return 'Cancelado / expirado'
     default:
       return status
   }

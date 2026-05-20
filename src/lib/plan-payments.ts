@@ -17,6 +17,42 @@ export function checkoutProductDays(product: PlanCheckoutProduct): number {
   return CHECKOUT_PRODUCTS[product].daysAdded
 }
 
+/** Intentos de pago sin completar en MP pasan a cancelled tras este tiempo. */
+export const PENDING_PLAN_PAYMENT_TTL_MINUTES = 5
+
+/** Marca como cancelados los pending viejos (checkout abandonado). */
+export async function expireStalePendingPlanPayments(
+  shopId: string,
+  ttlMinutes: number = PENDING_PLAN_PAYMENT_TTL_MINUTES,
+): Promise<void> {
+  const service = createServiceClient()
+  const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000).toISOString()
+  await service
+    .from('shop_plan_payments')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('shop_id', shopId)
+    .eq('status', 'pending')
+    .lt('created_at', cutoff)
+}
+
+export async function expireAllStalePendingPlanPayments(
+  ttlMinutes: number = PENDING_PLAN_PAYMENT_TTL_MINUTES,
+): Promise<void> {
+  const service = createServiceClient()
+  const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000).toISOString()
+  await service
+    .from('shop_plan_payments')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('status', 'pending')
+    .lt('created_at', cutoff)
+}
+
 /** Activa o renueva tras un pago aprobado (idempotente por mp_payment_id). */
 export async function fulfillPlanPayment(paymentId: string): Promise<{ ok: true } | { error: string }> {
   const service = createServiceClient()

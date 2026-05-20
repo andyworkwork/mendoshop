@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { updateShopAdmin } from '@/app/actions/admin'
 import { AdminAddPlanDaysDialog } from '@/components/admin-add-plan-days-dialog'
 import { AdminEditShopPlanDialog } from '@/components/admin-edit-shop-plan-dialog'
@@ -152,11 +152,32 @@ function ShopStatusBadges({ shop }: { shop: AdminShopRow }) {
   )
 }
 
+function shopSearchHaystack(shop: AdminShopRow): string {
+  return [
+    shop.name,
+    shop.slug,
+    shop.category_label ?? '',
+    shop.whatsapp_e164,
+    planLabel(shop.plan),
+    shop.active ? 'activa' : 'pausada',
+    shop.featured ? 'destacada' : '',
+  ]
+    .join(' ')
+    .toLowerCase()
+}
+
 export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
   const [pending, startTransition] = useTransition()
+  const [query, setQuery] = useState('')
   const [addDaysShop, setAddDaysShop] = useState<AdminShopRow | null>(null)
   const [editPlanShop, setEditPlanShop] = useState<AdminShopRow | null>(null)
   const [historyShop, setHistoryShop] = useState<AdminShopRow | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return shops
+    return shops.filter((s) => shopSearchHaystack(s).includes(q))
+  }, [shops, query])
 
   function toggle(shopId: string, field: 'active' | 'featured', value: boolean) {
     startTransition(async () => {
@@ -170,6 +191,33 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
 
   return (
     <>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <label className="block w-full max-w-md text-sm">
+          <span className="text-zinc-400">Buscar tienda</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Nombre, link, rubro, plan, WhatsApp…"
+            className="input mt-1 w-full"
+            autoComplete="off"
+          />
+        </label>
+        <p className="shrink-0 text-sm text-zinc-500">
+          {query.trim() ? (
+            <>
+              <span className="text-zinc-300">{filtered.length}</span> de {shops.length}
+            </>
+          ) : (
+            <>{shops.length} tienda{shops.length === 1 ? '' : 's'}</>
+          )}
+        </p>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-zinc-400">Ninguna tienda coincide con «{query.trim()}».</p>
+      ) : (
+        <>
       <AdminAddPlanDaysDialog
         shopId={addDaysShop?.id ?? ''}
         shopName={addDaysShop?.name ?? ''}
@@ -191,7 +239,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
       />
 
       <ul className="space-y-3 md:hidden">
-        {shops.map((s) => (
+        {filtered.map((s) => (
           <li key={s.id} className="card space-y-3">
             <div className="min-w-0">
               <p className="font-medium text-white">{s.name}</p>
@@ -238,7 +286,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {shops.map((s) => (
+            {filtered.map((s) => (
               <tr key={s.id} className="border-b border-zinc-800/80 last:border-0">
                 <td className="px-4 py-3">
                   <p className="font-medium text-white">{s.name}</p>
@@ -273,6 +321,8 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </>
   )
 }

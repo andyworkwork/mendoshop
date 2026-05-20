@@ -2,9 +2,11 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
-import { slugify } from '@/lib/format'
+import { formatMoneyArs, slugify } from '@/lib/format'
 import { isPlatformAdmin } from '@/lib/admin'
 import { extendPlanUntil, planLabel } from '@/lib/plans'
+import { expireAllStalePendingPlanPayments, expireStalePendingPlanPayments } from '@/lib/plan-payments'
+import { checkoutProductLabel, isPlanCheckoutProduct } from '@/lib/plan-checkout'
 import { revalidatePath } from 'next/cache'
 import type { ShopPlan } from '@/types/shop'
 
@@ -106,6 +108,8 @@ export async function createShopForUser(input: {
   }
 
   revalidatePath('/admin')
+  revalidatePath('/admin/crear-cuenta')
+  revalidatePath('/admin/historial-planes')
   return { ok: true }
 }
 
@@ -125,6 +129,8 @@ export async function updateShopAdmin(
   const { error } = await service.from('shops').update(patch).eq('id', shopId)
   if (error) return { error: error.message }
   revalidatePath('/admin')
+  revalidatePath('/admin/crear-cuenta')
+  revalidatePath('/admin/historial-planes')
   revalidatePath('/dashboard/account')
   return { ok: true }
 }
@@ -173,6 +179,8 @@ export async function grantPlanDaysToShop(input: {
   if (updateErr) return { error: updateErr.message }
 
   revalidatePath('/admin')
+  revalidatePath('/admin/crear-cuenta')
+  revalidatePath('/admin/historial-planes')
   revalidatePath('/dashboard/account')
   return { ok: true }
 }
@@ -216,6 +224,7 @@ export async function fetchShopPlanActivity(shopId: string): Promise<ShopPlanAct
   if (denied) return denied
 
   const service = createServiceClient()
+  await expireStalePendingPlanPayments(shopId)
 
   const [grantsRes, paymentsRes] = await Promise.all([
     service
@@ -283,6 +292,104 @@ export async function setShopPlanAdmin(input: {
   if (updateErr) return { error: updateErr.message }
 
   revalidatePath('/admin')
+  revalidatePath('/admin/historial-planes')
   revalidatePath('/dashboard/account')
   return { ok: true }
+}
+
+export type GlobalPlanLogEntry = {
+  id: string
+  kind: 'grant' | 'payment'
+  shop_id: string
+  shop_name: string
+  shop_slug: string
+  created_at: string
+  title: string
+  detail: string
+  status: string | null
+  watch: boolean
+}
+
+const GLOBAL_PLAN_LOG_LIMIT = 200
+
+function shopFromJoin(shops: unknown): { name: string; slug: string } {
+  const row = Array.isArray(shops) ? shops[0] : shops
+  if (row && typeof row === 'object' && 'name' in row && 'slug' in row) {
+    const s = row as { name: unknown; slug: unknown }
+    return { name: String(s.name), slug: String(s.slug) }
+  }
+  return { name: '—', slug: '' }
+}
+
+export async function listGlobalPlanActivityForAdmin(): Promise<
+  GlobalPlanLogEntry[] | { error: string }
+> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+  await expireAllStalePendingPlanPayments()
+
+  const [grantsRes, paymentsRes] = await Promise.all([
+    service
+      .from('shop_plan_grants')
+      .select('id, shop_id, days_added, reason, created_at, shops!inner(name, slug)')
+      .order('created_at', { ascending: false })
+      .limit(GLOBAL_PLAN_LOG_LIMIT),
+    service
+      .from('shop_plan_payments')
+      .select('id, shop_id, plan, amount_ars, days_added, status, created_at, shops!inner(name, slug)')
+      .order('created_at', { ascending: false })
+      .limit(GLOBAL_PLAN_LOG_LIMIT),
+  ])
+
+  if (grantsRes.error) return { error: grantsRes.error.message }
+  if (paymentsRes.error) return { error: paymentsRes.error.message }
+
+  const entries: GlobalPlanLogEntry[] = []
+
+  for (const g of grantsRes.data ?? []) {
+    const shop = shopFromJoin(g.shops)
+    const days = g.days_added as number
+    entries.push({
+      id: `grant-${g.id}`,
+      kind: 'grant',
+      shop_id: g.shop_id as string,
+      shop_name: shop.name,
+      shop_slug: shop.slug,
+      created_at: g.created_at as string,
+      title: days > 0 ? `+${days} día${days === 1 ? '' : 's'}` : 'Cambio de plan',
+      detail: g.reason as string,
+      status: null,
+      watch: days === 0,
+    })
+  }
+
+  for (const p of paymentsRes.data ?? []) {
+    const shop = shopFromJoin(p.shops)
+    const plan = p.plan as string
+    const amount = Number(p.amount_ars)
+    const label = isPlanCheckoutProduct(plan)
+      ? checkoutProductLabel(plan)
+      : planLabel(plan as ShopPlan)
+    const status = p.status as string
+    entries.push({
+      id: `payment-${p.id}`,
+      kind: 'payment',
+      shop_id: p.shop_id as string,
+      shop_name: shop.name,
+      shop_slug: shop.slug,
+      created_at: p.created_at as string,
+      title: `Pago MP — ${label}`,
+      detail: `${formatMoneyArs(amount, amount < 1 ? 2 : undefined)} · +${p.days_added} día${p.days_added === 1 ? '' : 's'}`,
+      status,
+      watch: status === 'pending' || status === 'rejected',
+    })
+  }
+
+  entries.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  )
+
+  return entries.slice(0, GLOBAL_PLAN_LOG_LIMIT)
 }

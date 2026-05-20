@@ -103,8 +103,8 @@ export function ThemePicker({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-400">
-        Elegí una plantilla por rubro (imagen y colores sugeridos). Podés cambiar fondo y colores cuando
-        quieras.
+        Elegí una plantilla por rubro (colores sugeridos y banner de ejemplo si no subiste el tuyo). Podés
+        cambiar fondo y colores cuando quieras.
       </p>
 
       <SettingsCollapsible title="Plantillas por rubro" subtitle={selectedName} defaultOpen={false}>
