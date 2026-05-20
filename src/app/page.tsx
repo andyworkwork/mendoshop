@@ -46,7 +46,7 @@ export default async function HomePage() {
         </section>
       </main>
       <footer className="relative z-10 border-t border-white/10 py-8 text-center text-sm text-zinc-300">
-        Mendoshop · Vitrinas para emprendedores de Mendoza
+        Mendoshop · Tiendas para emprendedores de Mendoza
       </footer>
     </div>
   )

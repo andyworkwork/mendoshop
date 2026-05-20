@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { updateShopSettings } from '@/app/actions/shop'
+import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { ThemePicker } from '@/components/theme-picker'
 import { shopPublicUrl } from '@/lib/publicUrl'
-import { planLabel } from '@/lib/plans'
 import type { ShopRow } from '@/types/shop'
 
 export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
@@ -15,6 +15,10 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
   const [seoTitle, setSeoTitle] = useState(shop.seo_title ?? '')
   const [seoDesc, setSeoDesc] = useState(shop.seo_description ?? '')
   const [theme, setTheme] = useState(shop.theme)
+  const [instagram, setInstagram] = useState(shop.instagram_url ?? '')
+  const [tiktok, setTiktok] = useState(shop.tiktok_url ?? '')
+  const [website, setWebsite] = useState(shop.website_url ?? '')
+  const [showWhatsappSocial, setShowWhatsappSocial] = useState(() => shop.social_whatsapp_visible === true)
   const [msg, setMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -30,6 +34,10 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
       seo_title: seoTitle.trim() || null,
       seo_description: seoDesc.trim() || null,
       theme,
+      instagram_url: instagram.trim() || null,
+      tiktok_url: tiktok.trim() || null,
+      website_url: website.trim() || null,
+      social_whatsapp_visible: showWhatsappSocial,
     })
     setLoading(false)
     setMsg('error' in res && res.error ? res.error : 'Guardado correctamente')
@@ -39,10 +47,6 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
     <form onSubmit={save} className="space-y-8 max-w-2xl">
       <section className="card space-y-3">
         <h2 className="font-semibold">Datos de la tienda</h2>
-        <p className="text-xs text-zinc-500">
-          Plan: {planLabel(shop.plan)}
-          {shop.plan_until && ` · Hasta ${new Date(shop.plan_until).toLocaleDateString('es-AR')}`}
-        </p>
         <p className="text-sm text-brand-accent break-all">{shopPublicUrl(shop.slug)}</p>
         <label className="block text-sm">
           Nombre
@@ -72,8 +76,52 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
       </section>
 
       <section className="card space-y-3">
-        <h2 className="font-semibold">Apariencia</h2>
-        <ThemePicker value={theme} onChange={setTheme} />
+        <h2 className="font-semibold">Mis redes sociales</h2>
+        <p className="text-sm text-zinc-400">
+          Aparecen al final de tu tienda. Solo se muestran las que completes.
+        </p>
+        <label className="block text-sm">
+          Instagram (usuario o link)
+          <input
+            className="input mt-1"
+            placeholder="@mitienda o https://instagram.com/mitienda"
+            value={instagram}
+            onChange={(e) => setInstagram(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          TikTok (usuario o link)
+          <input
+            className="input mt-1"
+            placeholder="@mitienda o https://tiktok.com/@mitienda"
+            value={tiktok}
+            onChange={(e) => setTiktok(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          Web personal
+          <input
+            className="input mt-1"
+            placeholder="luminamendoza.shop o https://tusitio.com"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-600"
+            checked={showWhatsappSocial}
+            onChange={(e) => setShowWhatsappSocial(e.target.checked)}
+          />
+          Mostrar WhatsApp en el pie (usa el número de pedidos de arriba)
+        </label>
+      </section>
+
+      <section className="card space-y-1">
+        <SettingsCollapsible title="Apariencia" subtitle="Plantillas, fondo y colores" defaultOpen={false}>
+          <ThemePicker value={theme} onChange={setTheme} />
+        </SettingsCollapsible>
       </section>
 
       <section className="card space-y-3">

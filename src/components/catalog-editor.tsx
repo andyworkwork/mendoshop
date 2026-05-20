@@ -145,7 +145,7 @@ export function CatalogEditor({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-zinc-400">
-          Productos: {productCount} / {limits.maxProducts} · Las fotos se comprimen a WebP automáticamente
+          Productos: {productCount} / {limits.maxProducts}
         </p>
         <button type="button" disabled={busy} onClick={addCategory} className="btn-primary text-sm">
           + Categoría

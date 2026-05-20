@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
+import { resolveBackgroundColors } from '@/lib/background-colors'
 import { getStoreTemplate, STORE_TEMPLATES } from '@/lib/store-templates'
-import type { ShopTheme } from '@/types/shop'
+import type { ShopBackgroundColors, ShopTheme } from '@/types/shop'
 
 export type ThemeTemplate = {
   id: string
@@ -36,11 +37,21 @@ const LEGACY_DEFAULTS: Record<string, ShopTheme> = {
 }
 
 export function themeCssVars(theme: ShopTheme): CSSProperties {
+  const bg = resolveBackgroundColors(theme)
   return {
     '--shop-primary': theme.primary,
     '--shop-accent': theme.accent,
+    '--shop-bg-light': bg.light,
+    '--shop-bg-solid': bg.solid,
+    '--shop-bg-gradient-top': bg.gradientTop,
+    '--shop-bg-gradient-bottom': bg.gradientBottom,
+    '--shop-bg-pattern-base': bg.patternBase,
+    '--shop-bg-pattern-dot': bg.patternDot,
   } as CSSProperties
 }
+
+export { resolveBackgroundColors, patchBackgroundColor, backgroundPreviewStyle } from '@/lib/background-colors'
+export type { ShopBackgroundColors }
 
 export type VitrinaBackgroundId = ShopTheme['background']
 
@@ -78,8 +89,8 @@ export const VITRINA_BACKGROUND_OPTIONS: {
 
 export function shopBackgroundClass(theme: ShopTheme): string {
   if (theme.background === 'light') return 'store-surface-light'
-  if (theme.background === 'solid') return 'bg-zinc-950'
-  if (theme.background === 'pattern') return 'bg-zinc-900 shop-bg-pattern'
+  if (theme.background === 'solid') return 'shop-bg-solid'
+  if (theme.background === 'pattern') return 'shop-bg-pattern'
   return 'shop-bg-gradient'
 }
 
@@ -97,16 +108,35 @@ export function parseTheme(raw: unknown): ShopTheme {
   const legacy = LEGACY_DEFAULTS[templateId]
   const base = storeTpl?.defaults ?? legacy ?? STORE_TEMPLATES[0]!.defaults
 
+  const primary = typeof t.primary === 'string' ? t.primary : base.primary
+  const accent = typeof t.accent === 'string' ? t.accent : base.accent
+  const background =
+    t.background === 'solid' ||
+    t.background === 'pattern' ||
+    t.background === 'gradient' ||
+    t.background === 'light'
+      ? t.background
+      : base.background
+
+  const rawBg = t.backgroundColors
+  const backgroundColors: Partial<ShopBackgroundColors> | undefined =
+    rawBg && typeof rawBg === 'object'
+      ? {
+          light: typeof rawBg.light === 'string' ? rawBg.light : undefined,
+          solid: typeof rawBg.solid === 'string' ? rawBg.solid : undefined,
+          gradientTop: typeof rawBg.gradientTop === 'string' ? rawBg.gradientTop : undefined,
+          gradientBottom:
+            typeof rawBg.gradientBottom === 'string' ? rawBg.gradientBottom : undefined,
+          patternBase: typeof rawBg.patternBase === 'string' ? rawBg.patternBase : undefined,
+          patternDot: typeof rawBg.patternDot === 'string' ? rawBg.patternDot : undefined,
+        }
+      : undefined
+
   return {
     templateId,
-    primary: typeof t.primary === 'string' ? t.primary : base.primary,
-    accent: typeof t.accent === 'string' ? t.accent : base.accent,
-    background:
-      t.background === 'solid' ||
-      t.background === 'pattern' ||
-      t.background === 'gradient' ||
-      t.background === 'light'
-        ? t.background
-        : base.background,
+    primary,
+    accent,
+    background,
+    backgroundColors,
   }
 }

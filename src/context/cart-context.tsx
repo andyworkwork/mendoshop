@@ -32,6 +32,9 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null)
 
+/** Vitrina tipo catálogo: sin tope por stock en BD (coordinación por WhatsApp). */
+const CART_QTY_MAX = 999
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
 
@@ -40,7 +43,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const i = prev.findIndex((l) => l.productId === p.productId)
       if (i === -1) return [...prev, { ...p, quantity: 1 }]
       const next = [...prev]
-      next[i] = { ...next[i]!, quantity: Math.min(next[i]!.quantity + 1, p.maxStock || 999) }
+      next[i] = { ...next[i]!, quantity: Math.min(next[i]!.quantity + 1, CART_QTY_MAX) }
       return next
     })
   }, [])
@@ -54,7 +57,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       prev
         .map((l) =>
           l.productId === productId
-            ? { ...l, quantity: Math.max(0, Math.min(quantity, l.maxStock || 999)) }
+            ? { ...l, quantity: Math.max(0, Math.min(quantity, CART_QTY_MAX)) }
             : l,
         )
         .filter((l) => l.quantity > 0),

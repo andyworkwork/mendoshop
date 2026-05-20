@@ -8,6 +8,7 @@ const links = [
   { href: '/dashboard', label: 'Inicio' },
   { href: '/dashboard/catalog', label: 'Catálogo' },
   { href: '/dashboard/settings', label: 'Ajustes y SEO' },
+  { href: '/dashboard/account', label: 'Cuenta' },
   { href: '/dashboard/qr', label: 'QR' },
 ] as const
 

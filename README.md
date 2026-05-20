@@ -56,7 +56,7 @@ npm run dev
 
 | Plan | Productos | Fotos/producto |
 |------|-----------|----------------|
-| Prueba 14 días | 15 | 2 |
+| Prueba 14 días | 30 | 2 |
 | Básico | 60 | 4 |
 | Pro | 300 | 8 |
 

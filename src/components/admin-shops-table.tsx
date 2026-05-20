@@ -105,7 +105,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
                     rel="noreferrer"
                     className="rounded-lg border border-zinc-600 px-2 py-1 text-xs hover:bg-zinc-800"
                   >
-                    Ver vitrina
+                    Ver tienda
                   </a>
                 </div>
               </td>

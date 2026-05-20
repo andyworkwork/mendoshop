@@ -21,7 +21,7 @@ const features = [
   },
   {
     title: 'Colores y categorías',
-    text: 'Elegí la paleta de tu vitrina y organizá el catálogo como quieras.',
+    text: 'Elegí la paleta de tu tienda y organizá el catálogo como quieras.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8" aria-hidden>
         <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.75" />

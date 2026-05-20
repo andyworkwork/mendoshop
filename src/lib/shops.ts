@@ -21,6 +21,10 @@ export function mapShopRow(raw: Record<string, unknown>): ShopRow {
     seo_title: (raw.seo_title as string | null) ?? null,
     seo_description: (raw.seo_description as string | null) ?? null,
     view_count: Number(raw.view_count ?? 0),
+    instagram_url: (raw.instagram_url as string | null) ?? null,
+    tiktok_url: (raw.tiktok_url as string | null) ?? null,
+    website_url: (raw.website_url as string | null) ?? null,
+    social_whatsapp_visible: raw.social_whatsapp_visible === true,
   }
 }
 

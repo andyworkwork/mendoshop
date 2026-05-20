@@ -17,8 +17,11 @@ export default async function DashboardHomePage() {
       <h1 className="text-2xl font-bold">Panel de {shop.name}</h1>
       {!active && (
         <p className="rounded-xl border border-amber-600/50 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
-          Tu período de prueba terminó. La tienda puede dejar de mostrarse al público. Contactanos para
-          renovar el plan.
+          Tu período de prueba terminó. La tienda puede dejar de mostrarse al público.{' '}
+          <Link href="/dashboard/account" className="underline hover:text-amber-100">
+            Ir a Cuenta
+          </Link>{' '}
+          para renovar o escribirnos por WhatsApp.
         </p>
       )}
       <div className="grid gap-4 sm:grid-cols-3">

@@ -1,15 +1,14 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { shopBackgroundClass, themeCssVars } from '@/lib/themes'
-import { PLAN_LIMITS } from '@/lib/plans'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
-import { MendoshopLogoLink } from '@/components/mendoshop-logo'
+import { StoreSocialFooter } from '@/components/store-social-footer'
 import { StoreHeaderBrand } from '@/components/store-header-brand'
 import { StoreCartDrawer } from '@/components/store-cart-drawer'
 import { StoreCategoryDrawer } from '@/components/store-category-drawer'
@@ -71,7 +70,6 @@ export function Storefront({ shop, categories }: Props) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
-  const showPoweredBy = PLAN_LIMITS[shop.plan].showPoweredBy
   const isLight = shop.theme.background === 'light'
   const themeStyle = themeCssVars(shop.theme)
   const products = useMemo(() => flattenProducts(categories), [categories])
@@ -101,7 +99,7 @@ export function Storefront({ shop, categories }: Props) {
         productId: p.id,
         name: p.name,
         unitPrice: Number(p.price),
-        maxStock: p.stock_quantity,
+        maxStock: 999,
         imagePath: p.image_path,
         categoryId: p.categoryId,
         categoryName: p.categoryName,
@@ -249,14 +247,7 @@ export function Storefront({ shop, categories }: Props) {
 
       </main>
 
-      {showPoweredBy && (
-        <footer
-          className={`py-6 text-center text-xs ${isLight ? 'text-zinc-500' : 'text-zinc-500'} ${isLight ? 'border-t border-zinc-200' : 'border-t border-zinc-800'}`}
-        >
-          <p className="mb-2">Vitrina creada con</p>
-          <MendoshopLogoLink size={40} className="mx-auto" />
-        </footer>
-      )}
+      <StoreSocialFooter shop={shop} isLight={isLight} />
 
       <StoreWhatsAppBar shop={shop} />
       <StoreCategoryDrawer
@@ -280,9 +271,19 @@ function ProductCard({
   isLight: boolean
   onAdd: () => void
 }) {
+  const [justAdded, setJustAdded] = useState(false)
+  const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const img = getPublicUrlFromPath(p.image_path)
-  const outOfStock = p.stock_quantity <= 0
   const cardClass = isLight ? 'store-card' : 'card flex flex-col'
+
+  const handleAdd = () => {
+    onAdd()
+    setJustAdded(true)
+    if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current)
+    addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 800)
+  }
+
+  const label = justAdded ? 'Agregado ✓' : 'Agregar'
 
   return (
     <li className={cardClass}>
@@ -304,11 +305,10 @@ function ProductCard({
       </p>
       <button
         type="button"
-        disabled={outOfStock}
-        className="btn-primary mt-2 w-full py-2 text-xs disabled:opacity-40"
-        onClick={onAdd}
+        className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
+        onClick={handleAdd}
       >
-        {outOfStock ? 'Sin stock' : 'Agregar'}
+        {label}
       </button>
     </li>
   )
