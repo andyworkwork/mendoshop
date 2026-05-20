@@ -25,6 +25,30 @@ export type MercadoPagoPreference = {
   sandbox_init_point?: string
 }
 
+/** MP no acepta localhost/127.0.0.1 en back_urls ni auto_return. */
+export function mercadoPagoSupportsBackUrls(baseUrl: string): boolean {
+  try {
+    const { hostname, protocol } = new URL(baseUrl)
+    if (protocol !== 'http:' && protocol !== 'https:') return false
+    const host = hostname.toLowerCase()
+    if (host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.endsWith('.local')) {
+      return false
+    }
+    return true
+  } catch {
+    return false
+  }
+}
+
+function accountBackUrls(base: string) {
+  const path = '/dashboard/account'
+  return {
+    success: `${base}${path}?payment=success`,
+    failure: `${base}${path}?payment=failure`,
+    pending: `${base}${path}?payment=pending`,
+  }
+}
+
 export async function createCheckoutPreference(input: {
   title: string
   unitPriceArs: number
@@ -32,30 +56,34 @@ export async function createCheckoutPreference(input: {
   payerEmail?: string | null
 }): Promise<MercadoPagoPreference> {
   const base = appBaseUrl()
-  const accountPath = '/dashboard/account'
+  const supportsBackUrls = mercadoPagoSupportsBackUrls(base)
+
+  const payload: Record<string, unknown> = {
+    items: [
+      {
+        title: input.title,
+        quantity: 1,
+        unit_price: input.unitPriceArs,
+        currency_id: 'ARS',
+      },
+    ],
+    external_reference: input.externalReference,
+  }
+
+  if (input.payerEmail) {
+    payload.payer = { email: input.payerEmail }
+  }
+
+  if (supportsBackUrls) {
+    payload.notification_url = `${base}/api/payments/mercadopago/webhook`
+    payload.back_urls = accountBackUrls(base)
+    payload.auto_return = 'approved'
+  }
 
   const res = await fetch(`${MP_API}/checkout/preferences`, {
     method: 'POST',
     headers: mpHeaders(),
-    body: JSON.stringify({
-      items: [
-        {
-          title: input.title,
-          quantity: 1,
-          unit_price: input.unitPriceArs,
-          currency_id: 'ARS',
-        },
-      ],
-      payer: input.payerEmail ? { email: input.payerEmail } : undefined,
-      external_reference: input.externalReference,
-      notification_url: `${base}/api/payments/mercadopago/webhook`,
-      back_urls: {
-        success: `${base}${accountPath}?payment=success`,
-        failure: `${base}${accountPath}?payment=failure`,
-        pending: `${base}${accountPath}?payment=pending`,
-      },
-      auto_return: 'approved',
-    }),
+    body: JSON.stringify(payload),
   })
 
   const body = (await res.json()) as MercadoPagoPreference & { message?: string; error?: string }
