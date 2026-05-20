@@ -2,21 +2,18 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * Tamaño estándar del carrusel móvil (home, login, etc.).
+ * Tamaño del carrusel móvil (80% de 1536×2048 → menos recorte al mostrar con cover).
  * Fuente: Desktop/carrusel/*.webp → npm run carousel:normalize
  */
-export const CAROUSEL_W = 1536
-export const CAROUSEL_H = 2048
+export const CAROUSEL_W = 1229
+export const CAROUSEL_H = 1638
 export const CAROUSEL_DIR_NAME = 'hero-carousel-2x'
 export const CAROUSEL_WEBP_QUALITY = 88
-export const CAROUSEL_BG = { r: 12, g: 12, b: 14, alpha: 1 }
 
 export const CARRUSEL_DESKTOP_DIR = path.join(process.env.USERPROFILE ?? '', 'Desktop', 'carrusel')
 
-/** fit: cover = llena marco (recorta). contain = menos recorte (barras). */
-export const CAROUSEL_OVERRIDES = {
-  bijuteria: { fit: 'contain', position: 'centre', background: CAROUSEL_BG },
-}
+/** Por slide: opciones sharp distintas a cover (vacío = todas iguales). */
+export const CAROUSEL_OVERRIDES = {}
 
 export function defaultCarouselResize() {
   return { fit: 'cover', position: 'center' }

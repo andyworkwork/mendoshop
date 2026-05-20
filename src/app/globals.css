@@ -47,7 +47,7 @@ body {
 
 .mendoshop-page-bg__img {
   object-fit: cover;
-  object-position: center top;
+  object-position: center center;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
