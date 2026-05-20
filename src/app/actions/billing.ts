@@ -1,22 +1,37 @@
 'use server'
 
 import {
+  CHECKOUT_PRODUCTS,
+  checkoutProductLabel,
+  type PlanCheckoutProduct,
+} from '@/lib/plan-checkout'
+import {
   createCheckoutPreference,
   isMercadoPagoConfigured,
   mercadoPagoCheckoutUrl,
 } from '@/lib/mercadopago'
-import { paidPlanPriceArs, type PaidShopPlan } from '@/lib/plan-payments'
-import { PLAN_SUBSCRIPTION_DAYS, planLabel } from '@/lib/plans'
+import {
+  checkoutProductDays,
+  checkoutProductPriceArs,
+} from '@/lib/plan-payments'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { fetchUserShops } from '@/lib/shops'
+import { isPlatformAdmin } from '@/lib/admin'
+
 export type PlanCheckoutResult =
   | { ok: true; checkoutUrl: string }
   | { error: string }
 
-export async function createPlanCheckout(plan: PaidShopPlan): Promise<PlanCheckoutResult> {
+export async function createPlanCheckout(
+  product: PlanCheckoutProduct,
+): Promise<PlanCheckoutResult> {
   if (!isMercadoPagoConfigured()) {
     return { error: 'El pago online no está disponible. Escribinos por WhatsApp.' }
+  }
+
+  if (product === 'test_andy' && !(await isPlatformAdmin())) {
+    return { error: 'El plan de prueba solo está disponible para administradores.' }
   }
 
   const supabase = await createClient()
@@ -29,16 +44,18 @@ export async function createPlanCheckout(plan: PaidShopPlan): Promise<PlanChecko
   const shop = shops[0]
   if (!shop) return { error: 'No encontramos tu tienda.' }
 
-  const amount = paidPlanPriceArs(plan)
+  const meta = CHECKOUT_PRODUCTS[product]
+  const amount = checkoutProductPriceArs(product)
+  const days = checkoutProductDays(product)
   const service = createServiceClient()
 
   const { data: paymentRow, error: insertErr } = await service
     .from('shop_plan_payments')
     .insert({
       shop_id: shop.id,
-      plan,
+      plan: product,
       amount_ars: amount,
-      days_added: PLAN_SUBSCRIPTION_DAYS,
+      days_added: days,
       status: 'pending',
     })
     .select('id')
@@ -50,7 +67,7 @@ export async function createPlanCheckout(plan: PaidShopPlan): Promise<PlanChecko
 
   try {
     const preference = await createCheckoutPreference({
-      title: `Mendoshop — Plan ${planLabel(plan)} (${PLAN_SUBSCRIPTION_DAYS} días)`,
+      title: `Mendoshop — ${checkoutProductLabel(product)} (${days} día${days === 1 ? '' : 's'})`,
       unitPriceArs: amount,
       externalReference: paymentRow.id,
       payerEmail: user.email,

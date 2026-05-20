@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { updateShopAdmin } from '@/app/actions/admin'
 import { AdminAddPlanDaysDialog } from '@/components/admin-add-plan-days-dialog'
+import { AdminEditShopPlanDialog } from '@/components/admin-edit-shop-plan-dialog'
+import { AdminShopPlanHistoryDialog } from '@/components/admin-shop-plan-history-dialog'
 import { shopPublicUrl } from '@/lib/publicUrl'
 import {
   formatPlanUntil,
@@ -62,14 +64,26 @@ function ShopAdminActions({
   pending,
   onToggle,
   onAddDays,
+  onChangePlan,
+  onHistory,
 }: {
   shop: AdminShopRow
   pending: boolean
   onToggle: (shopId: string, field: 'active' | 'featured', value: boolean) => void
   onAddDays: () => void
+  onChangePlan: () => void
+  onHistory: () => void
 }) {
   return (
     <div className="flex flex-wrap gap-2">
+      <button
+        type="button"
+        disabled={pending}
+        onClick={onChangePlan}
+        className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs hover:bg-zinc-800"
+      >
+        Plan
+      </button>
       <button
         type="button"
         disabled={pending}
@@ -77,6 +91,14 @@ function ShopAdminActions({
         className="rounded-lg border border-brand/50 bg-brand/10 px-2.5 py-1.5 text-xs text-brand hover:bg-brand/20"
       >
         + Días
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={onHistory}
+        className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs hover:bg-zinc-800"
+      >
+        Historial
       </button>
       <button
         type="button"
@@ -133,6 +155,8 @@ function ShopStatusBadges({ shop }: { shop: AdminShopRow }) {
 export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
   const [pending, startTransition] = useTransition()
   const [addDaysShop, setAddDaysShop] = useState<AdminShopRow | null>(null)
+  const [editPlanShop, setEditPlanShop] = useState<AdminShopRow | null>(null)
+  const [historyShop, setHistoryShop] = useState<AdminShopRow | null>(null)
 
   function toggle(shopId: string, field: 'active' | 'featured', value: boolean) {
     startTransition(async () => {
@@ -151,6 +175,19 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
         shopName={addDaysShop?.name ?? ''}
         open={addDaysShop !== null}
         onClose={() => setAddDaysShop(null)}
+      />
+      <AdminEditShopPlanDialog
+        shopId={editPlanShop?.id ?? ''}
+        shopName={editPlanShop?.name ?? ''}
+        currentPlan={editPlanShop?.plan ?? 'free_trial'}
+        open={editPlanShop !== null}
+        onClose={() => setEditPlanShop(null)}
+      />
+      <AdminShopPlanHistoryDialog
+        shopId={historyShop?.id ?? ''}
+        shopName={historyShop?.name ?? ''}
+        open={historyShop !== null}
+        onClose={() => setHistoryShop(null)}
       />
 
       <ul className="space-y-3 md:hidden">
@@ -183,6 +220,8 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
               pending={pending}
               onToggle={toggle}
               onAddDays={() => setAddDaysShop(s)}
+              onChangePlan={() => setEditPlanShop(s)}
+              onHistory={() => setHistoryShop(s)}
             />
           </li>
         ))}
@@ -225,6 +264,8 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
                     pending={pending}
                     onToggle={toggle}
                     onAddDays={() => setAddDaysShop(s)}
+                    onChangePlan={() => setEditPlanShop(s)}
+                    onHistory={() => setHistoryShop(s)}
                   />
                 </td>
               </tr>

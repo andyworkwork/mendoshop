@@ -1,7 +1,7 @@
 import { formatMoneyArs } from '@/lib/format'
 import { buildWhatsAppUrl } from '@/lib/shops'
-import { planDaysRemaining, planLabel, PLAN_PRICES_ARS, PLAN_SUBSCRIPTION_DAYS } from '@/lib/plans'
-import type { PaidShopPlan } from '@/lib/plan-payments'
+import { CHECKOUT_PRODUCTS, checkoutProductLabel, type PlanCheckoutProduct } from '@/lib/plan-checkout'
+import { planDaysRemaining, planLabel } from '@/lib/plans'
 import type { ShopRow } from '@/types/shop'
 
 /** WhatsApp de soporte Mendoshop (renovaciones, planes). */
@@ -34,32 +34,34 @@ export function supportWhatsAppUrl(shop: Pick<ShopRow, 'name' | 'plan' | 'plan_u
 
 export function buildPlanPurchaseWhatsAppMessage(
   shop: Pick<ShopRow, 'name' | 'plan'>,
-  targetPlan: PaidShopPlan,
+  product: PlanCheckoutProduct,
 ): string {
-  const price = formatMoneyArs(PLAN_PRICES_ARS[targetPlan])
+  const meta = CHECKOUT_PRODUCTS[product]
+  const price = formatMoneyArs(meta.priceArs, meta.priceArs < 1 ? 2 : undefined)
   return [
     `Hola! Soy *${shop.name}* en Mendoshop.`,
-    `Quiero contratar el plan *${planLabel(targetPlan)}* (${price}, ${PLAN_SUBSCRIPTION_DAYS} días).`,
+    `Quiero *${checkoutProductLabel(product)}* (${price}, +${meta.daysAdded} día${meta.daysAdded === 1 ? '' : 's'}).`,
     `Mi plan actual es *${planLabel(shop.plan)}*.`,
   ].join('\n')
 }
 
 export function planPurchaseWhatsAppUrl(
   shop: Pick<ShopRow, 'name' | 'plan' | 'plan_until'>,
-  targetPlan: PaidShopPlan,
+  product: PlanCheckoutProduct,
 ): string {
   return buildWhatsAppUrl(
     MENDOSHOP_SUPPORT_WHATSAPP,
-    buildPlanPurchaseWhatsAppMessage(shop, targetPlan),
+    buildPlanPurchaseWhatsAppMessage(shop, product),
   )
 }
 
 export function planPurchaseButtonLabel(
-  targetPlan: PaidShopPlan,
+  product: PlanCheckoutProduct,
   currentPlan: ShopRow['plan'],
 ): string | null {
-  if (currentPlan === 'pro' && targetPlan === 'basic') return null
-  if (currentPlan === targetPlan) return `Renovar plan ${planLabel(targetPlan)}`
-  if (currentPlan === 'free_trial') return `Adquirir plan ${planLabel(targetPlan)}`
-  return `Pasar a plan ${planLabel(targetPlan)}`
+  if (product === 'test_andy') return 'Probar pago real'
+  if (currentPlan === 'pro' && product === 'basic') return null
+  if (currentPlan === product) return `Renovar plan ${planLabel(product)}`
+  if (currentPlan === 'free_trial') return `Adquirir plan ${planLabel(product)}`
+  return `Pasar a plan ${planLabel(product)}`
 }

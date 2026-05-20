@@ -1,6 +1,6 @@
 import { PlanPurchaseButton } from '@/components/plan-purchase-button'
 import { formatMoneyArs } from '@/lib/format'
-import type { PaidShopPlan } from '@/lib/plan-payments'
+import { CHECKOUT_PRODUCTS, type PlanCheckoutProduct } from '@/lib/plan-checkout'
 import {
   formatPlanUntil,
   isShopSubscriptionActive,
@@ -16,12 +16,60 @@ import {
 } from '@/lib/platform-contact'
 import type { ShopRow } from '@/types/shop'
 
+function PlanCheckoutCard({
+  product,
+  shop,
+  mercadoPagoEnabled,
+  highlight,
+}: {
+  product: PlanCheckoutProduct
+  shop: ShopRow
+  mercadoPagoEnabled: boolean
+  highlight?: boolean
+}) {
+  const meta = CHECKOUT_PRODUCTS[product]
+  const label = planPurchaseButtonLabel(product, shop.plan)
+
+  return (
+    <li
+      className={`flex flex-col gap-2 rounded-xl border p-4 ${
+        highlight
+          ? 'border-amber-600/50 bg-amber-950/20'
+          : 'border-zinc-800 bg-zinc-900/40'
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        <p className="min-w-0 font-semibold">{meta.name}</p>
+        <span className="text-lg font-bold text-brand">
+          {formatMoneyArs(meta.priceArs, meta.priceArs < 1 ? 2 : undefined)}
+        </span>
+      </div>
+      <p className="text-sm text-zinc-400">{meta.summary}</p>
+      <ul className="list-outside list-disc space-y-1 pl-5 text-sm text-zinc-500">
+        {meta.features.map((f) => (
+          <li key={f}>{f}</li>
+        ))}
+      </ul>
+      {label && (
+        <PlanPurchaseButton
+          plan={product}
+          label={mercadoPagoEnabled ? `${label} con Mercado Pago` : label}
+          mercadoPagoEnabled={mercadoPagoEnabled}
+          whatsAppHref={planPurchaseWhatsAppUrl(shop, product)}
+        />
+      )}
+    </li>
+  )
+}
+
 export function ShopAccountPanel({
   shop,
   mercadoPagoEnabled,
+  showTestPlan,
 }: {
   shop: ShopRow
   mercadoPagoEnabled: boolean
+  showTestPlan?: boolean
 }) {
   const active = isShopSubscriptionActive(shop.plan_until)
   const daysLeft = planDaysRemaining(shop.plan_until)
@@ -137,20 +185,28 @@ export function ShopAccountPanel({
                 ))}
               </ul>
               {p.id !== 'free_trial' && (() => {
-                const paidPlan = p.id as PaidShopPlan
-                const label = planPurchaseButtonLabel(paidPlan, shop.plan)
+                const product = p.id as PlanCheckoutProduct
+                const label = planPurchaseButtonLabel(product, shop.plan)
                 if (!label) return null
                 return (
                   <PlanPurchaseButton
-                    plan={paidPlan}
+                    plan={product}
                     label={mercadoPagoEnabled ? `${label} con Mercado Pago` : label}
                     mercadoPagoEnabled={mercadoPagoEnabled}
-                    whatsAppHref={planPurchaseWhatsAppUrl(shop, paidPlan)}
+                    whatsAppHref={planPurchaseWhatsAppUrl(shop, product)}
                   />
                 )
               })()}
             </li>
           ))}
+          {showTestPlan && (
+            <PlanCheckoutCard
+              product="test_andy"
+              shop={shop}
+              mercadoPagoEnabled={mercadoPagoEnabled}
+              highlight
+            />
+          )}
         </ul>
       </section>
 

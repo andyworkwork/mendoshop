@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/format'
 import { isPlatformAdmin } from '@/lib/admin'
-import { extendPlanUntil } from '@/lib/plans'
+import { extendPlanUntil, planLabel } from '@/lib/plans'
 import { revalidatePath } from 'next/cache'
 import type { ShopPlan } from '@/types/shop'
 
@@ -188,4 +188,101 @@ export async function listShopsForAdmin() {
 
   if (error) return []
   return data ?? []
+}
+
+export type ShopPlanGrantAdminRow = {
+  id: string
+  days_added: number
+  reason: string
+  created_at: string
+}
+
+export type ShopPlanPaymentAdminRow = {
+  id: string
+  plan: string
+  amount_ars: number
+  days_added: number
+  status: string
+  created_at: string
+}
+
+export type ShopPlanActivity = {
+  grants: ShopPlanGrantAdminRow[]
+  payments: ShopPlanPaymentAdminRow[]
+}
+
+export async function fetchShopPlanActivity(shopId: string): Promise<ShopPlanActivity | { error: string }> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+
+  const [grantsRes, paymentsRes] = await Promise.all([
+    service
+      .from('shop_plan_grants')
+      .select('id, days_added, reason, created_at')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    service
+      .from('shop_plan_payments')
+      .select('id, plan, amount_ars, days_added, status, created_at')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+  ])
+
+  if (grantsRes.error) return { error: grantsRes.error.message }
+  if (paymentsRes.error) return { error: paymentsRes.error.message }
+
+  return {
+    grants: (grantsRes.data ?? []) as ShopPlanGrantAdminRow[],
+    payments: (paymentsRes.data ?? []).map((p) => ({
+      ...p,
+      amount_ars: Number(p.amount_ars),
+    })) as ShopPlanPaymentAdminRow[],
+  }
+}
+
+export async function setShopPlanAdmin(input: {
+  shopId: string
+  plan: ShopPlan
+  reason?: string
+}): Promise<AdminActionResult> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+  const { data: shop, error: fetchErr } = await service
+    .from('shops')
+    .select('plan')
+    .eq('id', input.shopId)
+    .maybeSingle()
+
+  if (fetchErr) return { error: fetchErr.message }
+  if (!shop) return { error: 'Tienda no encontrada.' }
+  if (shop.plan === input.plan) return { ok: true }
+
+  const reason =
+    input.reason?.trim() ||
+    `Plan cambiado a ${planLabel(input.plan)} por administración Mendoshop.`
+
+  const { error: grantErr } = await service.from('shop_plan_grants').insert({
+    shop_id: input.shopId,
+    days_added: 0,
+    reason,
+  })
+
+  if (grantErr) return { error: grantErr.message }
+
+  const { error: updateErr } = await service
+    .from('shops')
+    .update({ plan: input.plan })
+    .eq('id', input.shopId)
+
+  if (updateErr) return { error: updateErr.message }
+
+  revalidatePath('/admin')
+  revalidatePath('/dashboard/account')
+  return { ok: true }
 }

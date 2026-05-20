@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import { createPlanCheckout } from '@/app/actions/billing'
-import type { PaidShopPlan } from '@/lib/plan-payments'
+import type { PlanCheckoutProduct } from '@/lib/plan-checkout'
 
 type Props = {
-  plan: PaidShopPlan
+  plan: PlanCheckoutProduct
   label: string
   mercadoPagoEnabled: boolean
   whatsAppHref?: string

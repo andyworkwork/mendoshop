@@ -1,8 +1,11 @@
-export function formatMoneyArs(n: number): string {
+export function formatMoneyArs(n: number, maxFractionDigits?: number): string {
+  const fractionDigits =
+    maxFractionDigits ?? (Math.abs(n - Math.round(n)) < 0.001 ? 0 : 2)
   return new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
-    maximumFractionDigits: 0,
+    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: fractionDigits,
   }).format(n)
 }
 
