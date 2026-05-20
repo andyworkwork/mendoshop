@@ -116,6 +116,7 @@ export function ThemePicker({
               onClick={() =>
                 onChange({
                   ...tpl.defaults,
+                  productFrame: tpl.defaults.productFrame ?? '#ffffff',
                   background: value.background,
                   backgroundColors: value.backgroundColors,
                 })
@@ -145,14 +146,23 @@ export function ThemePicker({
                 />
               )}
               <div className="p-3">
-                <div className="mb-2 flex gap-2">
+                <div className="mb-2 flex flex-wrap gap-2">
                   <span
                     className="h-6 w-6 rounded-full border border-zinc-600"
+                    title="Principal (botones)"
                     style={{ backgroundColor: tpl.defaults.primary }}
                   />
                   <span
                     className="h-6 w-6 rounded-full border border-zinc-600"
+                    title="Acento (nombre y precios)"
                     style={{ backgroundColor: tpl.defaults.accent }}
+                  />
+                  <span
+                    className="h-6 w-6 rounded-full border border-zinc-600"
+                    title="Tarjeta de producto (fondo)"
+                    style={{
+                      backgroundColor: tpl.defaults.productFrame ?? '#f4f4f5',
+                    }}
                   />
                 </div>
                 <p className="font-medium">{tpl.name}</p>
@@ -210,7 +220,7 @@ export function ThemePicker({
         />
       </label>
       <label className="block text-sm">
-        Color de acento (precios y detalles)
+        Color de acento (nombre, precios y detalles)
         <input
           type="color"
           className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
@@ -218,6 +228,19 @@ export function ThemePicker({
           onChange={(e) => onChange({ ...value, accent: e.target.value })}
         />
       </label>
+      <label className="block text-sm">
+        Tarjeta de producto (fondo y borde)
+        <input
+          type="color"
+          className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
+          value={value.productFrame ?? (value.background === 'light' ? '#f4f4f5' : '#27272a')}
+          onChange={(e) => onChange({ ...value, productFrame: e.target.value })}
+        />
+      </label>
+      <p className="text-xs text-zinc-500">
+        Principal → botones · Acento → nombre y precio del producto · Tarjeta de producto → fondo del recuadro y
+        borde. Al elegir plantilla, el acento se ajusta si no contrasta con el fondo de tarjeta.
+      </p>
     </div>
   )
 }

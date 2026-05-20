@@ -13,7 +13,7 @@ import {
   CAROUSEL_WEBP_QUALITY,
   CARRUSEL_DESKTOP_DIR,
   carouselResizeForSlug,
-  listCarruselWebp,
+  listCarruselWebpOneVariants,
 } from './lib/hero-carousel-spec.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -21,10 +21,10 @@ const carouselDir = path.join(root, 'public', CAROUSEL_DIR_NAME)
 
 fs.mkdirSync(carouselDir, { recursive: true })
 
-const sources = listCarruselWebp(CARRUSEL_DESKTOP_DIR)
+const sources = listCarruselWebpOneVariants(CARRUSEL_DESKTOP_DIR)
 
 if (sources.length === 0) {
-  console.error(`No hay archivos .webp en ${CARRUSEL_DESKTOP_DIR}`)
+  console.error(`No hay .webp con "(1)" en el nombre en ${CARRUSEL_DESKTOP_DIR}`)
   process.exit(1)
 }
 

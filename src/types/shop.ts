@@ -14,6 +14,8 @@ export type ShopTheme = {
   templateId: string
   primary: string
   accent: string
+  /** Fondo (y borde) de la tarjeta de producto en la vitrina. */
+  productFrame?: string
   background: 'gradient' | 'solid' | 'pattern' | 'light'
   /** Colores del fondo de la tienda (por estilo). */
   backgroundColors?: Partial<ShopBackgroundColors>
@@ -48,5 +50,6 @@ export const DEFAULT_THEME: ShopTheme = {
   templateId: 'bijuteria',
   primary: '#c9a227',
   accent: '#9333ea',
+  productFrame: '#ffffff',
   background: 'light',
 }

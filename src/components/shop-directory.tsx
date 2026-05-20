@@ -43,15 +43,12 @@ export function ShopDirectory({ shops }: { shops: ShopRow[] }) {
                 }}
               />
             )}
-            <div className="relative z-10 flex w-full flex-col items-center justify-center gap-1 px-1">
-              <h3 className="line-clamp-2 font-semibold text-white drop-shadow-md group-hover:text-brand">
+            <div className="relative z-10 flex w-full flex-col items-center justify-center gap-1.5 px-1">
+              <h3 className="hero-text-shadow line-clamp-2 text-2xl font-bold group-hover:text-brand">
                 {shop.name}
               </h3>
               {shop.category_label && (
-                <p className="text-xs font-medium text-zinc-200/90">{shop.category_label}</p>
-              )}
-              {shop.description && (
-                <p className="line-clamp-2 max-w-[28ch] text-sm text-zinc-300/95">{shop.description}</p>
+                <p className="shop-directory-card__category italic">{shop.category_label}</p>
               )}
             </div>
           </Link>

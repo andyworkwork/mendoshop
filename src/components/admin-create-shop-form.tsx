@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { createShopForUser } from '@/app/actions/admin'
 import { slugify } from '@/lib/format'
 import type { ShopPlan } from '@/types/shop'
+import { RubroField } from '@/components/rubro-field'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
 export function AdminCreateShopForm() {
@@ -103,7 +104,7 @@ export function AdminCreateShopForm() {
       </label>
       <label className="block text-sm">
         Rubro (opcional)
-        <input className="input mt-1" value={rubro} onChange={(e) => setRubro(e.target.value)} />
+        <RubroField value={rubro} onChange={setRubro} fieldId="admin-rubro" />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">

@@ -6,7 +6,7 @@ import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { getProductImageUrl } from '@/lib/product-images'
 import { templateBannerSrc } from '@/lib/store-templates'
-import { shopBackgroundClass, themeCssVars } from '@/lib/themes'
+import { resolveProductFrameColor, shopBackgroundClass, themeCssVars } from '@/lib/themes'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 import { StoreSocialFooter } from '@/components/store-social-footer'
@@ -73,6 +73,7 @@ export function Storefront({ shop, categories }: Props) {
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
   const isLight = shop.theme.background === 'light'
   const themeStyle = themeCssVars(shop.theme)
+  const productFrame = resolveProductFrameColor(shop.theme)
   const products = useMemo(() => flattenProducts(categories), [categories])
   const featuredProducts = useMemo(() => products.slice(0, FEATURED_COUNT), [products])
   const bannerUrl = resolveBannerUrl(shop)
@@ -193,6 +194,7 @@ export function Storefront({ shop, categories }: Props) {
                   key={p.id}
                   product={p}
                   isLight={isLight}
+                  frameColor={productFrame}
                   onAdd={() => addProduct(p)}
                 />
               ))}
@@ -234,6 +236,7 @@ export function Storefront({ shop, categories }: Props) {
                             key={p.id}
                             product={p}
                             isLight={isLight}
+                            frameColor={productFrame}
                             onAdd={() => addProduct(p)}
                           />
                         ))}
@@ -266,16 +269,18 @@ export function Storefront({ shop, categories }: Props) {
 function ProductCard({
   product: p,
   isLight,
+  frameColor,
   onAdd,
 }: {
   product: FlatProduct
   isLight: boolean
+  frameColor: string
   onAdd: () => void
 }) {
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const img = getProductImageUrl(p.image_path, 'thumb')
-  const cardClass = isLight ? 'store-card' : 'card flex flex-col'
+  const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark flex flex-col'
 
   const handleAdd = () => {
     onAdd()
@@ -286,8 +291,22 @@ function ProductCard({
 
   const label = justAdded ? 'Agregado ✓' : 'Agregar'
 
+  const fill = frameColor || (isLight ? '#f4f4f5' : '#27272a')
+  const cardFrameStyle = {
+    ['--shop-product-frame' as string]: fill,
+    backgroundColor: fill,
+    borderColor: fill,
+    borderWidth: 2,
+    borderStyle: 'solid' as const,
+  }
+
+  const captionStyle = {
+    backgroundColor: fill,
+    ['--shop-product-frame' as string]: fill,
+  }
+
   return (
-    <li className={cardClass}>
+    <li className={cardClass} style={cardFrameStyle}>
       {img ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -298,12 +317,10 @@ function ProductCard({
       ) : (
         <div className={`mb-2 aspect-square w-full rounded-lg ${isLight ? 'bg-zinc-100' : 'bg-zinc-800'}`} />
       )}
-      <h4 className={`text-sm font-medium leading-tight ${isLight ? 'text-zinc-900' : ''}`}>
-        {p.name}
-      </h4>
-      <p className="mt-1 text-sm font-semibold" style={{ color: 'var(--shop-accent)' }}>
-        {formatMoneyArs(Number(p.price))}
-      </p>
+      <div className="store-product-card__caption" style={captionStyle}>
+        <p className="store-product-card__caption-name">{p.name}</p>
+        <p className="store-product-card__caption-price">{formatMoneyArs(Number(p.price))}</p>
+      </div>
       <button
         type="button"
         className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}

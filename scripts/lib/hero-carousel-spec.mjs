@@ -2,11 +2,11 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * Tamaño del carrusel móvil (80% de 1536×2048 → menos recorte al mostrar con cover).
- * Fuente: Desktop/carrusel/*.webp → npm run carousel:normalize
+ * Tamaño estándar del carrusel móvil (home, login, etc.).
+ * Fuente: Desktop/carrusel/* (1).webp → npm run carousel:normalize && carousel:sync-slides
  */
-export const CAROUSEL_W = 1229
-export const CAROUSEL_H = 1638
+export const CAROUSEL_W = 1536
+export const CAROUSEL_H = 2048
 export const CAROUSEL_DIR_NAME = 'hero-carousel-2x'
 export const CAROUSEL_WEBP_QUALITY = 88
 
@@ -40,4 +40,20 @@ export function listCarruselWebp(dir = CARRUSEL_DESKTOP_DIR) {
     .readdirSync(dir)
     .filter((f) => /\.webp$/i.test(f))
     .map((f) => ({ file: f, slug: toSlug(f), input: path.join(dir, f) }))
+}
+
+/** Variantes (1): .webp cuyo nombre incluye "(1)" — fuente del carrusel home. */
+export function isCarouselOneVariant(filename) {
+  return /\.webp$/i.test(filename) && filename.includes('(1)')
+}
+
+export function listCarruselWebpOneVariants(dir = CARRUSEL_DESKTOP_DIR) {
+  return listCarruselWebp(dir)
+    .filter((e) => isCarouselOneVariant(e.file))
+    .sort((a, b) => a.file.localeCompare(b.file, 'es'))
+}
+
+export function carouselSlideAlt(file) {
+  const label = file.replace(/\s*\(1\)\.webp$/i, '').trim()
+  return `Mendoshop — ${label.charAt(0).toUpperCase()}${label.slice(1)}`
 }

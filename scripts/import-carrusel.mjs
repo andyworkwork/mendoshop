@@ -9,7 +9,7 @@ import {
   CAROUSEL_WEBP_QUALITY,
   CARRUSEL_DESKTOP_DIR,
   carouselResizeForSlug,
-  listCarruselWebp,
+  listCarruselWebpOneVariants,
 } from './lib/hero-carousel-spec.mjs'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -34,12 +34,10 @@ if (!fs.existsSync(CARRUSEL_DESKTOP_DIR)) {
 fs.mkdirSync(templatesOut, { recursive: true })
 fs.mkdirSync(carouselOut, { recursive: true })
 
-const sources = listCarruselWebp(CARRUSEL_DESKTOP_DIR).sort((a, b) =>
-  a.file.localeCompare(b.file, 'es'),
-)
+const sources = listCarruselWebpOneVariants(CARRUSEL_DESKTOP_DIR)
 
 if (sources.length === 0) {
-  console.error(`No hay archivos .webp en ${CARRUSEL_DESKTOP_DIR}`)
+  console.error(`No hay .webp con "(1)" en ${CARRUSEL_DESKTOP_DIR}`)
   process.exit(1)
 }
 
@@ -74,5 +72,5 @@ fs.writeFileSync(
 )
 
 console.log(
-  `\n${manifest.length} plantillas desde .webp en carrusel → store-templates/ y ${CAROUSEL_DIR_NAME}/`,
+  `\n${manifest.length} plantillas desde * (1).webp → store-templates/ y ${CAROUSEL_DIR_NAME}/`,
 )

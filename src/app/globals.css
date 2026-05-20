@@ -45,9 +45,34 @@ body {
   background-color: var(--brand-ink);
 }
 
+/* Panel dashboard: misma paleta que la home (naranja + coral sobre fondo oscuro). */
+.dashboard-page-bg {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background-color: var(--brand-ink);
+  background-image:
+    radial-gradient(
+      ellipse 90% 65% at 50% -18%,
+      color-mix(in srgb, var(--brand-orange) 34%, transparent),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 100% 35%,
+      color-mix(in srgb, var(--brand-coral) 18%, transparent),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 0% 75%,
+      color-mix(in srgb, var(--brand-orange) 12%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(180deg, #141416 0%, var(--brand-ink) 42%, #101012 100%);
+}
+
 .mendoshop-page-bg__img {
   object-fit: cover;
-  object-position: center center;
+  object-position: center top;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
@@ -71,6 +96,18 @@ body {
 
 .hero-text-shadow {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+
+.shop-directory-card__category {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: color-mix(in srgb, #fafafa 88%, transparent);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+.site-footer__wa {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent);
 }
 
 .shop-bg-gradient {
@@ -167,6 +204,41 @@ body {
 
 .store-card {
   @apply flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm;
+}
+
+/* Tarjeta de producto: --shop-product-frame = fondo elegible + borde. */
+.store-product-card {
+  @apply flex flex-col overflow-hidden rounded-xl p-2 shadow-sm;
+  border: 2px solid color-mix(in srgb, var(--shop-product-frame, #e4e4e7) 72%, #71717a);
+  background-color: var(--shop-product-frame, #f4f4f5);
+}
+
+.store-product-card--dark {
+  @apply flex flex-col overflow-hidden rounded-xl p-2 shadow-lg backdrop-blur-md;
+  border: 2px solid color-mix(in srgb, var(--shop-product-frame, #27272a) 75%, #fafafa);
+  background-color: var(--shop-product-frame, #27272a);
+}
+
+.store-product-card__caption {
+  @apply w-full;
+  margin-top: 0.125rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in srgb, var(--shop-product-frame, #e4e4e7) 60%, #52525b);
+  background-color: var(--shop-product-frame, #f4f4f5);
+}
+
+.store-product-card__caption-name,
+.store-product-card__caption-price {
+  color: var(--shop-accent);
+}
+
+.store-product-card__caption-name {
+  @apply text-sm font-medium leading-tight;
+}
+
+.store-product-card__caption-price {
+  @apply mt-1 text-sm font-semibold leading-none;
 }
 
 .store-banner-frame {

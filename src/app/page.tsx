@@ -4,6 +4,7 @@ import { HomeHeroCta } from '@/components/home-hero-cta'
 import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
+import { SiteFooter } from '@/components/site-footer'
 import { createClient } from '@/lib/supabase/server'
 import { fetchFeaturedShops } from '@/lib/shops'
 
@@ -38,9 +39,7 @@ export default async function HomePage() {
           <ShopDirectory shops={shops} />
         </section>
       </main>
-      <footer className="relative z-10 border-t border-white/10 py-8 text-center text-sm text-zinc-300">
-        Mendoshop · Tiendas para emprendedores de Mendoza
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

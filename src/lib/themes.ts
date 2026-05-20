@@ -1,5 +1,10 @@
 import type { CSSProperties } from 'react'
 import { resolveBackgroundColors } from '@/lib/background-colors'
+import {
+  ensureReadableAccentOnFill,
+  hexLuminance,
+  parseHex,
+} from '@/lib/color-contrast'
 import { getStoreTemplate, STORE_TEMPLATES } from '@/lib/store-templates'
 import type { ShopBackgroundColors, ShopTheme } from '@/types/shop'
 
@@ -36,11 +41,31 @@ const LEGACY_DEFAULTS: Record<string, ShopTheme> = {
   mendoza: { templateId: 'mendoza', primary: '#7f1d1d', accent: '#ca8a04', background: 'pattern' },
 }
 
+/** Color de fondo de la tarjeta de producto (área nombre + precio y relleno de la tarjeta). */
+export function resolveProductFrameColor(theme: ShopTheme): string {
+  const raw = theme.productFrame?.trim()
+  if (raw) return raw
+  return theme.background === 'light' ? '#f4f4f5' : '#27272a'
+}
+
+/** Acento con contraste frente al fondo de tarjeta (nombre, precio, detalles). */
+export function resolveAccentColor(theme: ShopTheme): string {
+  const accent = theme.accent?.trim() || '#e53935'
+  return ensureReadableAccentOnFill(accent, resolveProductFrameColor(theme))
+}
+
+export function isLightColor(hex: string | undefined | null): boolean {
+  return hexLuminance(hex ?? '') > 150
+}
+
 export function themeCssVars(theme: ShopTheme): CSSProperties {
   const bg = resolveBackgroundColors(theme)
+  const productFrame = resolveProductFrameColor(theme)
+  const accent = resolveAccentColor(theme)
   return {
     '--shop-primary': theme.primary,
-    '--shop-accent': theme.accent,
+    '--shop-accent': accent,
+    '--shop-product-frame': productFrame,
     '--shop-bg-light': bg.light,
     '--shop-bg-solid': bg.solid,
     '--shop-bg-gradient-top': bg.gradientTop,
@@ -117,6 +142,14 @@ export function parseTheme(raw: unknown): ShopTheme {
     t.background === 'light'
       ? t.background
       : base.background
+  const productFrame =
+    typeof t.productFrame === 'string'
+      ? t.productFrame
+      : typeof base.productFrame === 'string'
+        ? base.productFrame
+        : background === 'light'
+          ? '#e4e4e7'
+          : '#ffffff'
 
   const rawBg = t.backgroundColors
   const backgroundColors: Partial<ShopBackgroundColors> | undefined =
@@ -136,6 +169,7 @@ export function parseTheme(raw: unknown): ShopTheme {
     templateId,
     primary,
     accent,
+    productFrame,
     background,
     backgroundColors,
   }

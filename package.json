@@ -12,6 +12,8 @@
     "hero-bg": "node scripts/prepare-hero-bg.mjs",
     "import-carrusel": "node scripts/import-carrusel.mjs",
     "carousel:normalize": "node scripts/upscale-hero-carousel.mjs",
+    "carousel:sync-slides": "node scripts/sync-hero-carousel-slides.mjs",
+    "templates:sync": "node scripts/sync-templates-from-carrusel.mjs",
     "carousel:slide": "node scripts/regenerate-carousel-slide.mjs"
   },
   "dependencies": {

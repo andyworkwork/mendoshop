@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { updateShopSettings } from '@/app/actions/shop'
+import { RubroField } from '@/components/rubro-field'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { ThemePicker } from '@/components/theme-picker'
 import { shopPublicUrl } from '@/lib/publicUrl'
@@ -73,7 +74,7 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
         </label>
         <label className="block text-sm">
           Rubro (directorio)
-          <input className="input mt-1" value={rubro} onChange={(e) => setRubro(e.target.value)} />
+          <RubroField value={rubro} onChange={setRubro} fieldId="shop-rubro" />
         </label>
       </section>
 

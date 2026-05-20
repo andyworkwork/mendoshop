@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/browser'
 import { slugify } from '@/lib/format'
 import Link from 'next/link'
+import { RubroField } from '@/components/rubro-field'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
 export function LoginForm({
@@ -205,7 +206,7 @@ export function RegisterForm() {
       </label>
       <label className="block text-sm">
         Rubro (opcional, aparece en el directorio)
-        <input className="input mt-1" value={rubro} onChange={(e) => setRubro(e.target.value)} />
+        <RubroField value={rubro} onChange={setRubro} fieldId="register-rubro" />
       </label>
       <hr className="border-zinc-800" />
       <label className="block text-sm">
