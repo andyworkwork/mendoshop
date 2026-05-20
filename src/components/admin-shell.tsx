@@ -12,25 +12,29 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-zinc-950">
       <header className="border-b border-zinc-800 bg-zinc-950/95">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-4">
-            <MendoshopLogoLink size={40} />
-            <div>
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <MendoshopLogoLink size={36} className="sm:hidden" />
+            <MendoshopLogoLink size={40} className="hidden sm:inline-flex" />
+            <div className="min-w-0">
               <p className="font-semibold text-brand">Panel admin</p>
-              <p className="text-xs text-zinc-500">{adminEmail}</p>
+              <p className="truncate text-xs text-zinc-500">{adminEmail}</p>
             </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-2 text-sm">
-            <Link href="/" className="rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white">
+          <nav className="-mx-1 flex items-center gap-1 overflow-x-auto pb-0.5 text-sm sm:mx-0 sm:flex-wrap sm:overflow-visible sm:pb-0">
+            <Link
+              href="/"
+              className="shrink-0 rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            >
               Sitio público
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              className="shrink-0 rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
             >
               Mi dashboard
             </Link>
-            <form action={signOutAction}>
+            <form action={signOutAction} className="shrink-0">
               <button type="submit" className="rounded-lg px-3 py-1.5 text-zinc-500 hover:text-white">
                 Salir
               </button>
@@ -38,7 +42,7 @@ export function AdminShell({
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>
     </div>
   )
 }

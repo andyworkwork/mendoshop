@@ -8,7 +8,7 @@ import { buildWhatsAppUrl } from '@/lib/shops'
 import { formatWhatsAppDetailFromStoreLines } from '@/lib/whatsapp-cart-detail'
 import type { SharedCartItem } from '@/app/api/carts/route'
 import type { ShopRow } from '@/types/shop'
-import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { getProductImageUrl } from '@/lib/product-images'
 
 type Props = {
   shop: ShopRow
@@ -86,7 +86,7 @@ export function StoreCartDrawer({ shop, open, onClose }: Props) {
             <li className="text-center text-zinc-500 py-8">El carrito está vacío</li>
           )}
           {lines.map((l) => {
-            const img = getPublicUrlFromPath(l.imagePath)
+            const img = getProductImageUrl(l.imagePath, 'thumb')
             return (
               <li key={l.productId} className="flex gap-3 rounded-xl border border-zinc-800 p-2">
                 {img ? (

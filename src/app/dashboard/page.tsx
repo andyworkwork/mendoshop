@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireDashboardShop } from '@/lib/dashboard'
 import { shopPublicUrl } from '@/lib/publicUrl'
-import { planLabel, isShopSubscriptionActive } from '@/lib/plans'
+import { planHasViewCount, planLabel, isShopSubscriptionActive } from '@/lib/plans'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoriesWithNested, countProducts } from '@/lib/fetch-catalog'
 
@@ -35,7 +35,16 @@ export default async function DashboardHomePage() {
         </article>
         <article className="card">
           <p className="text-sm text-zinc-500">Visitas</p>
-          <p className="text-lg font-semibold">{shop.view_count}</p>
+          {planHasViewCount(shop.plan) ? (
+            <p className="text-lg font-semibold">{shop.view_count}</p>
+          ) : (
+            <p className="text-sm text-zinc-400">
+              Plan Pro{' '}
+              <Link href="/dashboard/account" className="text-brand-accent underline">
+                Ver planes
+              </Link>
+            </p>
+          )}
         </article>
       </div>
       <div className="card space-y-2">

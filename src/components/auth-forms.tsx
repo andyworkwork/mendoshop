@@ -7,11 +7,17 @@ import { slugify } from '@/lib/format'
 import Link from 'next/link'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
-export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
+export function LoginForm({
+  redirectTo = '/dashboard',
+  initialError,
+}: {
+  redirectTo?: string
+  initialError?: string
+}) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(initialError ?? null)
   const [loading, setLoading] = useState(false)
 
   async function onSubmit(e: React.FormEvent) {
@@ -53,6 +59,11 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+      <p className="text-right text-sm">
+        <Link href="/recuperar-contrasena" className="text-brand-accent hover:underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
+      </p>
       <button type="submit" disabled={loading} className="btn-primary w-full">
         {loading ? 'Entrando…' : 'Entrar'}
       </button>
@@ -115,7 +126,7 @@ export function RegisterForm() {
       return
     }
 
-    const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
     const { data: shop, error: shopErr } = await sb
       .from('shops')
@@ -157,7 +168,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="card mx-auto max-w-lg space-y-4">
       <h1 className="text-xl font-bold">Crear tu tienda en Mendoshop</h1>
-      <p className="text-sm text-zinc-400">14 días de prueba gratis. Sin tarjeta.</p>
+      <p className="text-sm text-zinc-400">7 días de prueba gratis. Sin tarjeta.</p>
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <label className="block text-sm">

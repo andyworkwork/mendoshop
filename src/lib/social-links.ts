@@ -1,3 +1,4 @@
+import { PLAN_LIMITS } from '@/lib/plans'
 import { buildWhatsAppUrl } from '@/lib/shops'
 import type { ShopRow } from '@/types/shop'
 
@@ -73,5 +74,7 @@ export function getShopSocialLinks(shop: ShopRow): ShopSocialLink[] {
     })
   }
 
-  return out
+  const max = PLAN_LIMITS[shop.plan].maxSocialLinks
+  if (max <= 0) return []
+  return out.slice(0, max)
 }

@@ -14,9 +14,11 @@ const links = [
 
 export function DashboardShell({
   shop,
+  platformAdmin = false,
   children,
 }: {
   shop: ShopRow
+  platformAdmin?: boolean
   children: React.ReactNode
 }) {
   return (
@@ -38,6 +40,14 @@ export function DashboardShell({
             >
               Ver tienda ↗
             </a>
+            {platformAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-lg border border-brand/40 bg-brand/10 px-3 py-1.5 font-medium text-brand hover:bg-brand/20"
+              >
+                Panel admin
+              </Link>
+            )}
           </nav>
           <form action={signOutAction}>
             <button type="submit" className="text-sm text-zinc-500 hover:text-white">

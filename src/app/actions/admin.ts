@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/format'
 import { isPlatformAdmin } from '@/lib/admin'
+import { extendPlanUntil } from '@/lib/plans'
 import { revalidatePath } from 'next/cache'
 import type { ShopPlan } from '@/types/shop'
 
@@ -34,7 +35,7 @@ export async function createShopForUser(input: {
   const cleanSlug = slugify(input.slug)
   const wa = input.whatsapp.replace(/\D/g, '')
   const plan = input.plan ?? 'free_trial'
-  const trialDays = input.trialDays ?? 14
+  const trialDays = input.trialDays ?? 7
 
   if (!email || password.length < 6) {
     return { error: 'Email y contraseña (mín. 6 caracteres) son obligatorios.' }
@@ -124,6 +125,55 @@ export async function updateShopAdmin(
   const { error } = await service.from('shops').update(patch).eq('id', shopId)
   if (error) return { error: error.message }
   revalidatePath('/admin')
+  revalidatePath('/dashboard/account')
+  return { ok: true }
+}
+
+export async function grantPlanDaysToShop(input: {
+  shopId: string
+  days: number
+  reason: string
+}): Promise<AdminActionResult> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const days = Math.floor(input.days)
+  const reason = input.reason.trim()
+  if (days < 1 || days > 365) {
+    return { error: 'Los días deben estar entre 1 y 365.' }
+  }
+  if (reason.length < 3) {
+    return { error: 'Escribí un motivo de al menos 3 caracteres.' }
+  }
+
+  const service = createServiceClient()
+  const { data: shop, error: fetchErr } = await service
+    .from('shops')
+    .select('plan_until')
+    .eq('id', input.shopId)
+    .maybeSingle()
+
+  if (fetchErr) return { error: fetchErr.message }
+  if (!shop) return { error: 'Tienda no encontrada.' }
+
+  const planUntil = extendPlanUntil(shop.plan_until as string | null, days)
+
+  const { error: grantErr } = await service.from('shop_plan_grants').insert({
+    shop_id: input.shopId,
+    days_added: days,
+    reason,
+  })
+  if (grantErr) return { error: grantErr.message }
+
+  const { error: updateErr } = await service
+    .from('shops')
+    .update({ plan_until: planUntil, active: true })
+    .eq('id', input.shopId)
+
+  if (updateErr) return { error: updateErr.message }
+
+  revalidatePath('/admin')
+  revalidatePath('/dashboard/account')
   return { ok: true }
 }
 

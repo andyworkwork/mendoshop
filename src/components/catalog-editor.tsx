@@ -2,11 +2,13 @@
 
 import { useCallback, useState } from 'react'
 import { createClient } from '@/lib/supabase/browser'
+import { revalidateStorefront } from '@/app/actions/shop'
 import { compressImageForUpload } from '@/lib/image-compress'
 import { formatMoneyArs } from '@/lib/format'
 import { countProducts } from '@/lib/fetch-catalog'
 import { PLAN_LIMITS } from '@/lib/plans'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { pathsToRemove, productImagePaths } from '@/lib/product-images'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 
@@ -44,6 +46,11 @@ export function CatalogEditor({
     void prodRes
   }, [sb, shop.id])
 
+  const publishCatalog = useCallback(async () => {
+    await refresh()
+    await revalidateStorefront(shop.slug)
+  }, [refresh, shop.slug])
+
   async function addCategory() {
     const name = prompt('Nombre de la categoría')
     if (!name?.trim()) return
@@ -51,7 +58,7 @@ export function CatalogEditor({
     const sort = categories.length
     await sb.from('categories').insert({ shop_id: shop.id, name: name.trim(), sort_order: sort })
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function addSubcategory(categoryId: string) {
@@ -65,7 +72,7 @@ export function CatalogEditor({
       sort_order: 0,
     })
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function addSubsub(subcategoryId: string) {
@@ -79,7 +86,7 @@ export function CatalogEditor({
       sort_order: 0,
     })
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function addProduct(subcategoryId: string, subsubId: string | null) {
@@ -104,41 +111,73 @@ export function CatalogEditor({
       sort_order: 0,
     })
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function uploadProductImage(productId: string, file: File | null) {
     if (!file) return
     setBusy(true)
     try {
-      const compressed = await compressImageForUpload(file)
-      const path = `${shop.id}/${productId}/${Date.now()}.webp`
-      const { error: upErr } = await sb.storage.from('shop-images').upload(path, compressed, {
+      const { data: existing } = await sb
+        .from('products')
+        .select('image_path')
+        .eq('id', productId)
+        .maybeSingle()
+
+      const { main, thumb } = productImagePaths(shop.id, productId)
+      const [mainFile, thumbFile] = await Promise.all([
+        compressImageForUpload(file, 'main'),
+        compressImageForUpload(file, 'thumb'),
+      ])
+
+      const uploadOpts = {
         upsert: true,
         contentType: 'image/webp',
-      })
-      if (upErr) throw upErr
-      await sb.from('products').update({ image_path: path }).eq('id', productId)
+        cacheControl: '86400',
+      } as const
+
+      const { error: upMain } = await sb.storage.from('shop-images').upload(main, mainFile, uploadOpts)
+      if (upMain) throw upMain
+      const { error: upThumb } = await sb.storage.from('shop-images').upload(thumb, thumbFile, uploadOpts)
+      if (upThumb) throw upThumb
+
+      const toDelete = pathsToRemove(shop.id, productId, existing?.image_path ?? null).filter(
+        (p) => p !== main && p !== thumb,
+      )
+      if (toDelete.length > 0) {
+        await sb.storage.from('shop-images').remove(toDelete)
+      }
+
+      await sb.from('products').update({ image_path: main }).eq('id', productId)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Error al subir imagen')
     }
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function toggleActive(productId: string, active: boolean) {
     setBusy(true)
     await sb.from('products').update({ active: !active }).eq('id', productId)
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   async function deleteProduct(productId: string) {
     if (!confirm('¿Eliminar este producto?')) return
     setBusy(true)
+    const { data: row } = await sb
+      .from('products')
+      .select('image_path')
+      .eq('id', productId)
+      .maybeSingle()
+    const toDelete = pathsToRemove(shop.id, productId, row?.image_path ?? null)
+    if (toDelete.length > 0) {
+      await sb.storage.from('shop-images').remove(toDelete)
+    }
     await sb.from('products').delete().eq('id', productId)
     setBusy(false)
-    await refresh()
+    await publishCatalog()
   }
 
   return (

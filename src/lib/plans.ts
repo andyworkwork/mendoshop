@@ -5,6 +5,10 @@ export type PlanLimits = {
   maxImagesPerProduct: number
   maxStorageMb: number
   showPoweredBy: boolean
+  /** Máximo de íconos de redes en el pie de la tienda pública. */
+  maxSocialLinks: number
+  viewCount: boolean
+  featuredPriority: boolean
 }
 
 export const PLAN_LIMITS: Record<ShopPlan, PlanLimits> = {
@@ -13,18 +17,27 @@ export const PLAN_LIMITS: Record<ShopPlan, PlanLimits> = {
     maxImagesPerProduct: 2,
     maxStorageMb: 50,
     showPoweredBy: true,
+    maxSocialLinks: 0,
+    viewCount: false,
+    featuredPriority: false,
   },
   basic: {
-    maxProducts: 60,
+    maxProducts: 30,
     maxImagesPerProduct: 4,
     maxStorageMb: 200,
     showPoweredBy: true,
+    maxSocialLinks: 2,
+    viewCount: false,
+    featuredPriority: false,
   },
   pro: {
-    maxProducts: 300,
+    maxProducts: 80,
     maxImagesPerProduct: 8,
     maxStorageMb: 1024,
     showPoweredBy: false,
+    maxSocialLinks: 4,
+    viewCount: true,
+    featuredPriority: true,
   },
 }
 
@@ -39,22 +52,76 @@ export function planLabel(plan: ShopPlan): string {
   }
 }
 
-export function isShopSubscriptionActive(planUntil: string | null): boolean {
-  if (!planUntil) return true
-  return new Date(planUntil) > new Date()
+export function planHasViewCount(plan: ShopPlan): boolean {
+  return PLAN_LIMITS[plan].viewCount
 }
 
-/** Días restantes hasta plan_until (0 si venció). null si no hay fecha de corte. */
+function startOfLocalDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function parsePlanEndDate(planUntil: string): Date | null {
+  const end = new Date(planUntil)
+  if (Number.isNaN(end.getTime())) return null
+  return end
+}
+
+/** Vigente hasta el final del día de vencimiento (hora local). */
+export function isShopSubscriptionActive(planUntil: string | null): boolean {
+  if (!planUntil) return true
+  const end = parsePlanEndDate(planUntil)
+  if (!end) return true
+  const endOfDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59, 999)
+  return Date.now() <= endOfDay.getTime()
+}
+
+/**
+ * Días de calendario restantes (incluye hoy si aún no venció).
+ * Ej.: hoy 19 may, vence 1 jun → 13 días (no 14 por redondeo de horas).
+ */
 export function planDaysRemaining(planUntil: string | null): number | null {
   if (!planUntil) return null
-  const end = new Date(planUntil)
-  const ms = end.getTime() - Date.now()
-  return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)))
+  const end = parsePlanEndDate(planUntil)
+  if (!end) return null
+  const today = startOfLocalDay(new Date())
+  const endDay = startOfLocalDay(end)
+  const diff = Math.round((endDay.getTime() - today.getTime()) / 86_400_000)
+  return Math.max(0, diff)
+}
+
+/** Suma días de calendario a la vigencia actual (o desde hoy si venció o no hay fecha). */
+export function extendPlanUntil(planUntil: string | null, daysToAdd: number): string {
+  const days = Math.max(1, Math.floor(daysToAdd))
+  const today = startOfLocalDay(new Date())
+  let baseDay = today
+
+  if (planUntil) {
+    const end = parsePlanEndDate(planUntil)
+    if (end) {
+      const endDay = startOfLocalDay(end)
+      baseDay = endDay.getTime() >= today.getTime() ? endDay : today
+    }
+  }
+
+  const newEndDay = new Date(baseDay)
+  newEndDay.setDate(newEndDay.getDate() + days)
+  const endOfDay = new Date(
+    newEndDay.getFullYear(),
+    newEndDay.getMonth(),
+    newEndDay.getDate(),
+    23,
+    59,
+    59,
+    999,
+  )
+  return endOfDay.toISOString()
 }
 
 export function formatPlanUntil(planUntil: string | null): string | null {
   if (!planUntil) return null
-  return new Date(planUntil).toLocaleDateString('es-AR', {
+  const end = parsePlanEndDate(planUntil)
+  if (!end) return null
+  return end.toLocaleDateString('es-AR', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -71,18 +138,29 @@ export const PLAN_CATALOG: {
     id: 'free_trial',
     name: 'Prueba gratis',
     summary: 'Para probar Mendoshop con tu catálogo real.',
-    features: ['30 productos', '2 fotos por producto', 'Período de prueba con fecha de vencimiento'],
+    features: ['30 productos', '7 días de prueba'],
   },
   {
     id: 'basic',
     name: 'Básico',
-    summary: 'Para tiendas en crecimiento.',
-    features: ['60 productos', '4 fotos por producto', 'Más espacio para imágenes'],
+    summary: 'Tu tienda online con lo esencial para vender por WhatsApp.',
+    features: [
+      '30 productos',
+      '30 días de tienda',
+      'Soporte técnico',
+      'Link para tus redes sociales',
+    ],
   },
   {
     id: 'pro',
     name: 'Pro',
-    summary: 'Catálogo amplio sin límites ajustados.',
-    features: ['300 productos', '8 fotos por producto', 'Máximo almacenamiento'],
+    summary: 'Más catálogo, visibilidad y herramientas para crecer.',
+    features: [
+      '+50 productos (hasta 80 en total)',
+      'Todas tus redes sociales y más',
+      'Prioridad de publicidad en la página',
+      'Contador de visitas',
+      'Personalización exclusiva',
+    ],
   },
 ]

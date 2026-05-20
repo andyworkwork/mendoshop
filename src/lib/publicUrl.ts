@@ -31,6 +31,11 @@ export function shopPublicUrl(slug: string): string {
   return `${appBaseUrl()}/tienda/${slug}`
 }
 
+/** URL de retorno tras enlaces de auth (recuperar contraseña, confirmar email). */
+export function authConfirmUrl(next = '/actualizar-contrasena'): string {
+  return `${appBaseUrl()}/auth/confirmar?next=${encodeURIComponent(next)}`
+}
+
 /** Texto para formularios: mendoshop.vercel.app/tienda/ */
 export function shopLinkPrefix(): string {
   try {

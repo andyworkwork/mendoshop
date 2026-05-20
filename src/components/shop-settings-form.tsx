@@ -5,6 +5,7 @@ import { updateShopSettings } from '@/app/actions/shop'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { ThemePicker } from '@/components/theme-picker'
 import { shopPublicUrl } from '@/lib/publicUrl'
+import { PLAN_LIMITS } from '@/lib/plans'
 import type { ShopRow } from '@/types/shop'
 
 export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
@@ -21,6 +22,7 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
   const [showWhatsappSocial, setShowWhatsappSocial] = useState(() => shop.social_whatsapp_visible === true)
   const [msg, setMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const socialLimit = PLAN_LIMITS[shop.plan].maxSocialLinks
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -77,42 +79,57 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
 
       <section className="card space-y-3">
         <h2 className="font-semibold">Mis redes sociales</h2>
-        <p className="text-sm text-zinc-400">
-          Aparecen al final de tu tienda. Solo se muestran las que completes.
-        </p>
-        <label className="block text-sm">
+        {socialLimit === 0 ? (
+          <p className="text-sm text-zinc-400">
+            Disponible desde el plan Básico. En Cuenta podés ver cómo activarlo.
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-400">
+            Aparecen al final de tu tienda.{' '}
+            {shop.plan === 'pro'
+              ? 'Podés mostrar todas las redes que configures.'
+              : `Tu plan muestra hasta ${socialLimit} enlaces en el pie de la tienda.`}
+          </p>
+        )}
+        <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
           Instagram (usuario o link)
           <input
             className="input mt-1"
             placeholder="@mitienda o https://instagram.com/mitienda"
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}
+            disabled={socialLimit === 0}
           />
         </label>
-        <label className="block text-sm">
+        <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
           TikTok (usuario o link)
           <input
             className="input mt-1"
             placeholder="@mitienda o https://tiktok.com/@mitienda"
             value={tiktok}
             onChange={(e) => setTiktok(e.target.value)}
+            disabled={socialLimit === 0}
           />
         </label>
-        <label className="block text-sm">
+        <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
           Web personal
           <input
             className="input mt-1"
             placeholder="luminamendoza.shop o https://tusitio.com"
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
+            disabled={socialLimit === 0}
           />
         </label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <label
+          className={`flex cursor-pointer items-center gap-2 text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}
+        >
           <input
             type="checkbox"
             className="h-4 w-4 rounded border-zinc-600"
             checked={showWhatsappSocial}
             onChange={(e) => setShowWhatsappSocial(e.target.checked)}
+            disabled={socialLimit === 0}
           />
           Mostrar WhatsApp en el pie (usa el número de pedidos de arriba)
         </label>

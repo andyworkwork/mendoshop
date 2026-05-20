@@ -53,10 +53,37 @@ export function ShopAccountPanel({ shop }: { shop: ShopRow }) {
         ) : (
           <p className="text-sm text-zinc-400">Sin fecha de vencimiento configurada.</p>
         )}
-        <ul className="text-sm text-zinc-400">
-          <li>Productos: hasta {PLAN_LIMITS[shop.plan].maxProducts}</li>
-          <li>Fotos por producto: hasta {PLAN_LIMITS[shop.plan].maxImagesPerProduct}</li>
-        </ul>
+        <p className="text-sm text-zinc-400">
+          Hasta <span className="text-zinc-200">{PLAN_LIMITS[shop.plan].maxProducts} productos</span> en
+          tu catálogo.
+        </p>
+        <div
+          className={`rounded-xl border p-4 text-sm ${
+            active
+              ? 'border-zinc-700 bg-zinc-900/40 text-zinc-400'
+              : 'border-red-900/50 bg-red-950/20 text-red-200/90'
+          }`}
+        >
+          <p className="mb-2 font-medium text-zinc-200">¿Qué pasa cuando se acaban los días?</p>
+          {active ? (
+            <ul className="list-inside list-disc space-y-1 text-zinc-400">
+              <li>
+                Hasta la fecha de vigencia tu tienda pública sigue visible y podés editar el catálogo.
+              </li>
+              <li>
+                Cuando vence, el link de la tienda deja de mostrarse (error 404 para visitantes).
+              </li>
+              <li>Seguís pudiendo entrar al panel para renovar o pasar a Básico / Pro.</li>
+              <li>Tus productos y fotos se guardan; al renovar, la tienda vuelve a publicarse.</li>
+            </ul>
+          ) : (
+            <ul className="list-inside list-disc space-y-1">
+              <li>Tu link público ya no muestra la tienda a los clientes.</li>
+              <li>El panel sigue abierto: podés ver catálogo y escribirnos para renovar.</li>
+              <li>Al extender el plan o pasar a Básico / Pro, la tienda se activa de nuevo.</li>
+            </ul>
+          )}
+        </div>
       </section>
 
       <section className="card space-y-4">

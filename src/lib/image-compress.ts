@@ -1,19 +1,40 @@
-const MAX_WIDTH = 1400
-const MAX_BYTES = 500_000
-const QUALITY_STEPS = [0.82, 0.72, 0.62, 0.52]
+export type ImageUploadVariant = 'main' | 'thumb'
+
+const PRESETS: Record<
+  ImageUploadVariant,
+  { maxWidth: number; maxBytes: number; qualities: number[] }
+> = {
+  main: {
+    maxWidth: 1200,
+    maxBytes: 380_000,
+    qualities: [0.78, 0.68, 0.58, 0.48],
+  },
+  thumb: {
+    maxWidth: 480,
+    maxBytes: 90_000,
+    qualities: [0.72, 0.62, 0.52],
+  },
+}
 
 /**
- * Comprime imágenes en el navegador antes de subir (WebP, ancho máx. 1400px, ~500 KB).
+ * Comprime imágenes en el navegador antes de subir (WebP).
+ * - main: catálogo completo (~380 KB, 1200px)
+ * - thumb: grilla de la tienda (~90 KB, 480px)
  */
-export async function compressImageForUpload(file: File): Promise<File> {
+export async function compressImageForUpload(
+  file: File,
+  variant: ImageUploadVariant = 'main',
+): Promise<File> {
   if (!file.type.startsWith('image/')) {
     throw new Error('El archivo debe ser una imagen')
   }
 
+  const { maxWidth, maxBytes, qualities } = PRESETS[variant]
+
   const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, MAX_WIDTH / bitmap.width)
-  const w = Math.round(bitmap.width * scale)
-  const h = Math.round(bitmap.height * scale)
+  const scale = Math.min(1, maxWidth / bitmap.width)
+  const w = Math.max(1, Math.round(bitmap.width * scale))
+  const h = Math.max(1, Math.round(bitmap.height * scale))
 
   const canvas = document.createElement('canvas')
   canvas.width = w
@@ -23,11 +44,12 @@ export async function compressImageForUpload(file: File): Promise<File> {
   ctx.drawImage(bitmap, 0, 0, w, h)
   bitmap.close()
 
-  for (const q of QUALITY_STEPS) {
+  const suffix = variant === 'thumb' ? '-thumb' : ''
+  for (const q of qualities) {
     const blob = await canvasToWebp(canvas, q)
-    if (blob.size <= MAX_BYTES || q === QUALITY_STEPS[QUALITY_STEPS.length - 1]) {
+    if (blob.size <= maxBytes || q === qualities[qualities.length - 1]) {
       const base = file.name.replace(/\.[^.]+$/, '') || 'imagen'
-      return new File([blob], `${base}.webp`, { type: 'image/webp' })
+      return new File([blob], `${base}${suffix}.webp`, { type: 'image/webp' })
     }
   }
 

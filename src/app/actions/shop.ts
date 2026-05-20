@@ -58,6 +58,11 @@ export async function updateShopSettings(
   return { ok: true }
 }
 
+/** Invalida caché de la tienda pública tras cambios en el catálogo. */
+export async function revalidateStorefront(slug: string) {
+  revalidatePath(`/tienda/${slug}`)
+}
+
 export async function signOutAction() {
   const supabase = await createClient()
   await supabase.auth.signOut()

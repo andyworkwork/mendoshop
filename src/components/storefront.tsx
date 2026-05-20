@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { getProductImageUrl } from '@/lib/product-images'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { shopBackgroundClass, themeCssVars } from '@/lib/themes'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
@@ -273,7 +274,7 @@ function ProductCard({
 }) {
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const img = getPublicUrlFromPath(p.image_path)
+  const img = getProductImageUrl(p.image_path, 'thumb')
   const cardClass = isLight ? 'store-card' : 'card flex flex-col'
 
   const handleAdd = () => {

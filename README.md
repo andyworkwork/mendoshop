@@ -54,11 +54,11 @@ npm run dev
 
 ## Planes (límites en código)
 
-| Plan | Productos | Fotos/producto |
-|------|-----------|----------------|
-| Prueba 14 días | 30 | 2 |
-| Básico | 60 | 4 |
-| Pro | 300 | 8 |
+| Plan | Productos | Redes en pie | Visitas |
+|------|-----------|--------------|---------|
+| Prueba 7 días | 30 | — | — |
+| Básico | 30 | hasta 2 | — |
+| Pro | 80 | todas | sí |
 
 Los pagos (Mercado Pago) se pueden activar manualmente actualizando `plan` y `plan_until` en la tabla `shops`.
 

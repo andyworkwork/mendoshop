@@ -1,13 +1,8 @@
-import { LoginForm } from '@/components/auth-forms'
+import { UpdatePasswordForm } from '@/components/update-password-form'
 import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 
-type Props = { searchParams: Promise<{ next?: string; error?: string }> }
-
-export default async function LoginPage({ searchParams }: Props) {
-  const { next, error } = await searchParams
-  const redirectTo = next?.startsWith('/') ? next : '/dashboard'
-
+export default function ActualizarContrasenaPage() {
   return (
     <div className="relative min-h-screen mendoshop-page-bg">
       <MendoshopPageBackground />
@@ -15,7 +10,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <SiteHeader />
       </div>
       <main className="relative z-10 px-4 py-12">
-        <LoginForm redirectTo={redirectTo} initialError={error} />
+        <UpdatePasswordForm />
       </main>
     </div>
   )

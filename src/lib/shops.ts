@@ -49,9 +49,12 @@ export async function fetchFeaturedShops(supabase: SupabaseClient, limit = 12): 
     .eq('active', true)
     .order('featured', { ascending: false })
     .order('view_count', { ascending: false })
-    .limit(limit)
+    .limit(Math.max(limit * 3, limit))
 
-  return (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>))
+  const shops = (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>))
+  const pro = shops.filter((s) => s.plan === 'pro')
+  const rest = shops.filter((s) => s.plan !== 'pro')
+  return [...pro, ...rest].slice(0, limit)
 }
 
 export async function fetchUserShops(supabase: SupabaseClient): Promise<ShopRow[]> {

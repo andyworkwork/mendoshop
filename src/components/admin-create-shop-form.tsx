@@ -14,7 +14,7 @@ export function AdminCreateShopForm() {
   const [whatsapp, setWhatsapp] = useState('')
   const [rubro, setRubro] = useState('')
   const [plan, setPlan] = useState<ShopPlan>('free_trial')
-  const [trialDays, setTrialDays] = useState(14)
+  const [trialDays, setTrialDays] = useState(7)
   const [msg, setMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -79,10 +79,12 @@ export function AdminCreateShopForm() {
       </label>
       <label className="block text-sm">
         Link de la tienda
-        <div className="mt-1 flex items-center gap-1 text-sm text-zinc-500">
-          <ShopLinkPrefix />
+        <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center">
+          <span className="break-all text-xs text-zinc-500 sm:text-sm">
+            <ShopLinkPrefix />
+          </span>
           <input
-            className="input flex-1"
+            className="input min-w-0 flex-1"
             required
             value={slug}
             onChange={(e) => setSlug(slugify(e.target.value))}

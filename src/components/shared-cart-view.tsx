@@ -1,7 +1,7 @@
 'use client'
 
 import { formatMoneyArs } from '@/lib/format'
-import { getPublicUrlFromPath } from '@/lib/publicUrl'
+import { getProductImageUrl } from '@/lib/product-images'
 import { buildWhatsAppUrl } from '@/lib/shops'
 import { formatSharedCartWhatsAppDetail } from '@/lib/whatsapp-cart-detail'
 import type { SharedCartItem } from '@/app/api/carts/route'
@@ -56,5 +56,5 @@ export function SharedCartView({
 }
 
 export function productImageUrl(p: ProductSnap): string | null {
-  return getPublicUrlFromPath(p.image_path)
+  return getProductImageUrl(p.image_path, 'thumb')
 }
