@@ -28,7 +28,7 @@ const slides = entries.map(({ file, slug }) => ({
 }))
 
 const body = `/** Generado por npm run carousel:sync-slides — no editar a mano. */
-export const HERO_CAROUSEL_SLIDES = ${JSON.stringify(slides, null, 2)} as const
+export const HERO_CAROUSEL_SLIDES: { src: string; alt: string }[] = ${JSON.stringify(slides, null, 2)}
 `
 
 fs.writeFileSync(outFile, body, 'utf8')

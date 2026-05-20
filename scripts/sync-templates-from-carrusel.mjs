@@ -159,7 +159,7 @@ export const RUBRO_PRESET_OPTIONS = ${JSON.stringify(rubroOptions, null, 2)} as 
 fs.writeFileSync(path.join(root, 'src/lib/store-templates.generated.ts'), templatesTs)
 
 const slidesTs = `/** Generado por npm run templates:sync — no editar a mano. */
-export const HERO_CAROUSEL_SLIDES = ${JSON.stringify(slides, null, 2)} as const
+export const HERO_CAROUSEL_SLIDES: { src: string; alt: string }[] = ${JSON.stringify(slides, null, 2)}
 `
 fs.writeFileSync(path.join(root, 'src/lib/hero-carousel-slides.generated.ts'), slidesTs)
 

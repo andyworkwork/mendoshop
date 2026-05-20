@@ -8,7 +8,7 @@ const INTERVAL_MS = 5500
 
 export function HeroMobileCarousel() {
   const [index, setIndex] = useState(0)
-  const n = HERO_CAROUSEL_SLIDES.length
+  const n: number = HERO_CAROUSEL_SLIDES.length
 
   useEffect(() => {
     if (n <= 1) return

@@ -32,4 +32,4 @@ export const HERO_CAROUSEL_SLIDES = [
     "src": "/hero-carousel-2x/ropa-1.webp",
     "alt": "Mendoshop — Ropa"
   }
-] as const
+]
