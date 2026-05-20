@@ -1,5 +1,7 @@
+import { formatMoneyArs } from '@/lib/format'
 import { buildWhatsAppUrl } from '@/lib/shops'
-import { planDaysRemaining, planLabel } from '@/lib/plans'
+import { planDaysRemaining, planLabel, PLAN_PRICES_ARS, PLAN_SUBSCRIPTION_DAYS } from '@/lib/plans'
+import type { PaidShopPlan } from '@/lib/plan-payments'
 import type { ShopRow } from '@/types/shop'
 
 /** WhatsApp de soporte Mendoshop (renovaciones, planes). */
@@ -28,4 +30,36 @@ export function buildSupportWhatsAppMessage(shop: Pick<ShopRow, 'name' | 'plan' 
 
 export function supportWhatsAppUrl(shop: Pick<ShopRow, 'name' | 'plan' | 'plan_until'>): string {
   return buildWhatsAppUrl(MENDOSHOP_SUPPORT_WHATSAPP, buildSupportWhatsAppMessage(shop))
+}
+
+export function buildPlanPurchaseWhatsAppMessage(
+  shop: Pick<ShopRow, 'name' | 'plan'>,
+  targetPlan: PaidShopPlan,
+): string {
+  const price = formatMoneyArs(PLAN_PRICES_ARS[targetPlan])
+  return [
+    `Hola! Soy *${shop.name}* en Mendoshop.`,
+    `Quiero contratar el plan *${planLabel(targetPlan)}* (${price}, ${PLAN_SUBSCRIPTION_DAYS} días).`,
+    `Mi plan actual es *${planLabel(shop.plan)}*.`,
+  ].join('\n')
+}
+
+export function planPurchaseWhatsAppUrl(
+  shop: Pick<ShopRow, 'name' | 'plan' | 'plan_until'>,
+  targetPlan: PaidShopPlan,
+): string {
+  return buildWhatsAppUrl(
+    MENDOSHOP_SUPPORT_WHATSAPP,
+    buildPlanPurchaseWhatsAppMessage(shop, targetPlan),
+  )
+}
+
+export function planPurchaseButtonLabel(
+  targetPlan: PaidShopPlan,
+  currentPlan: ShopRow['plan'],
+): string | null {
+  if (currentPlan === 'pro' && targetPlan === 'basic') return null
+  if (currentPlan === targetPlan) return `Renovar plan ${planLabel(targetPlan)}`
+  if (currentPlan === 'free_trial') return `Adquirir plan ${planLabel(targetPlan)}`
+  return `Pasar a plan ${planLabel(targetPlan)}`
 }

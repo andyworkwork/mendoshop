@@ -1,3 +1,6 @@
+import { formatMoneyArs } from '@/lib/format'
+import { PLAN_PRICES_ARS } from '@/lib/plans'
+
 const features = [
   {
     title: 'Link propio',
@@ -52,7 +55,7 @@ const features = [
   },
   {
     title: 'Planes y prueba gratis',
-    text: 'Empezá con 7 días gratis; después elegí el plan Básico o Pro según lo que necesite tu tienda.',
+    text: `Empezá con 7 días gratis; después elegí Básico (${formatMoneyArs(PLAN_PRICES_ARS.basic)}) o Pro (${formatMoneyArs(PLAN_PRICES_ARS.pro)}) según lo que necesite tu tienda.`,
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8" aria-hidden>
         <path

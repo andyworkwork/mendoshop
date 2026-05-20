@@ -128,22 +128,34 @@ export function formatPlanUntil(planUntil: string | null): string | null {
   })
 }
 
+/** Días de vigencia incluidos al contratar o renovar Básico / Pro. */
+export const PLAN_SUBSCRIPTION_DAYS = 30
+
+/** Precio mensual en pesos argentinos (planes de pago). */
+export const PLAN_PRICES_ARS = {
+  basic: 16_000,
+  pro: 27_000,
+} as const satisfies Record<Exclude<ShopPlan, 'free_trial'>, number>
+
 export const PLAN_CATALOG: {
   id: ShopPlan
   name: string
   summary: string
+  priceArs: number | null
   features: string[]
 }[] = [
   {
     id: 'free_trial',
     name: 'Prueba gratis',
     summary: 'Para probar Mendoshop con tu catálogo real.',
+    priceArs: null,
     features: ['30 productos', '7 días de prueba'],
   },
   {
     id: 'basic',
     name: 'Básico',
     summary: 'Tu tienda online con lo esencial para vender por WhatsApp.',
+    priceArs: PLAN_PRICES_ARS.basic,
     features: [
       '30 productos',
       '30 días de tienda',
@@ -155,8 +167,10 @@ export const PLAN_CATALOG: {
     id: 'pro',
     name: 'Pro',
     summary: 'Más catálogo, visibilidad y herramientas para crecer.',
+    priceArs: PLAN_PRICES_ARS.pro,
     features: [
       '+50 productos (hasta 80 en total)',
+      '30 días de tienda',
       'Todas tus redes sociales y más',
       'Prioridad de publicidad en la página',
       'Contador de visitas',

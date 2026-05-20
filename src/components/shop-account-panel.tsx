@@ -1,3 +1,6 @@
+import { PlanPurchaseButton } from '@/components/plan-purchase-button'
+import { formatMoneyArs } from '@/lib/format'
+import type { PaidShopPlan } from '@/lib/plan-payments'
 import {
   formatPlanUntil,
   isShopSubscriptionActive,
@@ -6,10 +9,20 @@ import {
   planDaysRemaining,
   planLabel,
 } from '@/lib/plans'
-import { supportWhatsAppUrl } from '@/lib/platform-contact'
+import {
+  planPurchaseButtonLabel,
+  planPurchaseWhatsAppUrl,
+  supportWhatsAppUrl,
+} from '@/lib/platform-contact'
 import type { ShopRow } from '@/types/shop'
 
-export function ShopAccountPanel({ shop }: { shop: ShopRow }) {
+export function ShopAccountPanel({
+  shop,
+  mercadoPagoEnabled,
+}: {
+  shop: ShopRow
+  mercadoPagoEnabled: boolean
+}) {
   const active = isShopSubscriptionActive(shop.plan_until)
   const daysLeft = planDaysRemaining(shop.plan_until)
   const untilLabel = formatPlanUntil(shop.plan_until)
@@ -71,7 +84,7 @@ export function ShopAccountPanel({ shop }: { shop: ShopRow }) {
                 Hasta la fecha de vigencia tu tienda pública sigue visible y podés editar el catálogo.
               </li>
               <li>
-                Cuando vence, el link de la tienda deja de mostrarse (error 404 para visitantes).
+                Cuando vence, el link de la tienda deja de mostrarse a los visitantes.
               </li>
               <li>Seguís pudiendo entrar al panel para renovar o pasar a Básico / Pro.</li>
               <li>Tus productos y fotos se guardan; al renovar, la tienda vuelve a publicarse.</li>
@@ -89,31 +102,53 @@ export function ShopAccountPanel({ shop }: { shop: ShopRow }) {
       <section className="card space-y-4">
         <h2 className="font-semibold">Planes disponibles</h2>
         <p className="text-sm text-zinc-400">
-          Los límites se aplican a tu catálogo. Para activar otro plan o extender la prueba, escribinos por
-          WhatsApp.
+          Los límites se aplican a tu catálogo.{' '}
+          {mercadoPagoEnabled
+            ? 'Podés pagar con Mercado Pago o escribirnos por WhatsApp.'
+            : 'Para activar un plan, usá el botón de cada tarjeta (WhatsApp) o escribinos.'}
         </p>
         <ul className="space-y-3">
           {PLAN_CATALOG.map((p) => (
             <li
               key={p.id}
-              className={`rounded-xl border p-4 ${
+              className={`flex flex-col gap-2 rounded-xl border p-4 ${
                 isCurrentPlan(p.id)
                   ? 'border-brand bg-brand/5 ring-1 ring-brand/40'
                   : 'border-zinc-800 bg-zinc-900/40'
               }`}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-semibold">{p.name}</p>
-                {isCurrentPlan(p.id) && (
-                  <span className="text-xs font-medium text-brand">Plan actual</span>
-                )}
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <p className="min-w-0 font-semibold">{p.name}</p>
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                  {p.priceArs != null ? (
+                    <span className="text-lg font-bold text-brand">{formatMoneyArs(p.priceArs)}</span>
+                  ) : (
+                    <span className="text-sm font-medium text-zinc-300">Gratis</span>
+                  )}
+                  {isCurrentPlan(p.id) && (
+                    <span className="text-xs font-medium text-brand">Plan actual</span>
+                  )}
+                </div>
               </div>
-              <p className="mt-1 text-sm text-zinc-400">{p.summary}</p>
-              <ul className="mt-2 list-inside list-disc text-sm text-zinc-500">
+              <p className="text-sm text-zinc-400">{p.summary}</p>
+              <ul className="list-outside list-disc space-y-1 pl-5 text-sm text-zinc-500">
                 {p.features.map((f) => (
                   <li key={f}>{f}</li>
                 ))}
               </ul>
+              {p.id !== 'free_trial' && (() => {
+                const paidPlan = p.id as PaidShopPlan
+                const label = planPurchaseButtonLabel(paidPlan, shop.plan)
+                if (!label) return null
+                return (
+                  <PlanPurchaseButton
+                    plan={paidPlan}
+                    label={mercadoPagoEnabled ? `${label} con Mercado Pago` : label}
+                    mercadoPagoEnabled={mercadoPagoEnabled}
+                    whatsAppHref={planPurchaseWhatsAppUrl(shop, paidPlan)}
+                  />
+                )
+              })()}
             </li>
           ))}
         </ul>

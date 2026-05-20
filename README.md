@@ -60,7 +60,24 @@ npm run dev
 | Básico | 30 | hasta 2 | — |
 | Pro | 80 | todas | sí |
 
-Los pagos (Mercado Pago) se pueden activar manualmente actualizando `plan` y `plan_until` en la tabla `shops`.
+### Pagos con Mercado Pago (opcional)
+
+En **Dashboard → Cuenta** cada plan de pago tiene un botón que abre Checkout Pro de Mercado Pago. Al aprobarse el pago, un webhook activa el plan y suma 30 días de vigencia.
+
+Variables en Vercel / `.env.local`:
+
+| Variable | Uso |
+|----------|-----|
+| `MERCADOPAGO_ACCESS_TOKEN` | Access token de tu aplicación MP (producción o `TEST-…` en sandbox) |
+| `NEXT_PUBLIC_APP_URL` | URL pública, ej. `https://mendoshop.vercel.app` (webhook y vuelta post-pago) |
+
+En [Mercado Pago Developers](https://www.mercadopago.com.ar/developers) → tu app → **Webhooks**, configurá la URL:
+
+`https://TU_DOMINIO/api/payments/mercadopago/webhook`
+
+Aplicá la migración `supabase/migrations/006_shop_plan_payments.sql` en Supabase.
+
+Sin `MERCADOPAGO_ACCESS_TOKEN`, los botones abren WhatsApp con el plan elegido (como antes).
 
 ## SEO (para el vendedor)
 
