@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { imageFocusStyle } from '@/lib/image-focus'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
@@ -14,6 +15,10 @@ import { StoreSocialFooter } from '@/components/store-social-footer'
 import { StoreHeaderBrand } from '@/components/store-header-brand'
 import { StoreCartDrawer } from '@/components/store-cart-drawer'
 import { StoreCategoryDrawer } from '@/components/store-category-drawer'
+import {
+  StoreProductViewSelector,
+  type ProductViewMode,
+} from '@/components/store-product-view-selector'
 import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
 
 const FEATURED_COUNT = 6
@@ -21,6 +26,10 @@ const FEATURED_COUNT = 6
 type Props = {
   shop: ShopRow
   categories: CategoryRow[]
+  mode?: 'public' | 'edit'
+  onOpenBannerEditor?: () => void
+  onOpenAppearanceEditor?: () => void
+  onOpenProductFocus?: (productId: string) => void
 }
 
 type FlatProduct = ProductRow & {
@@ -66,11 +75,25 @@ function resolveBannerUrl(shop: ShopRow): string | null {
   return templateBannerSrc(shop.theme.templateId)
 }
 
-export function Storefront({ shop, categories }: Props) {
+export function Storefront({
+  shop,
+  categories,
+  mode = 'public',
+  onOpenBannerEditor,
+  onOpenAppearanceEditor,
+  onOpenProductFocus,
+}: Props) {
+  const isEdit = mode === 'edit'
   const { addLine, lines } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
+  const [productViewMode, setProductViewMode] = useState<ProductViewMode>('category')
+
+  useEffect(() => {
+    if (!isEdit) return
+    setExpandedCategories(new Set(categories.map((c) => c.id)))
+  }, [isEdit, categories])
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
   const isLight = shop.theme.background === 'light'
   const themeStyle = themeCssVars(shop.theme)
@@ -78,6 +101,10 @@ export function Storefront({ shop, categories }: Props) {
   const products = useMemo(() => flattenProducts(categories), [categories])
   const featuredProducts = useMemo(() => products.slice(0, FEATURED_COUNT), [products])
   const bannerUrl = resolveBannerUrl(shop)
+  const bannerFocusStyle = imageFocusStyle({
+    x: shop.banner_focus_x,
+    y: shop.banner_focus_y,
+  })
 
   const toggleCategory = useCallback((categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -117,9 +144,21 @@ export function Storefront({ shop, categories }: Props) {
     [categories],
   )
 
+  const productsByPrice = useMemo(() => {
+    const featuredIds = new Set(featuredProducts.map((p) => p.id))
+    const list = products.filter((p) => !featuredIds.has(p.id))
+    if (productViewMode === 'price_asc') {
+      return list.sort((a, b) => Number(a.price) - Number(b.price))
+    }
+    if (productViewMode === 'price_desc') {
+      return list.sort((a, b) => Number(b.price) - Number(a.price))
+    }
+    return list
+  }, [products, featuredProducts, productViewMode])
+
   return (
     <div
-      className={`min-h-screen pb-24 ${shopBackgroundClass(shop.theme)}`}
+      className={`min-h-screen pb-24 ${shopBackgroundClass(shop.theme)}${isEdit ? ' store-editor-preview' : ''}`}
       style={themeStyle}
     >
       <header className={isLight ? 'store-header-bar' : 'sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur'}>
@@ -160,7 +199,21 @@ export function Storefront({ shop, categories }: Props) {
           >
             <div className="store-banner-media">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <img
+                src={bannerUrl}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+                style={bannerFocusStyle}
+              />
+              {isEdit && onOpenBannerEditor && (
+                <button
+                  type="button"
+                  className="store-edit-overlay-btn"
+                  onClick={onOpenBannerEditor}
+                >
+                  Editar banner
+                </button>
+              )}
               <div className="store-banner-badge-wrap" aria-hidden>
                 <div className="store-banner-title-badge">
                   <h1 className="store-banner-shop-name">{shop.name}</h1>
@@ -184,12 +237,22 @@ export function Storefront({ shop, categories }: Props) {
           </div>
         ) : null}
 
-        <section id="productos" className="scroll-mt-20 py-4">
-          <div className="mb-4 text-center">
-            <h2 className="store-section-title store-vitrina-frame-text text-lg font-bold">
-              Productos destacados
-            </h2>
+        {isEdit && onOpenAppearanceEditor && (
+          <div className="mt-2 flex justify-center">
+            <button type="button" className="store-edit-chip" onClick={onOpenAppearanceEditor}>
+              Editar colores y apariencia
+            </button>
           </div>
+        )}
+
+        <section id="productos" className="scroll-mt-20 py-4">
+          {featuredProducts.length > 0 && (
+            <div className="mb-4 text-center">
+              <h2 className="store-section-title store-vitrina-frame-text text-lg font-bold">
+                Productos destacados
+              </h2>
+            </div>
+          )}
 
           {products.length === 0 && (
             <p className={`py-12 text-center ${isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>
@@ -205,6 +268,8 @@ export function Storefront({ shop, categories }: Props) {
                   product={p}
                   isLight={isLight}
                   accentFrame={productFrame}
+                  isEdit={isEdit}
+                  onEditFocus={onOpenProductFocus}
                   onAdd={() => addProduct(p)}
                 />
               ))}
@@ -212,16 +277,15 @@ export function Storefront({ shop, categories }: Props) {
           )}
         </section>
 
-        {categoriesWithProducts.length > 0 && (
+        {products.length > 0 && (
           <section className="scroll-mt-20 pb-6">
-            <h2 className="store-section-title store-vitrina-frame-text mb-3 flex items-center justify-center gap-2 text-lg font-bold">
-              <CategoryIcon
-                icon={categoriesWithProducts[0]?.icon}
-                themeColor="product-frame"
-                className="h-6 w-6"
-              />
-              Por categoría
-            </h2>
+            <StoreProductViewSelector
+              value={productViewMode}
+              onChange={setProductViewMode}
+              categoryIcon={categoriesWithProducts[0]?.icon}
+            />
+
+            {productViewMode === 'category' && categoriesWithProducts.length > 0 && (
             <div className="space-y-2">
               {categoriesWithProducts.map((cat) => {
                 const catProducts = productsForCategory(categories, cat.id)
@@ -256,6 +320,8 @@ export function Storefront({ shop, categories }: Props) {
                             product={p}
                             isLight={isLight}
                             accentFrame={productFrame}
+                            isEdit={isEdit}
+                            onEditFocus={onOpenProductFocus}
                             onAdd={() => addProduct(p)}
                           />
                         ))}
@@ -265,6 +331,27 @@ export function Storefront({ shop, categories }: Props) {
                 )
               })}
             </div>
+            )}
+
+            {productViewMode !== 'category' && productsByPrice.length > 0 && (
+              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {productsByPrice.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    isLight={isLight}
+                    accentFrame={productFrame}
+                    isEdit={isEdit}
+                    onEditFocus={onOpenProductFocus}
+                    onAdd={() => addProduct(p)}
+                  />
+                ))}
+              </ul>
+            )}
+
+            {productViewMode === 'category' && categoriesWithProducts.length === 0 && (
+              <p className="text-center text-sm text-zinc-500">No hay productos en categorías.</p>
+            )}
           </section>
         )}
 
@@ -289,11 +376,15 @@ function ProductCard({
   product: p,
   isLight,
   accentFrame,
+  isEdit,
+  onEditFocus,
   onAdd,
 }: {
   product: FlatProduct
   isLight: boolean
   accentFrame: string
+  isEdit?: boolean
+  onEditFocus?: (productId: string) => void
   onAdd: () => void
 }) {
   const [justAdded, setJustAdded] = useState(false)
@@ -310,15 +401,32 @@ function ProductCard({
 
   const label = justAdded ? 'Agregado ✓' : 'Agregar al carrito'
   const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')
+  const mediaFocus = imageFocusStyle({ x: p.image_focus_x, y: p.image_focus_y })
 
   return (
     <li className={cardClass} style={{ ['--shop-product-frame' as string]: frameVar }}>
-      {img ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={img} alt={p.name} className="store-product-card__media" />
-      ) : (
-        <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
-      )}
+      <div className="relative">
+        {img ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={img}
+            alt={p.name}
+            className="store-product-card__media"
+            style={mediaFocus}
+          />
+        ) : (
+          <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
+        )}
+        {isEdit && img && onEditFocus && (
+          <button
+            type="button"
+            className="store-edit-overlay-btn store-edit-overlay-btn--compact"
+            onClick={() => onEditFocus(p.id)}
+          >
+            Encuadre
+          </button>
+        )}
+      </div>
       <div className="store-product-card__body">
         <div>
           <p className="store-product-card__caption-name">{p.name}</p>

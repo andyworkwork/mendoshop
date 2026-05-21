@@ -29,6 +29,8 @@ export type ShopRow = {
   whatsapp_e164: string
   logo_path: string | null
   banner_path: string | null
+  banner_focus_x: number
+  banner_focus_y: number
   plan: ShopPlan
   plan_until: string | null
   active: boolean

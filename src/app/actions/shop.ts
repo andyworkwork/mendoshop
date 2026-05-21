@@ -1,5 +1,6 @@
 'use server'
 
+import { clampFocusPercent } from '@/lib/image-focus'
 import { createClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/format'
 import { revalidatePath } from 'next/cache'
@@ -22,6 +23,8 @@ export async function updateShopSettings(
     website_url?: string | null
     social_whatsapp_visible?: boolean
     banner_path?: string | null
+    banner_focus_x?: number
+    banner_focus_y?: number
   },
 ) {
   const supabase = await createClient()
@@ -46,6 +49,8 @@ export async function updateShopSettings(
     patch.social_whatsapp_visible = data.social_whatsapp_visible
   }
   if (data.banner_path !== undefined) patch.banner_path = data.banner_path
+  if (data.banner_focus_x !== undefined) patch.banner_focus_x = clampFocusPercent(data.banner_focus_x)
+  if (data.banner_focus_y !== undefined) patch.banner_focus_y = clampFocusPercent(data.banner_focus_y)
 
   const { data: row, error } = await supabase
     .from('shops')
@@ -56,6 +61,7 @@ export async function updateShopSettings(
   if (error) return { error: error.message }
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard/editar-tienda')
   if (row?.slug) revalidatePath(`/tienda/${row.slug}`)
   return { ok: true }
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { templateBannerSrc } from '@/lib/store-templates'
+import { normalizeImageFocus } from '@/lib/image-focus'
 import { parseTheme } from '@/lib/themes'
 import type { ShopRow } from '@/types/shop'
 import { DEFAULT_THEME } from '@/types/shop'
@@ -20,6 +21,13 @@ export function mapShopRow(raw: Record<string, unknown>): ShopRow {
     whatsapp_e164: String(raw.whatsapp_e164),
     logo_path: (raw.logo_path as string | null) ?? null,
     banner_path: (raw.banner_path as string | null) ?? null,
+    ...(() => {
+      const f = normalizeImageFocus(
+        raw.banner_focus_x as number | null | undefined,
+        raw.banner_focus_y as number | null | undefined,
+      )
+      return { banner_focus_x: f.x, banner_focus_y: f.y }
+    })(),
     plan: (raw.plan as ShopRow['plan']) ?? 'free_trial',
     plan_until: (raw.plan_until as string | null) ?? null,
     active: Boolean(raw.active),

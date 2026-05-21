@@ -6,6 +6,7 @@ import { shopPublicUrl } from '@/lib/publicUrl'
 
 const links = [
   { href: '/dashboard', label: 'Inicio' },
+  { href: '/dashboard/editar-tienda', label: 'Editar tienda' },
   { href: '/dashboard/catalog', label: 'Catálogo' },
   { href: '/dashboard/settings', label: 'Ajustes y SEO' },
   { href: '/dashboard/account', label: 'Cuenta' },
@@ -42,7 +43,7 @@ export function DashboardShell({
               rel="noreferrer"
               className="rounded-lg px-3 py-1.5 text-brand-accent transition hover:bg-white/5"
             >
-              Ver tienda ↗
+              Ir a tienda ↗
             </a>
             {platformAdmin && (
               <Link

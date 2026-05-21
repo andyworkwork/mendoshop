@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { normalizeImageFocus } from '@/lib/image-focus'
 import type {
   CategoryRow,
   ProductRow,
@@ -41,7 +42,7 @@ export async function fetchCategoriesWithNested(
     supabase
       .from('products')
       .select(
-        'id, subcategory_id, subsubcategoria_id, name, description, price, stock_quantity, image_path, image_gallery, active, sort_order',
+        'id, subcategory_id, subsubcategoria_id, name, description, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order',
       )
       .eq('shop_id', shopId)
       .order('sort_order'),
@@ -55,13 +56,20 @@ export async function fetchCategoriesWithNested(
     (ssRes.data ?? []) as (SubsubcategoriaRow & { subcategory_id: string })[],
   )
 
-  let products = ((prodRes.data ?? []) as (Omit<ProductRow, 'image_gallery'> & { image_gallery?: unknown })[]).map(
-    (r) => ({
+  let products = ((prodRes.data ?? []) as (Omit<ProductRow, 'image_gallery' | 'image_focus_x' | 'image_focus_y'> & {
+    image_gallery?: unknown
+    image_focus_x?: number | null
+    image_focus_y?: number | null
+  })[]).map((r) => {
+    const focus = normalizeImageFocus(r.image_focus_x, r.image_focus_y)
+    return {
       ...r,
       price: Number(r.price),
+      image_focus_x: focus.x,
+      image_focus_y: focus.y,
       image_gallery: normalizeGallery(r.image_gallery),
-    }),
-  )
+    }
+  })
 
   if (!opts?.includeInactive) {
     products = products.filter((p) => p.active)

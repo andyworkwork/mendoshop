@@ -7,6 +7,8 @@ export type ProductRow = {
   price: number
   stock_quantity: number
   image_path: string | null
+  image_focus_x: number
+  image_focus_y: number
   image_gallery: string[]
   active: boolean
   sort_order: number

@@ -344,8 +344,75 @@ body {
   background-color: color-mix(in srgb, var(--shop-primary) 22%, transparent);
 }
 
+/* Selector de orden (segmentos — distinto a acordeón de categorías). */
+.store-view-mode__label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.store-view-mode__segments {
+  display: flex;
+  gap: 0.35rem;
+  border-radius: 0.75rem;
+  background-color: color-mix(in srgb, var(--brand-ink) 55%, #27272a);
+  padding: 0.25rem;
+}
+
+.store-view-mode__segment {
+  @apply flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition;
+  color: color-mix(in srgb, var(--shop-product-frame, #a1a1aa) 85%, #71717a);
+}
+
+.store-view-mode__segment--active {
+  background-color: var(--shop-primary);
+  color: var(--brand-ink);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--shop-primary) 35%, transparent);
+}
+
+/* Marco fijo = tamaño de la foto en vitrina; cuadrícula 4×4. */
+.image-crop-viewport {
+  @apply overflow-hidden rounded-xl bg-zinc-950;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.image-crop-viewport__grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.42) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.42) 1px, transparent 1px);
+  background-size: 25% 25%;
+  opacity: 0.85;
+}
+
 .store-social-icon {
-  @apply inline-flex h-12 w-12 items-center justify-center rounded-full border-0 text-white shadow-md transition hover:scale-105 hover:opacity-90;
+  @apply inline-flex h-9 w-9 items-center justify-center rounded-full border-0 text-white shadow-md transition hover:scale-105 hover:opacity-90;
+}
+
+.store-social-icon svg {
+  @apply h-5 w-5;
+}
+
+.store-edit-chip {
+  @apply rounded-full border px-3 py-1.5 text-xs font-semibold transition;
+  border-color: color-mix(in srgb, var(--brand-orange) 50%, transparent);
+  background-color: color-mix(in srgb, var(--brand-orange) 15%, transparent);
+  color: var(--brand-orange);
+}
+
+.store-edit-chip:hover {
+  background-color: color-mix(in srgb, var(--brand-orange) 25%, transparent);
+}
+
+.store-edit-overlay-btn {
+  @apply absolute bottom-2 right-2 z-10 rounded-lg border border-white/30 bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white shadow-md backdrop-blur-sm transition hover:bg-black/85;
+}
+
+.store-edit-overlay-btn--compact {
+  @apply bottom-1.5 right-1.5 px-2 py-0.5 text-[10px];
+}
+
+.store-editor-preview {
+  outline: 2px solid color-mix(in srgb, var(--brand-orange) 30%, transparent);
+  outline-offset: 2px;
 }
 
 .store-social-icon--tiktok {

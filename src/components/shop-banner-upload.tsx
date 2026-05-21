@@ -10,7 +10,13 @@ import { shopBannerStoragePath } from '@/lib/shop-banner'
 import { createClient } from '@/lib/supabase/browser'
 import type { ShopRow } from '@/types/shop'
 
-export function ShopBannerUpload({ shop }: { shop: ShopRow }) {
+export function ShopBannerUpload({
+  shop,
+  onShopChange,
+}: {
+  shop: ShopRow
+  onShopChange?: (next: ShopRow) => void
+}) {
   const [bannerPath, setBannerPath] = useState(shop.banner_path)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -42,6 +48,7 @@ export function ShopBannerUpload({ shop }: { shop: ShopRow }) {
       if ('error' in res && res.error) throw new Error(res.error)
 
       setBannerPath(path)
+      onShopChange?.({ ...shop, banner_path: path })
       setMsg('Banner actualizado (WebP optimizado).')
       await revalidateStorefront(shop.slug)
     } catch (e) {
@@ -61,6 +68,7 @@ export function ShopBannerUpload({ shop }: { shop: ShopRow }) {
       const res = await updateShopSettings(shop.id, { banner_path: null })
       if ('error' in res && res.error) throw new Error(res.error)
       setBannerPath(null)
+      onShopChange?.({ ...shop, banner_path: null })
       setMsg('Volviste a la imagen de la plantilla.')
       await revalidateStorefront(shop.slug)
     } catch (e) {
