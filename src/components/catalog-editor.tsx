@@ -9,6 +9,8 @@ import { countProducts } from '@/lib/fetch-catalog'
 import { PLAN_LIMITS } from '@/lib/plans'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { pathsToRemove, productImagePaths } from '@/lib/product-images'
+import { CategoryIconPicker } from '@/components/category-icon-picker'
+import { categoryIconLabel } from '@/lib/category-icons'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 
@@ -27,7 +29,7 @@ export function CatalogEditor({
 
   const refresh = useCallback(async () => {
     const [catRes, subRes, ssRes, prodRes] = await Promise.all([
-      sb.from('categories').select('id, name, sort_order').eq('shop_id', shop.id).order('sort_order'),
+      sb.from('categories').select('id, name, sort_order, icon').eq('shop_id', shop.id).order('sort_order'),
       sb.from('subcategories').select('id, category_id, name, sort_order').eq('shop_id', shop.id),
       sb.from('subsubcategorias').select('id, subcategory_id, name, sort_order').eq('shop_id', shop.id),
       sb
@@ -56,7 +58,19 @@ export function CatalogEditor({
     if (!name?.trim()) return
     setBusy(true)
     const sort = categories.length
-    await sb.from('categories').insert({ shop_id: shop.id, name: name.trim(), sort_order: sort })
+    await sb.from('categories').insert({
+      shop_id: shop.id,
+      name: name.trim(),
+      sort_order: sort,
+      icon: 'tag',
+    })
+    setBusy(false)
+    await publishCatalog()
+  }
+
+  async function setCategoryIcon(categoryId: string, icon: string) {
+    setBusy(true)
+    await sb.from('categories').update({ icon }).eq('id', categoryId)
     setBusy(false)
     await publishCatalog()
   }
@@ -197,7 +211,7 @@ export function CatalogEditor({
 
       {categories.map((cat) => (
         <section key={cat.id} className="card space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold text-brand">{cat.name}</h2>
             <button
               type="button"
@@ -207,6 +221,16 @@ export function CatalogEditor({
             >
               + Subcategoría
             </button>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs text-zinc-500">
+              Icono en la tienda ({categoryIconLabel(cat.icon)})
+            </p>
+            <CategoryIconPicker
+              value={cat.icon}
+              disabled={busy}
+              onChange={(icon) => void setCategoryIcon(cat.id, icon)}
+            />
           </div>
           {cat.subcategories.map((sub) => (
             <div key={sub.id} className="ml-2 border-l border-zinc-700 pl-4 space-y-2">

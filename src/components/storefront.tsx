@@ -6,6 +6,7 @@ import { formatMoneyArs } from '@/lib/format'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { getProductImageUrl } from '@/lib/product-images'
 import { templateBannerSrc } from '@/lib/store-templates'
+import { CategoryIcon } from '@/lib/category-icons'
 import { resolveProductFrameColor, shopBackgroundClass, themeCssVars } from '@/lib/themes'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
@@ -125,7 +126,7 @@ export function Storefront({ shop, categories }: Props) {
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3 md:max-w-5xl">
           <button
             type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-300 text-zinc-700 md:border-zinc-700 md:text-zinc-200"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-600 text-white"
             aria-label="Abrir menú"
             onClick={() => setMenuOpen(true)}
           >
@@ -148,35 +149,44 @@ export function Storefront({ shop, categories }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-lg md:max-w-5xl">
+      <main className="mx-auto max-w-lg px-4 md:max-w-5xl">
         {bannerUrl ? (
-          <div className={isLight ? 'store-banner-frame' : 'mx-4 mt-3 overflow-hidden rounded-2xl border border-zinc-800'}>
-            <div className="relative aspect-[3/2] w-full bg-zinc-200 sm:aspect-[21/10]">
+          <div
+            className={
+              isLight
+                ? 'store-banner-shell store-banner-frame mt-3'
+                : 'store-banner-shell mt-3 overflow-hidden rounded-2xl border border-zinc-800'
+            }
+          >
+            <div className="store-banner-media">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={bannerUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-              <div className="store-banner-overlay">
+              <div className="store-banner-badge-wrap" aria-hidden>
                 <div className="store-banner-title-badge">
                   <h1 className="store-banner-shop-name">{shop.name}</h1>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="px-4 pt-4 text-center">
+        ) : null}
+        {shop.description ? (
+          <p
+            className={`store-shop-tagline store-vitrina-frame-text text-center ${bannerUrl ? 'mt-2' : 'mb-3 pt-2'}`}
+          >
+            {shop.description}
+          </p>
+        ) : null}
+        {!bannerUrl ? (
+          <div className="pt-2 text-center">
             <h1 className={`text-2xl font-bold ${isLight ? 'text-zinc-900' : 'text-white'}`}>
               {shop.name}
             </h1>
           </div>
-        )}
+        ) : null}
 
-        <section id="productos" className="scroll-mt-20 px-4 py-4">
+        <section id="productos" className="scroll-mt-20 py-4">
           <div className="mb-4 text-center">
-            {shop.description && (
-              <p className={`store-shop-tagline ${!isLight ? '!text-zinc-400' : ''}`}>
-                {shop.description}
-              </p>
-            )}
-            <h2 className={`text-lg font-bold ${isLight ? 'text-zinc-900' : ''}`}>
+            <h2 className="store-section-title store-vitrina-frame-text text-lg font-bold">
               Productos destacados
             </h2>
           </div>
@@ -194,7 +204,7 @@ export function Storefront({ shop, categories }: Props) {
                   key={p.id}
                   product={p}
                   isLight={isLight}
-                  frameColor={productFrame}
+                  accentFrame={productFrame}
                   onAdd={() => addProduct(p)}
                 />
               ))}
@@ -203,8 +213,13 @@ export function Storefront({ shop, categories }: Props) {
         </section>
 
         {categoriesWithProducts.length > 0 && (
-          <section className="scroll-mt-20 px-4 pb-6">
-            <h2 className={`mb-3 text-center text-lg font-bold ${isLight ? 'text-zinc-900' : ''}`}>
+          <section className="scroll-mt-20 pb-6">
+            <h2 className="store-section-title store-vitrina-frame-text mb-3 flex items-center justify-center gap-2 text-lg font-bold">
+              <CategoryIcon
+                icon={categoriesWithProducts[0]?.icon}
+                themeColor="product-frame"
+                className="h-6 w-6"
+              />
               Por categoría
             </h2>
             <div className="space-y-2">
@@ -221,11 +236,15 @@ export function Storefront({ shop, categories }: Props) {
                       type="button"
                       aria-expanded={expanded}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`store-category-toggle flex w-full items-center justify-between gap-2 border px-4 py-3 text-left text-sm font-semibold ${isLight ? 'text-zinc-900' : 'text-zinc-100'}`}
+                      className="store-category-toggle store-vitrina-frame-text flex w-full items-center justify-between gap-2 border px-4 py-3 text-left text-sm font-semibold"
                     >
-                      <span>{cat.name}</span>
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <CategoryIcon icon={cat.icon} themeColor="product-frame" className="h-5 w-5 shrink-0" />
+                        <span className="store-vitrina-frame-text truncate">
+                          {cat.name} ({catProducts.length} producto{catProducts.length === 1 ? '' : 's'})
+                        </span>
+                      </span>
                       <span className="flex shrink-0 items-center gap-2 text-xs font-normal opacity-70">
-                        {catProducts.length} producto{catProducts.length === 1 ? '' : 's'}
                         <ChevronIcon open={expanded} />
                       </span>
                     </button>
@@ -236,7 +255,7 @@ export function Storefront({ shop, categories }: Props) {
                             key={p.id}
                             product={p}
                             isLight={isLight}
-                            frameColor={productFrame}
+                            accentFrame={productFrame}
                             onAdd={() => addProduct(p)}
                           />
                         ))}
@@ -269,18 +288,18 @@ export function Storefront({ shop, categories }: Props) {
 function ProductCard({
   product: p,
   isLight,
-  frameColor,
+  accentFrame,
   onAdd,
 }: {
   product: FlatProduct
   isLight: boolean
-  frameColor: string
+  accentFrame: string
   onAdd: () => void
 }) {
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const img = getProductImageUrl(p.image_path, 'thumb')
-  const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark flex flex-col'
+  const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark'
 
   const handleAdd = () => {
     onAdd()
@@ -289,46 +308,44 @@ function ProductCard({
     addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 800)
   }
 
-  const label = justAdded ? 'Agregado ✓' : 'Agregar'
-
-  const fill = frameColor || (isLight ? '#f4f4f5' : '#27272a')
-  const cardFrameStyle = {
-    ['--shop-product-frame' as string]: fill,
-    backgroundColor: fill,
-    borderColor: fill,
-    borderWidth: 2,
-    borderStyle: 'solid' as const,
-  }
-
-  const captionStyle = {
-    backgroundColor: fill,
-    ['--shop-product-frame' as string]: fill,
-  }
+  const label = justAdded ? 'Agregado ✓' : 'Agregar al carrito'
+  const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')
 
   return (
-    <li className={cardClass} style={cardFrameStyle}>
+    <li className={cardClass} style={{ ['--shop-product-frame' as string]: frameVar }}>
       {img ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={img}
-          alt={p.name}
-          className="mb-2 aspect-square w-full rounded-lg object-cover"
-        />
+        <img src={img} alt={p.name} className="store-product-card__media" />
       ) : (
-        <div className={`mb-2 aspect-square w-full rounded-lg ${isLight ? 'bg-zinc-100' : 'bg-zinc-800'}`} />
+        <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
       )}
-      <div className="store-product-card__caption" style={captionStyle}>
-        <p className="store-product-card__caption-name">{p.name}</p>
-        <p className="store-product-card__caption-price">{formatMoneyArs(Number(p.price))}</p>
+      <div className="store-product-card__body">
+        <div>
+          <p className="store-product-card__caption-name">{p.name}</p>
+          <p className="store-product-card__caption-price">{formatMoneyArs(Number(p.price))}</p>
+        </div>
+        <button
+          type="button"
+          className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
+          onClick={handleAdd}
+        >
+          <CartAddIcon />
+          {label}
+        </button>
       </div>
-      <button
-        type="button"
-        className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
-        onClick={handleAdd}
-      >
-        {label}
-      </button>
     </li>
+  )
+}
+
+function CartAddIcon() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25} aria-hidden>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-6-9V6a2 2 0 012-2h0a2 2 0 012 2v7"
+      />
+    </svg>
   )
 }
 

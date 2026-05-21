@@ -238,8 +238,9 @@ export function ThemePicker({
         />
       </label>
       <p className="text-xs text-zinc-500">
-        Principal → botones · Acento → nombre y precio del producto · Tarjeta de producto → fondo del recuadro y
-        borde. Al elegir plantilla, el acento se ajusta si no contrasta con el fondo de tarjeta.
+        Principal → botones · Acento → nombre y precio del producto · Tarjeta de producto → fondo del recuadro,
+        títulos de sección, categorías e iconos en la vitrina. Al elegir plantilla, el acento se ajusta si no contrasta
+        con el fondo de tarjeta.
       </p>
     </div>
   )

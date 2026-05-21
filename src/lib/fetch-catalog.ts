@@ -25,7 +25,7 @@ export async function fetchCategoriesWithNested(
   const [catRes, subRes, ssRes, prodRes] = await Promise.all([
     supabase
       .from('categories')
-      .select('id, name, sort_order')
+      .select('id, name, sort_order, icon')
       .eq('shop_id', shopId)
       .order('sort_order'),
     supabase
@@ -49,7 +49,7 @@ export async function fetchCategoriesWithNested(
 
   if (catRes.error || !catRes.data?.length) return []
 
-  const cats = catRes.data as Pick<CategoryRow, 'id' | 'name' | 'sort_order'>[]
+  const cats = catRes.data as Pick<CategoryRow, 'id' | 'name' | 'sort_order' | 'icon'>[]
   const subs = sortByOrder((subRes.data ?? []) as (SubcategoryRow & { category_id: string })[])
   const subsubs = sortByOrder(
     (ssRes.data ?? []) as (SubsubcategoriaRow & { subcategory_id: string })[],
@@ -109,6 +109,7 @@ export async function fetchCategoriesWithNested(
 
   return sortByOrder(cats).map((c) => ({
     ...c,
+    icon: (c.icon as string | null) ?? null,
     subcategories: sortByOrder(subsByCat.get(c.id) ?? []),
   }))
 }

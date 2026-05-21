@@ -147,11 +147,15 @@ body {
 
 /* Botón Agregar en vitrina: presión táctil + estado "Agregado" */
 .btn-store-add {
-  @apply mt-2 w-full min-h-[44px] touch-manipulation select-none rounded-xl py-2 text-xs font-semibold;
+  @apply mt-auto flex w-full min-h-[40px] touch-manipulation select-none items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-[10px] font-bold leading-none whitespace-nowrap sm:min-h-[44px] sm:gap-1.5 sm:px-2 sm:text-[11px];
   background-color: var(--shop-primary);
   color: var(--brand-ink);
-  border: 2px solid color-mix(in srgb, var(--brand-ink) 28%, var(--shop-primary));
+  border: 2px solid color-mix(in srgb, var(--brand-ink) 22%, var(--shop-primary));
   transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-store-add svg {
+  @apply h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4;
 }
 
 .btn-store-add:hover:not(:disabled) {
@@ -206,75 +210,94 @@ body {
   @apply flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 shadow-sm;
 }
 
-/* Tarjeta de producto: --shop-product-frame = fondo elegible + borde. */
+/* Tarjeta de producto en vitrina (imagen arriba, datos y botón abajo). */
 .store-product-card {
-  @apply flex flex-col overflow-hidden rounded-xl p-2 shadow-sm;
-  border: 2px solid color-mix(in srgb, var(--shop-product-frame, #e4e4e7) 72%, #71717a);
-  background-color: var(--shop-product-frame, #f4f4f5);
+  @apply flex flex-col overflow-hidden rounded-2xl border-0 bg-transparent shadow-none;
 }
 
 .store-product-card--dark {
-  @apply flex flex-col overflow-hidden rounded-xl p-2 shadow-lg backdrop-blur-md;
-  border: 2px solid color-mix(in srgb, var(--shop-product-frame, #27272a) 75%, #fafafa);
-  background-color: var(--shop-product-frame, #27272a);
+  @apply border-0 bg-transparent shadow-none;
 }
 
-.store-product-card__caption {
-  @apply w-full;
-  margin-top: 0.125rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--shop-product-frame, #e4e4e7) 60%, #52525b);
+.store-product-card__media {
+  @apply aspect-[5/4] w-full rounded-t-2xl object-cover;
+}
+
+.store-product-card__body {
+  @apply flex flex-1 flex-col gap-2 rounded-b-2xl px-2.5 pb-2.5 pt-2;
   background-color: var(--shop-product-frame, #f4f4f5);
 }
 
-.store-product-card__caption-name,
-.store-product-card__caption-price {
+.store-product-card__caption-name {
+  @apply text-sm font-bold leading-tight;
   color: var(--shop-accent);
 }
 
-.store-product-card__caption-name {
-  @apply text-sm font-medium leading-tight;
+.store-product-card__caption-price {
+  @apply mt-0.5 text-sm font-bold leading-none;
+  color: var(--shop-accent);
 }
 
-.store-product-card__caption-price {
-  @apply mt-1 text-sm font-semibold leading-none;
+/* Textos de sección e iconos de categoría: color de tarjeta de producto. */
+.store-vitrina-frame-text {
+  color: var(--shop-product-frame, #f4f4f5);
+}
+
+.store-section-title {
+  @apply leading-tight;
+}
+
+/* Iconos de categoría en vitrina → color de tarjeta de producto. */
+.store-category-icon--frame {
+  color: var(--shop-product-frame, #f4f4f5);
+}
+
+.store-category-icon--frame svg {
+  stroke: currentColor;
+}
+
+/* Mismo ancho que la grilla de productos (contenedor px-4 del main). */
+.store-banner-shell {
+  @apply w-full overflow-hidden rounded-2xl;
+}
+
+/* Banner horizontal en móvil (referencia vitrina); productos siguen 5:4. */
+.store-banner-media {
+  @apply relative w-full bg-zinc-200;
+  aspect-ratio: 2 / 1;
+  max-height: 9.75rem;
+}
+
+@media (min-width: 640px) {
+  .store-banner-media {
+    aspect-ratio: 21 / 10;
+    max-height: none;
+  }
 }
 
 .store-banner-frame {
-  @apply mx-4 mt-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md;
+  @apply border border-zinc-200 bg-white shadow-md;
 }
 
-.store-banner-overlay {
-  @apply absolute inset-0 flex items-center justify-center px-4;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.15) 0%,
-    rgba(0, 0, 0, 0.35) 45%,
-    rgba(0, 0, 0, 0.45) 100%
-  );
+/* Solo centra el badge; no oscurece todo el banner. */
+.store-banner-badge-wrap {
+  @apply pointer-events-none absolute inset-0 flex items-center justify-center px-4;
 }
 
 .store-banner-title-badge {
-  @apply max-w-[92%] rounded-2xl border border-white/30 px-5 py-3 text-center backdrop-blur-md;
-  background: linear-gradient(
-    145deg,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.38) 100%
-  );
-  box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  @apply inline-block max-w-[min(100%,20rem)] rounded-full px-4 py-2 text-center shadow-md;
+  background-color: var(--shop-product-frame, #f4f4f5);
+  border: 1px solid color-mix(in srgb, var(--shop-accent) 25%, transparent);
 }
 
 .store-banner-shop-name {
-  @apply text-xl font-extrabold leading-snug tracking-tight text-white sm:text-2xl;
-  letter-spacing: -0.02em;
+  @apply text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base;
+  color: var(--shop-accent);
   text-wrap: balance;
 }
 
 .store-shop-tagline {
-  @apply mx-auto mb-3 max-w-md px-2 text-center text-sm leading-relaxed text-zinc-600 sm:text-base;
+  @apply mx-auto mb-3 max-w-md px-2 text-center text-sm leading-relaxed sm:text-base;
 }
 
 .scrollbar-none {
@@ -322,37 +345,40 @@ body {
 }
 
 .store-social-icon {
-  @apply inline-flex h-11 w-11 items-center justify-center rounded-full border-2 transition;
-  border-color: color-mix(in srgb, var(--shop-primary) 40%, transparent);
-  background-color: color-mix(in srgb, var(--shop-primary) 12%, transparent);
-  color: var(--shop-primary);
+  @apply inline-flex h-12 w-12 items-center justify-center rounded-full border-0 text-white shadow-md transition hover:scale-105 hover:opacity-90;
 }
 
-.store-social-icon:hover {
-  border-color: var(--shop-accent);
-  background-color: color-mix(in srgb, var(--shop-accent) 18%, transparent);
-  color: var(--shop-accent);
+.store-social-icon--tiktok {
+  background-color: #0f0f0f;
+}
+
+.store-social-icon--instagram {
+  background: linear-gradient(135deg, #f58529 0%, #dd2a7b 45%, #8134af 100%);
 }
 
 .store-social-icon--whatsapp {
-  border-color: color-mix(in srgb, #25d366 50%, transparent);
-  background-color: color-mix(in srgb, #25d366 12%, transparent);
-  color: #25d366;
-}
-
-.store-social-icon--whatsapp:hover {
-  border-color: #25d366;
-  background-color: color-mix(in srgb, #25d366 22%, transparent);
-  color: #128c7e;
+  background-color: #25d366;
 }
 
 .store-social-icon--website {
-  border-color: color-mix(in srgb, var(--shop-accent) 45%, transparent);
-  background-color: color-mix(in srgb, var(--shop-accent) 10%, transparent);
-  color: var(--shop-accent);
+  background-color: #1e3a5f;
+  color: #e2e8f0;
 }
 
-.store-social-icon--website:hover {
-  border-color: var(--shop-accent);
-  background-color: color-mix(in srgb, var(--shop-accent) 20%, transparent);
+/* Barra fija de WhatsApp en vitrina (referencia móvil). */
+.store-whatsapp-bar-wrap {
+  @apply fixed bottom-0 left-0 right-0 z-40 pb-4;
+}
+
+.store-whatsapp-bar-container {
+  @apply mx-auto w-full max-w-lg px-4 md:max-w-5xl;
+}
+
+.store-whatsapp-bar {
+  @apply flex w-full min-h-[52px] items-center justify-center gap-2.5 rounded-xl px-4 py-3.5 text-sm font-bold leading-none text-white shadow-[0_6px_20px_rgba(37,211,102,0.35)] transition hover:brightness-105 active:scale-[0.99];
+  background-color: #25d366;
+}
+
+.store-whatsapp-bar__icon {
+  @apply h-6 w-6;
 }

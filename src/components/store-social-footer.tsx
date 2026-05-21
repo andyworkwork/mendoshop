@@ -16,9 +16,7 @@ export function StoreSocialFooter({ shop, isLight }: Props) {
     <footer
       className={`py-6 text-center text-xs ${isLight ? 'border-t border-zinc-200 text-zinc-600' : 'border-t border-zinc-800 text-zinc-500'}`}
     >
-      <p className={`mb-3 text-sm font-medium ${isLight ? 'text-zinc-800' : 'text-zinc-300'}`}>
-        Mis redes sociales
-      </p>
+      <p className="store-vitrina-frame-text mb-3 text-sm font-medium">Mis redes sociales</p>
       <div className="flex flex-wrap items-center justify-center gap-4">
         {links.map((link) => (
           <a
@@ -27,13 +25,7 @@ export function StoreSocialFooter({ shop, isLight }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={link.label}
-            className={`store-social-icon${
-              link.id === 'whatsapp'
-                ? ' store-social-icon--whatsapp'
-                : link.id === 'website'
-                  ? ' store-social-icon--website'
-                  : ''
-            }`}
+            className={`store-social-icon store-social-icon--${link.id}`}
             title={link.label}
           >
             {link.id === 'instagram' && <InstagramIcon />}

@@ -31,5 +31,7 @@ export type CategoryRow = {
   id: string
   name: string
   sort_order: number
+  /** Slug de icono en vitrina (coffee, shirt, ring, …). */
+  icon: string | null
   subcategories: SubcategoryRow[]
 }
