@@ -24,8 +24,8 @@ export function CategoryIconPicker({
             onClick={() => onChange(opt.id)}
             className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
               selected
-                ? 'border-brand bg-brand/15 text-brand'
-                : 'border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
+                ? 'border-2 border-[var(--brand-orange)] bg-brand/20 text-brand shadow-[0_0_0_1px_var(--brand-orange),0_0_10px_color-mix(in_srgb,var(--brand-orange)_45%,transparent)] ring-2 ring-white/30 ring-offset-1 ring-offset-zinc-900'
+                : 'border border-zinc-600 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
             }`}
           >
             <CategoryIcon icon={opt.id} className="h-5 w-5" />
