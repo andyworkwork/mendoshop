@@ -28,7 +28,6 @@ type Props = {
   mode?: 'public' | 'edit'
   onOpenBannerEditor?: () => void
   onOpenAppearanceEditor?: () => void
-  onOpenProductFocus?: (productId: string) => void
   onOpenFeaturedEditor?: () => void
 }
 
@@ -73,7 +72,6 @@ export function Storefront({
   mode = 'public',
   onOpenBannerEditor,
   onOpenAppearanceEditor,
-  onOpenProductFocus,
   onOpenFeaturedEditor,
 }: Props) {
   const isEdit = mode === 'edit'
@@ -292,7 +290,6 @@ export function Storefront({
                   isLight={isLight}
                   accentFrame={productFrame}
                   isEdit={isEdit}
-                  onEditFocus={onOpenProductFocus}
                   onAdd={() => addProduct(p)}
                 />
               ))}
@@ -344,7 +341,6 @@ export function Storefront({
                             isLight={isLight}
                             accentFrame={productFrame}
                             isEdit={isEdit}
-                            onEditFocus={onOpenProductFocus}
                             onAdd={() => addProduct(p)}
                           />
                         ))}
@@ -372,7 +368,6 @@ export function Storefront({
                           isLight={isLight}
                           accentFrame={productFrame}
                           isEdit={isEdit}
-                          onEditFocus={onOpenProductFocus}
                           onAdd={() => addProduct(p)}
                         />
                       ))}
@@ -425,14 +420,12 @@ function ProductCard({
   isLight,
   accentFrame,
   isEdit,
-  onEditFocus,
   onAdd,
 }: {
   product: FlatProduct
   isLight: boolean
   accentFrame: string
   isEdit?: boolean
-  onEditFocus?: (productId: string) => void
   onAdd: () => void
 }) {
   const [justAdded, setJustAdded] = useState(false)
@@ -466,15 +459,6 @@ function ProductCard({
           />
         ) : (
           <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
-        )}
-        {isEdit && img && onEditFocus && (
-          <button
-            type="button"
-            className="store-edit-overlay-btn store-edit-overlay-btn--compact"
-            onClick={() => onEditFocus(p.id)}
-          >
-            Encuadre
-          </button>
         )}
       </div>
       <div className="store-product-card__body">

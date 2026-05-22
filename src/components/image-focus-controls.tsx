@@ -10,14 +10,16 @@ export function ImageFocusControls({
   previewUrl,
   aspectWidth = 5,
   aspectHeight = 4,
+  objectFit = 'cover',
 }: {
   value: ImageFocus
   onChange: (next: ImageFocus) => void
   disabled?: boolean
   previewUrl?: string | null
-  /** Proporción del recuadre (ej. banner 2×1, producto 5×4). */
+  /** Proporción del marco (ej. banner 2×1). */
   aspectWidth?: number
   aspectHeight?: number
+  objectFit?: 'cover' | 'contain'
 }) {
   return (
     <ImageCropFrameEditor
@@ -27,6 +29,7 @@ export function ImageFocusControls({
       value={value}
       onChange={onChange}
       disabled={disabled}
+      objectFit={objectFit}
     />
   )
 }

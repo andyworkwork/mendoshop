@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { updateProductImageFocus } from '@/app/actions/catalog'
 import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
 import { ImageFocusControls } from '@/components/image-focus-controls'
 import { ShopBannerUpload } from '@/components/shop-banner-upload'
@@ -11,45 +10,13 @@ import { CategoryIconPicker } from '@/components/category-icon-picker'
 import { FeaturedProductsPicker } from '@/components/featured-products-picker'
 import { ThemePicker } from '@/components/theme-picker'
 import { categoryIconLabel } from '@/lib/category-icons'
-import { cropImageToBlob, CROP_OUTPUT } from '@/lib/crop-image'
-import { compressImageForUpload } from '@/lib/image-compress'
 import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
-import { getProductImageUrl, productImagePaths } from '@/lib/product-images'
-import { getPublicUrlFromPath, shopPublicUrl } from '@/lib/publicUrl'
-import { resolveShopBannerCropSourceUrl, shopBannerStoragePath } from '@/lib/shop-banner'
-import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
-import { createClient } from '@/lib/supabase/browser'
-import type { CategoryRow, ProductRow } from '@/types/catalog'
+import { shopPublicUrl } from '@/lib/publicUrl'
+import { resolveShopBannerUrl } from '@/lib/shops'
+import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow, ShopTheme } from '@/types/shop'
 
-type Panel = null | 'appearance' | 'banner' | 'featured' | { type: 'product'; productId: string }
-
-function patchProductInCategories(
-  categories: CategoryRow[],
-  productId: string,
-  patch: Partial<ProductRow>,
-): CategoryRow[] {
-  const mapProducts = (list: ProductRow[]) =>
-    list.map((p) => (p.id === productId ? { ...p, ...patch } : p))
-
-  return categories.map((cat) => ({
-    ...cat,
-    subcategories: cat.subcategories.map((sub) => ({
-      ...sub,
-      products: mapProducts(sub.products),
-    })),
-  }))
-}
-
-function findProduct(categories: CategoryRow[], productId: string): ProductRow | null {
-  for (const cat of categories) {
-    for (const sub of cat.subcategories) {
-      const p = sub.products.find((x) => x.id === productId)
-      if (p) return p
-    }
-  }
-  return null
-}
+type Panel = null | 'appearance' | 'banner' | 'featured'
 
 function EditorSheet({
   title,
@@ -63,7 +30,7 @@ function EditorSheet({
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 sm:items-center">
       <div
-        className="max-h-[min(90vh,640px)] w-full max-w-lg overflow-y-auto rounded-2xl border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"
+        className="max-h-[min(90vh,640px)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl border border-zinc-700 bg-zinc-900 p-4 shadow-2xl"
         role="dialog"
         aria-labelledby="editor-sheet-title"
       >
@@ -103,10 +70,7 @@ export function StoreEditor({
   const [msg, setMsg] = useState<string | null>(null)
   const [featuredIds, setFeaturedIds] = useState<string[]>(() => [...shop.featured_product_ids])
   const [categoryViewIcon, setCategoryViewIcon] = useState(shop.category_view_icon)
-  const [bannerCropKey, setBannerCropKey] = useState(0)
-
-  const productPanel = panel && typeof panel === 'object' ? panel : null
-  const editingProduct = productPanel ? findProduct(categories, productPanel.productId) : null
+  const [bannerMediaKey, setBannerMediaKey] = useState(0)
 
   const closePanel = useCallback(() => setPanel(null), [])
 
@@ -175,113 +139,43 @@ export function StoreEditor({
     closePanel()
   }
 
-  async function saveBannerCrop() {
-    const sourceUrl = resolveShopBannerCropSourceUrl(shop, Date.now())
-    if (!sourceUrl) {
-      setMsg('No hay imagen de banner para recortar.')
-      return
-    }
+  async function saveBannerFrame() {
+    const focus = normalizeImageFocus(bannerFocus.x, bannerFocus.y)
     setBusy(true)
     setMsg(null)
-    try {
-      const focus = normalizeImageFocus(bannerFocus.x, bannerFocus.y)
-      const { w, h } = CROP_OUTPUT.banner
-      const blob = await cropImageToBlob(sourceUrl, focus, w, h)
-      const file = await compressImageForUpload(
-        new File([blob], 'banner.webp', { type: 'image/webp' }),
-        'banner',
-      )
-      const path = shopBannerStoragePath(shop.id)
-      const sb = createClient()
-      const { error: upErr } = await sb.storage.from('shop-images').upload(path, file, {
-        upsert: true,
-        contentType: 'image/webp',
-        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
-      })
-      if (upErr) throw upErr
-
-      const res = await updateShopSettings(shop.id, {
-        banner_path: path,
-        banner_focus_x: 50,
-        banner_focus_y: 50,
-      })
-      if ('error' in res && res.error) throw new Error(res.error)
-
-      setBannerFocus({ x: 50, y: 50 })
-      setShop((s) => ({
-        ...s,
-        banner_path: path,
-        banner_focus_x: 50,
-        banner_focus_y: 50,
-      }))
-      setBannerCropKey((k) => k + 1)
-      setMsg('Banner recortado y guardado (WebP).')
-      await revalidateStorefront(shop.slug)
-      closePanel()
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Error al recortar el banner')
-    }
+    const res = await updateShopSettings(shop.id, {
+      banner_focus_x: focus.x,
+      banner_focus_y: focus.y,
+    })
     setBusy(false)
-  }
-
-  async function saveProductCrop() {
-    if (!editingProduct?.image_path) return
-    const sourceUrl = getPublicUrlFromPath(editingProduct.image_path)
-    if (!sourceUrl) {
-      setMsg('No hay imagen del producto.')
+    if ('error' in res && res.error) {
+      setMsg(res.error)
       return
     }
-    setBusy(true)
-    setMsg(null)
-    try {
-      const focus = normalizeImageFocus(editingProduct.image_focus_x, editingProduct.image_focus_y)
-      const { main, thumb } = CROP_OUTPUT.product
-      const [mainBlob, thumbBlob] = await Promise.all([
-        cropImageToBlob(sourceUrl, focus, main.w, main.h),
-        cropImageToBlob(sourceUrl, focus, thumb.w, thumb.h),
-      ])
-      const [mainFile, thumbFile] = await Promise.all([
-        compressImageForUpload(new File([mainBlob], 'main.webp', { type: 'image/webp' }), 'main'),
-        compressImageForUpload(new File([thumbBlob], 'thumb.webp', { type: 'image/webp' }), 'thumb'),
-      ])
-      const paths = productImagePaths(shop.id, editingProduct.id)
-      const sb = createClient()
-      const uploadOpts = {
-        upsert: true,
-        contentType: 'image/webp',
-        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
-      } as const
-      const { error: upMain } = await sb.storage.from('shop-images').upload(paths.main, mainFile, uploadOpts)
-      if (upMain) throw upMain
-      const { error: upThumb } = await sb.storage.from('shop-images').upload(paths.thumb, thumbFile, uploadOpts)
-      if (upThumb) throw upThumb
-
-      const res = await updateProductImageFocus(shop.id, editingProduct.id, 50, 50)
-      if ('error' in res && res.error) throw new Error(res.error)
-
-      setCategories((cats) =>
-        patchProductInCategories(cats, editingProduct.id, {
-          image_focus_x: 50,
-          image_focus_y: 50,
-        }),
-      )
-      setMsg('Foto recortada a tamaño de vitrina y guardada.')
-      await revalidateStorefront(shop.slug)
-      closePanel()
-    } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'Error al recortar la foto')
-    }
-    setBusy(false)
+    setShop((s) => ({ ...s, banner_focus_x: focus.x, banner_focus_y: focus.y }))
+    setMsg('Vista del banner guardada.')
+    await revalidateStorefront(shop.slug)
+    closePanel()
   }
 
-  const bannerCropPreviewUrl = useMemo(
-    () => resolveShopBannerCropSourceUrl(shop, bannerCropKey),
-    [shop.banner_path, shop.theme.templateId, bannerCropKey],
+  const bannerPreviewShop = useMemo(
+    () => ({
+      ...shop,
+      theme,
+      category_view_icon: categoryViewIcon,
+      banner_focus_x: bannerFocus.x,
+      banner_focus_y: bannerFocus.y,
+    }),
+    [shop, theme, categoryViewIcon, bannerFocus],
   )
 
+  const bannerFrameUrl = useMemo(() => resolveShopBannerUrl(bannerPreviewShop), [bannerPreviewShop])
+
+  const isLogoBannerFrame = !shop.banner_path && theme.templateId === 'minimal'
+
   useEffect(() => {
-    setBannerCropKey((k) => k + 1)
-  }, [shop.banner_path, shop.theme.templateId])
+    setBannerMediaKey((k) => k + 1)
+  }, [shop.banner_path, theme.templateId])
 
   return (
     <div className="space-y-4">
@@ -329,13 +223,12 @@ export function StoreEditor({
 
       <div className="overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-xl">
         <Storefront
-          key={`preview-${shop.banner_path ?? 'template'}-${bannerCropKey}`}
-          shop={{ ...shop, theme, category_view_icon: categoryViewIcon }}
+          key={`preview-${shop.banner_path ?? 'template'}-${theme.templateId}-${bannerMediaKey}`}
+          shop={bannerPreviewShop}
           categories={categories}
           mode="edit"
           onOpenBannerEditor={() => setPanel('banner')}
           onOpenAppearanceEditor={() => setPanel('appearance')}
-          onOpenProductFocus={(productId) => setPanel({ type: 'product', productId })}
           onOpenFeaturedEditor={() => {
             setFeaturedIds([...shop.featured_product_ids])
             setPanel('featured')
@@ -408,56 +301,32 @@ export function StoreEditor({
             }}
           />
           <div className="mt-4 border-t border-zinc-800 pt-4">
-            <p className="mb-2 text-sm font-medium text-zinc-200">Encuadre del banner</p>
+            <p className="mb-2 text-sm font-medium text-zinc-200">Vista en el banner</p>
             <p className="mb-3 text-xs text-zinc-500">
-              Recorta la imagen que ves arriba (tu foto o la de la plantilla). Al guardar, se sube como banner
-              propio de la tienda.
+              La foto completa no entra en el banner: en el recuadro elegís qué parte se verá en la tienda (igual
+              que arriba en la vista previa). No se recorta el archivo.
             </p>
             <ImageFocusControls
               value={bannerFocus}
               onChange={setBannerFocus}
-              disabled={busy}
-              previewUrl={bannerCropPreviewUrl}
+              disabled={busy || !bannerFrameUrl}
+              previewUrl={bannerFrameUrl}
               aspectWidth={2}
               aspectHeight={1}
+              objectFit={isLogoBannerFrame ? 'contain' : 'cover'}
             />
             <button
               type="button"
-              disabled={busy}
-              onClick={() => void saveBannerCrop()}
+              disabled={busy || !bannerFrameUrl || isLogoBannerFrame}
+              onClick={() => void saveBannerFrame()}
               className="btn-primary mt-4 w-full"
             >
-              {busy ? 'Recortando…' : 'Guardar recorte del banner'}
+              {busy ? 'Guardando…' : 'Guardar vista del banner'}
             </button>
           </div>
         </EditorSheet>
       )}
 
-      {productPanel && editingProduct && (
-        <EditorSheet title={`Encuadre: ${editingProduct.name}`} onClose={closePanel}>
-          <ImageFocusControls
-            value={normalizeImageFocus(editingProduct.image_focus_x, editingProduct.image_focus_y)}
-            onChange={(next) => {
-              setCategories((cats) =>
-                patchProductInCategories(cats, editingProduct.id, {
-                  image_focus_x: next.x,
-                  image_focus_y: next.y,
-                }),
-              )
-            }}
-            disabled={busy}
-            previewUrl={getProductImageUrl(editingProduct.image_path, 'full')}
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void saveProductCrop()}
-            className="btn-primary mt-4 w-full"
-          >
-            {busy ? 'Recortando…' : 'Guardar recorte de la foto'}
-          </button>
-        </EditorSheet>
-      )}
     </div>
   )
 }
