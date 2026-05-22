@@ -2,6 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { normalizeImageFocus } from '@/lib/image-focus'
+import { normalizeCategoryIcon } from '@/lib/category-icons'
+import { parseFeaturedProductIds } from '@/lib/featured-products'
 import { parseTheme } from '@/lib/themes'
 import type { ShopRow } from '@/types/shop'
 import { DEFAULT_THEME } from '@/types/shop'
@@ -41,6 +43,10 @@ export function mapShopRow(raw: Record<string, unknown>): ShopRow {
     tiktok_url: (raw.tiktok_url as string | null) ?? null,
     website_url: (raw.website_url as string | null) ?? null,
     social_whatsapp_visible: raw.social_whatsapp_visible === true,
+    featured_product_ids: parseFeaturedProductIds(raw.featured_product_ids),
+    category_view_icon: normalizeCategoryIcon(
+      (raw.category_view_icon as string | null | undefined) ?? undefined,
+    ),
   }
 }
 

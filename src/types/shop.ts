@@ -16,6 +16,8 @@ export type ShopTheme = {
   accent: string
   /** Fondo (y borde) de la tarjeta de producto en la vitrina. */
   productFrame?: string
+  /** Tagline, títulos de sección, categorías y etiquetas de orden. */
+  titleColor?: string
   background: 'gradient' | 'solid' | 'pattern' | 'light'
   /** Colores del fondo de la tienda (por estilo). */
   backgroundColors?: Partial<ShopBackgroundColors>
@@ -46,6 +48,10 @@ export type ShopRow = {
   website_url: string | null
   /** Si true, muestra ícono de WhatsApp en el pie (usa whatsapp_e164). */
   social_whatsapp_visible: boolean
+  /** Hasta 2 productos mostrados en "Productos destacados" (orden de elección). */
+  featured_product_ids: string[]
+  /** Icono del botón "Categorías" en el selector de orden de la vitrina. */
+  category_view_icon: string
 }
 
 export const DEFAULT_THEME: ShopTheme = {

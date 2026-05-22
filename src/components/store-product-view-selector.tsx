@@ -25,7 +25,7 @@ export function StoreProductViewSelector({
 }) {
   return (
     <div className="store-view-mode mb-3">
-      <p className="store-view-mode__label mb-2 text-xs font-medium text-zinc-500">Ordenar productos</p>
+      <p className="store-view-mode__label mb-2 text-xs font-medium">Ordenar productos</p>
       <div className="store-view-mode__segments" role="group" aria-label="Ordenar productos">
         {OPTIONS.map((opt) => {
           const active = value === opt.id
@@ -38,7 +38,7 @@ export function StoreProductViewSelector({
               className={`store-view-mode__segment ${active ? 'store-view-mode__segment--active' : ''}`}
             >
               {opt.id === 'category' ? (
-                <CategoryIcon icon={categoryIcon} themeColor="product-frame" className="h-4 w-4 shrink-0" />
+                <CategoryIcon icon={categoryIcon} themeColor="title" className="h-4 w-4 shrink-0" />
               ) : (
                 <SortPriceIcon ascending={opt.id === 'price_asc'} className="h-4 w-4 shrink-0" />
               )}

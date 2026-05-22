@@ -14,9 +14,9 @@ export function StoreSocialFooter({ shop, isLight }: Props) {
 
   return (
     <footer
-      className={`py-6 text-center text-xs ${isLight ? 'border-t border-zinc-200 text-zinc-600' : 'border-t border-zinc-800 text-zinc-500'}`}
+      className={`py-6 text-center text-xs ${isLight ? 'text-zinc-600' : 'text-zinc-500'}`}
     >
-      <p className="store-vitrina-frame-text mb-3 text-sm font-medium">Mis redes sociales</p>
+      <p className="store-vitrina-title-text mb-3 text-sm font-medium">Mis redes sociales</p>
       <div className="flex flex-wrap items-center justify-center gap-4">
         {links.map((link) => (
           <a

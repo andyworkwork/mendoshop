@@ -6,6 +6,8 @@ import { slugify } from '@/lib/format'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { normalizeInstagramUrl, normalizeTikTokUrl, normalizeWebsiteUrl } from '@/lib/social-links'
+import { normalizeCategoryIcon } from '@/lib/category-icons'
+import { MAX_FEATURED_PRODUCTS } from '@/lib/featured-products'
 import type { ShopTheme } from '@/types/shop'
 
 export async function updateShopSettings(
@@ -25,6 +27,8 @@ export async function updateShopSettings(
     banner_path?: string | null
     banner_focus_x?: number
     banner_focus_y?: number
+    featured_product_ids?: string[]
+    category_view_icon?: string
   },
 ) {
   const supabase = await createClient()
@@ -51,6 +55,25 @@ export async function updateShopSettings(
   if (data.banner_path !== undefined) patch.banner_path = data.banner_path
   if (data.banner_focus_x !== undefined) patch.banner_focus_x = clampFocusPercent(data.banner_focus_x)
   if (data.banner_focus_y !== undefined) patch.banner_focus_y = clampFocusPercent(data.banner_focus_y)
+  if (data.featured_product_ids !== undefined) {
+    const ids = [...new Set(data.featured_product_ids)].slice(0, MAX_FEATURED_PRODUCTS)
+    if (ids.length > 0) {
+      const { data: owned, error: ownErr } = await supabase
+        .from('products')
+        .select('id')
+        .eq('shop_id', shopId)
+        .eq('active', true)
+        .in('id', ids)
+      if (ownErr) return { error: ownErr.message }
+      if ((owned ?? []).length !== ids.length) {
+        return { error: 'Uno o más productos no son válidos o no están activos.' }
+      }
+    }
+    patch.featured_product_ids = ids
+  }
+  if (data.category_view_icon !== undefined) {
+    patch.category_view_icon = normalizeCategoryIcon(data.category_view_icon)
+  }
 
   const { data: row, error } = await supabase
     .from('shops')

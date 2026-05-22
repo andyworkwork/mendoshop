@@ -14,18 +14,10 @@ export type ProductRow = {
   sort_order: number
 }
 
-export type SubsubcategoriaRow = {
-  id: string
-  name: string
-  sort_order: number
-  products: ProductRow[]
-}
-
 export type SubcategoryRow = {
   id: string
   name: string
   sort_order: number
-  subsubcategorias: SubsubcategoriaRow[]
   products: ProductRow[]
 }
 

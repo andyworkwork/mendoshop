@@ -59,8 +59,8 @@ export default async function DashboardHomePage() {
           <Link href="/dashboard/catalog" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
             Catálogo
           </Link>
-          <Link href="/dashboard/qr" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
-            Ver QR
+          <Link href="/dashboard/settings" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
+            Ajustes (QR, SEO…)
           </Link>
         </div>
       </div>

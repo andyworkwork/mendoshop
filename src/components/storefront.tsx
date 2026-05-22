@@ -20,8 +20,7 @@ import {
   type ProductViewMode,
 } from '@/components/store-product-view-selector'
 import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
-
-const FEATURED_COUNT = 6
+import { resolveFeaturedProducts } from '@/lib/featured-products'
 
 type Props = {
   shop: ShopRow
@@ -30,6 +29,7 @@ type Props = {
   onOpenBannerEditor?: () => void
   onOpenAppearanceEditor?: () => void
   onOpenProductFocus?: (productId: string) => void
+  onOpenFeaturedEditor?: () => void
 }
 
 type FlatProduct = ProductRow & {
@@ -49,16 +49,6 @@ function flattenProducts(categories: CategoryRow[]): FlatProduct[] {
           categoryName: cat.name,
           categorySort: cat.sort_order,
         })
-      }
-      for (const ss of sub.subsubcategorias) {
-        for (const p of ss.products) {
-          out.push({
-            ...p,
-            categoryId: cat.id,
-            categoryName: cat.name,
-            categorySort: cat.sort_order,
-          })
-        }
       }
     }
   }
@@ -82,6 +72,7 @@ export function Storefront({
   onOpenBannerEditor,
   onOpenAppearanceEditor,
   onOpenProductFocus,
+  onOpenFeaturedEditor,
 }: Props) {
   const isEdit = mode === 'edit'
   const { addLine, lines } = useCart()
@@ -99,8 +90,12 @@ export function Storefront({
   const themeStyle = themeCssVars(shop.theme)
   const productFrame = resolveProductFrameColor(shop.theme)
   const products = useMemo(() => flattenProducts(categories), [categories])
-  const featuredProducts = useMemo(() => products.slice(0, FEATURED_COUNT), [products])
+  const featuredProducts = useMemo(
+    () => resolveFeaturedProducts(products, shop.featured_product_ids, { publicOnly: !isEdit }),
+    [products, shop.featured_product_ids, isEdit],
+  )
   const bannerUrl = resolveBannerUrl(shop)
+  const isBrandLogoBanner = !shop.banner_path && shop.theme.templateId === 'minimal'
   const bannerFocusStyle = imageFocusStyle({
     x: shop.banner_focus_x,
     y: shop.banner_focus_y,
@@ -145,8 +140,7 @@ export function Storefront({
   )
 
   const productsByPrice = useMemo(() => {
-    const featuredIds = new Set(featuredProducts.map((p) => p.id))
-    const list = products.filter((p) => !featuredIds.has(p.id))
+    const list = [...products]
     if (productViewMode === 'price_asc') {
       return list.sort((a, b) => Number(a.price) - Number(b.price))
     }
@@ -154,7 +148,7 @@ export function Storefront({
       return list.sort((a, b) => Number(b.price) - Number(a.price))
     }
     return list
-  }, [products, featuredProducts, productViewMode])
+  }, [products, productViewMode])
 
   return (
     <div
@@ -202,8 +196,10 @@ export function Storefront({
               <img
                 src={bannerUrl}
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                style={bannerFocusStyle}
+                className={`absolute inset-0 h-full w-full ${
+                  isBrandLogoBanner ? 'object-contain bg-zinc-950 p-6' : 'object-cover'
+                }`}
+                style={isBrandLogoBanner ? undefined : bannerFocusStyle}
               />
               {isEdit && onOpenBannerEditor && (
                 <button
@@ -224,7 +220,7 @@ export function Storefront({
         ) : null}
         {shop.description ? (
           <p
-            className={`store-shop-tagline store-vitrina-frame-text text-center ${bannerUrl ? 'mt-2' : 'mb-3 pt-2'}`}
+            className={`store-shop-tagline store-vitrina-title-text text-center ${bannerUrl ? 'mt-2' : 'mb-3 pt-2'}`}
           >
             {shop.description}
           </p>
@@ -246,11 +242,20 @@ export function Storefront({
         )}
 
         <section id="productos" className="scroll-mt-20 py-4">
-          {featuredProducts.length > 0 && (
+          {(featuredProducts.length > 0 || (isEdit && onOpenFeaturedEditor)) && (
             <div className="mb-4 text-center">
-              <h2 className="store-section-title store-vitrina-frame-text text-lg font-bold">
+              <h2 className="store-section-title store-vitrina-title-text text-lg font-bold">
                 Productos destacados
               </h2>
+              {isEdit && onOpenFeaturedEditor && (
+                <button
+                  type="button"
+                  className="store-edit-chip mt-2"
+                  onClick={onOpenFeaturedEditor}
+                >
+                  Elegir destacados ({featuredProducts.length}/2)
+                </button>
+              )}
             </div>
           )}
 
@@ -282,7 +287,7 @@ export function Storefront({
             <StoreProductViewSelector
               value={productViewMode}
               onChange={setProductViewMode}
-              categoryIcon={categoriesWithProducts[0]?.icon}
+              categoryIcon={shop.category_view_icon}
             />
 
             {productViewMode === 'category' && categoriesWithProducts.length > 0 && (
@@ -300,12 +305,12 @@ export function Storefront({
                       type="button"
                       aria-expanded={expanded}
                       onClick={() => toggleCategory(cat.id)}
-                      className="store-category-toggle store-vitrina-frame-text flex w-full items-center justify-between gap-2 border px-4 py-3 text-left text-sm font-semibold"
+                      className="store-category-toggle flex w-full items-center justify-between gap-2 border px-4 py-3 text-left text-sm font-semibold"
                     >
                       <span className="flex min-w-0 items-center gap-2.5">
-                        <CategoryIcon icon={cat.icon} themeColor="product-frame" className="h-5 w-5 shrink-0" />
-                        <span className="store-vitrina-frame-text truncate">
-                          {cat.name} ({catProducts.length} producto{catProducts.length === 1 ? '' : 's'})
+                        <CategoryIcon icon={cat.icon} themeColor="title" className="h-5 w-5 shrink-0" />
+                        <span className="store-vitrina-title-text truncate">
+                          {cat.name}
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-2 text-xs font-normal opacity-70">
@@ -333,7 +338,7 @@ export function Storefront({
             </div>
             )}
 
-            {productViewMode !== 'category' && productsByPrice.length > 0 && (
+            {productViewMode !== 'category' && (
               <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {productsByPrice.map((p) => (
                   <ProductCard

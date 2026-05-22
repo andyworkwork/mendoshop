@@ -238,7 +238,12 @@ body {
   color: var(--shop-accent);
 }
 
-/* Textos de sección e iconos de categoría: color de tarjeta de producto. */
+/* Títulos, tagline, categorías y etiquetas de sección. */
+.store-vitrina-title-text {
+  color: var(--shop-title-color, #f4f4f5);
+}
+
+/* Compat: mismo uso que antes en bordes/rellenos que referencian el frame. */
 .store-vitrina-frame-text {
   color: var(--shop-product-frame, #f4f4f5);
 }
@@ -247,7 +252,15 @@ body {
   @apply leading-tight;
 }
 
-/* Iconos de categoría en vitrina → color de tarjeta de producto. */
+/* Iconos de categoría en vitrina → color de títulos. */
+.store-category-icon--title {
+  color: var(--shop-title-color, #f4f4f5);
+}
+
+.store-category-icon--title svg {
+  stroke: currentColor;
+}
+
 .store-category-icon--frame {
   color: var(--shop-product-frame, #f4f4f5);
 }
@@ -348,6 +361,7 @@ body {
 .store-view-mode__label {
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--shop-title-color, #71717a);
 }
 
 .store-view-mode__segments {
@@ -448,4 +462,37 @@ body {
 
 .store-whatsapp-bar__icon {
   @apply h-6 w-6;
+}
+
+/* Paleta RGB en editor de colores de tienda */
+.theme-hue-slider {
+  background: linear-gradient(
+    to right,
+    #ff0000 0%,
+    #ffff00 17%,
+    #00ff00 33%,
+    #00ffff 50%,
+    #0000ff 67%,
+    #ff00ff 83%,
+    #ff0000 100%
+  );
+}
+
+.theme-hue-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  background: transparent;
+}
+
+.theme-hue-slider::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  background: transparent;
 }

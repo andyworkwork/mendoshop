@@ -15,7 +15,7 @@ export function QrPanel({ slug, shopName }: { slug: string; shopName: string }) 
   }, [url])
 
   return (
-    <div className="card max-w-md mx-auto text-center space-y-4">
+    <div className="mx-auto max-w-md space-y-4 text-center">
       <h2 className="text-lg font-semibold">QR de tu tienda</h2>
       <p className="text-sm text-zinc-400">
         Imprimilo o mostralo en tu local. Al escanearlo abren <strong className="text-zinc-200">{shopName}</strong>.

@@ -42,7 +42,7 @@ export function StoreCategoryDrawer({
               onClick={() => onSelectCategory(cat.id)}
               className="store-drawer-cat-btn mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium"
             >
-              <CategoryIcon icon={cat.icon} themeColor="product-frame" className="h-5 w-5 shrink-0 opacity-90" />
+              <CategoryIcon icon={cat.icon} themeColor="title" className="h-5 w-5 shrink-0 opacity-90" />
               {cat.name}
             </button>
           ))}

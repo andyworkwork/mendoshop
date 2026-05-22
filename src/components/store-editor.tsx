@@ -7,7 +7,10 @@ import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
 import { ImageFocusControls } from '@/components/image-focus-controls'
 import { ShopBannerUpload } from '@/components/shop-banner-upload'
 import { Storefront } from '@/components/storefront'
+import { CategoryIconPicker } from '@/components/category-icon-picker'
+import { FeaturedProductsPicker } from '@/components/featured-products-picker'
 import { ThemePicker } from '@/components/theme-picker'
+import { categoryIconLabel } from '@/lib/category-icons'
 import { cropImageToBlob, CROP_OUTPUT } from '@/lib/crop-image'
 import { compressImageForUpload } from '@/lib/image-compress'
 import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
@@ -19,7 +22,7 @@ import { createClient } from '@/lib/supabase/browser'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow, ShopTheme } from '@/types/shop'
 
-type Panel = null | 'appearance' | 'banner' | { type: 'product'; productId: string }
+type Panel = null | 'appearance' | 'banner' | 'featured' | { type: 'product'; productId: string }
 
 function patchProductInCategories(
   categories: CategoryRow[],
@@ -34,10 +37,6 @@ function patchProductInCategories(
     subcategories: cat.subcategories.map((sub) => ({
       ...sub,
       products: mapProducts(sub.products),
-      subsubcategorias: sub.subsubcategorias.map((ss) => ({
-        ...ss,
-        products: mapProducts(ss.products),
-      })),
     })),
   }))
 }
@@ -47,10 +46,6 @@ function findProduct(categories: CategoryRow[], productId: string): ProductRow |
     for (const sub of cat.subcategories) {
       const p = sub.products.find((x) => x.id === productId)
       if (p) return p
-      for (const ss of sub.subsubcategorias) {
-        const sp = ss.products.find((x) => x.id === productId)
-        if (sp) return sp
-      }
     }
   }
   return null
@@ -106,22 +101,42 @@ export function StoreEditor({
   )
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const [featuredIds, setFeaturedIds] = useState<string[]>(() => [...shop.featured_product_ids])
+  const [categoryViewIcon, setCategoryViewIcon] = useState(shop.category_view_icon)
 
   const productPanel = panel && typeof panel === 'object' ? panel : null
   const editingProduct = productPanel ? findProduct(categories, productPanel.productId) : null
 
   const closePanel = useCallback(() => setPanel(null), [])
 
-  async function saveAppearance() {
+  async function saveFeatured() {
     setBusy(true)
     setMsg(null)
-    const res = await updateShopSettings(shop.id, { theme })
+    const res = await updateShopSettings(shop.id, { featured_product_ids: featuredIds })
     setBusy(false)
     if ('error' in res && res.error) {
       setMsg(res.error)
       return
     }
-    setShop((s) => ({ ...s, theme }))
+    setShop((s) => ({ ...s, featured_product_ids: featuredIds }))
+    setMsg('Productos destacados guardados.')
+    await revalidateStorefront(shop.slug)
+    closePanel()
+  }
+
+  async function saveAppearance() {
+    setBusy(true)
+    setMsg(null)
+    const res = await updateShopSettings(shop.id, {
+      theme,
+      category_view_icon: categoryViewIcon,
+    })
+    setBusy(false)
+    if ('error' in res && res.error) {
+      setMsg(res.error)
+      return
+    }
+    setShop((s) => ({ ...s, theme, category_view_icon: categoryViewIcon }))
     setMsg('Apariencia guardada.')
     await revalidateStorefront(shop.slug)
     closePanel()
@@ -238,6 +253,16 @@ export function StoreEditor({
           <button
             type="button"
             className="store-edit-chip"
+            onClick={() => {
+              setFeaturedIds([...shop.featured_product_ids])
+              setPanel('featured')
+            }}
+          >
+            Productos destacados
+          </button>
+          <button
+            type="button"
+            className="store-edit-chip"
             onClick={() => setPanel('appearance')}
           >
             Colores y apariencia
@@ -263,12 +288,16 @@ export function StoreEditor({
 
       <div className="overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-xl">
         <Storefront
-          shop={{ ...shop, theme }}
+          shop={{ ...shop, theme, category_view_icon: categoryViewIcon }}
           categories={categories}
           mode="edit"
           onOpenBannerEditor={() => setPanel('banner')}
           onOpenAppearanceEditor={() => setPanel('appearance')}
           onOpenProductFocus={(productId) => setPanel({ type: 'product', productId })}
+          onOpenFeaturedEditor={() => {
+            setFeaturedIds([...shop.featured_product_ids])
+            setPanel('featured')
+          }}
         />
       </div>
 
@@ -283,9 +312,39 @@ export function StoreEditor({
         </Link>
       </p>
 
+      {panel === 'featured' && (
+        <EditorSheet title="Productos destacados" onClose={closePanel}>
+          <FeaturedProductsPicker
+            categories={categories}
+            selectedIds={featuredIds}
+            onChange={setFeaturedIds}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void saveFeatured()}
+            className="btn-primary mt-4 w-full"
+          >
+            {busy ? 'Guardando…' : 'Guardar destacados'}
+          </button>
+        </EditorSheet>
+      )}
+
       {panel === 'appearance' && (
         <EditorSheet title="Colores y apariencia" onClose={closePanel}>
           <ThemePicker value={theme} onChange={setTheme} />
+          <div className="mt-6 space-y-2 border-t border-zinc-800 pt-4">
+            <p className="text-sm font-medium text-zinc-200">Icono del botón &quot;Categorías&quot;</p>
+            <p className="text-xs text-zinc-500">
+              Independiente del icono de cada categoría. Actual: {categoryIconLabel(categoryViewIcon)}
+            </p>
+            <CategoryIconPicker
+              value={categoryViewIcon}
+              disabled={busy}
+              onChange={setCategoryViewIcon}
+            />
+          </div>
           <button
             type="button"
             disabled={busy}

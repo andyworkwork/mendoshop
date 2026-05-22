@@ -28,13 +28,33 @@ export const THEME_TEMPLATES: ThemeTemplate[] = [
   {
     id: 'minimal',
     name: 'Mendoshop (marca)',
-    description: 'Naranja y coral clásico',
-    defaults: { templateId: 'minimal', primary: '#f9a825', accent: '#e53935', background: 'gradient' },
+    description: 'Logo Mendoshop y paleta de marca',
+    bannerSrc: '/mendoshop-logo.png',
+    defaults: {
+      templateId: 'minimal',
+      primary: '#f9a825',
+      accent: '#e53935',
+      productFrame: '#ffffff',
+      titleColor: '#1a1a1a',
+      background: 'gradient',
+      backgroundColors: {
+        gradientTop: '#f9a825',
+        gradientBottom: '#27272a',
+      },
+    },
   },
 ]
 
 const LEGACY_DEFAULTS: Record<string, ShopTheme> = {
-  minimal: { templateId: 'minimal', primary: '#f9a825', accent: '#e53935', background: 'gradient' },
+  minimal: {
+    templateId: 'minimal',
+    primary: '#f9a825',
+    accent: '#e53935',
+    productFrame: '#ffffff',
+    titleColor: '#1a1a1a',
+    background: 'gradient',
+    backgroundColors: { gradientTop: '#f9a825', gradientBottom: '#27272a' },
+  },
   bold: { templateId: 'bold', primary: '#dc2626', accent: '#1d4ed8', background: 'solid' },
   pastel: { templateId: 'pastel', primary: '#a78bfa', accent: '#f472b6', background: 'gradient' },
   dark: { templateId: 'dark', primary: '#22d3ee', accent: '#a3e635', background: 'solid' },
@@ -46,6 +66,13 @@ export function resolveProductFrameColor(theme: ShopTheme): string {
   const raw = theme.productFrame?.trim()
   if (raw) return raw
   return theme.background === 'light' ? '#f4f4f5' : '#27272a'
+}
+
+/** Títulos, tagline, categorías y etiquetas de sección en la vitrina. */
+export function resolveTitleColor(theme: ShopTheme): string {
+  const raw = theme.titleColor?.trim()
+  if (raw) return raw
+  return resolveProductFrameColor(theme)
 }
 
 /** Acento con contraste frente al fondo de tarjeta (nombre, precio, detalles). */
@@ -61,11 +88,13 @@ export function isLightColor(hex: string | undefined | null): boolean {
 export function themeCssVars(theme: ShopTheme): CSSProperties {
   const bg = resolveBackgroundColors(theme)
   const productFrame = resolveProductFrameColor(theme)
+  const titleColor = resolveTitleColor(theme)
   const accent = resolveAccentColor(theme)
   return {
     '--shop-primary': theme.primary,
     '--shop-accent': accent,
     '--shop-product-frame': productFrame,
+    '--shop-title-color': titleColor,
     '--shop-bg-light': bg.light,
     '--shop-bg-solid': bg.solid,
     '--shop-bg-gradient-top': bg.gradientTop,
@@ -151,6 +180,13 @@ export function parseTheme(raw: unknown): ShopTheme {
           ? '#e4e4e7'
           : '#ffffff'
 
+  const titleColor =
+    typeof t.titleColor === 'string'
+      ? t.titleColor
+      : typeof base.titleColor === 'string'
+        ? base.titleColor
+        : undefined
+
   const rawBg = t.backgroundColors
   const backgroundColors: Partial<ShopBackgroundColors> | undefined =
     rawBg && typeof rawBg === 'object'
@@ -170,6 +206,7 @@ export function parseTheme(raw: unknown): ShopTheme {
     primary,
     accent,
     productFrame,
+    ...(titleColor ? { titleColor } : {}),
     background,
     backgroundColors,
   }

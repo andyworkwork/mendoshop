@@ -2,10 +2,13 @@
 
 import Image from 'next/image'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
+import { ThemeColorField } from '@/components/theme-color-field'
 import {
   backgroundPreviewStyle,
   patchBackgroundColor,
   resolveBackgroundColors,
+  resolveProductFrameColor,
+  resolveTitleColor,
   themeCssVars,
   THEME_TEMPLATES,
   VITRINA_BACKGROUND_OPTIONS,
@@ -16,26 +19,16 @@ function templateLabel(templateId: string): string {
   return THEME_TEMPLATES.find((t) => t.id === templateId)?.name ?? templateId
 }
 
-function ColorField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: string
-  onChange: (color: string) => void
-}) {
-  return (
-    <label className="block text-sm">
-      {label}
-      <input
-        type="color"
-        className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </label>
-  )
+function templateSwatches(defaults: ShopTheme) {
+  return [
+    { title: 'Principal (botones)', color: defaults.primary },
+    { title: 'Detalle (nombre y precios)', color: defaults.accent },
+    { title: 'Producto (fondo tarjeta)', color: defaults.productFrame ?? '#f4f4f5' },
+    {
+      title: 'Títulos',
+      color: defaults.titleColor ?? defaults.productFrame ?? '#71717a',
+    },
+  ]
 }
 
 function BackgroundColorFields({
@@ -49,23 +42,23 @@ function BackgroundColorFields({
 }) {
   if (background === 'light') {
     return (
-      <ColorField label="Color de fondo" value={colors.light} onChange={(c) => onPatch('light', c)} />
+      <ThemeColorField label="Color de fondo" value={colors.light} onChange={(c) => onPatch('light', c)} />
     )
   }
   if (background === 'solid') {
     return (
-      <ColorField label="Color de fondo" value={colors.solid} onChange={(c) => onPatch('solid', c)} />
+      <ThemeColorField label="Color de fondo" value={colors.solid} onChange={(c) => onPatch('solid', c)} />
     )
   }
   if (background === 'gradient') {
     return (
       <div className="grid gap-3 sm:grid-cols-2">
-        <ColorField
+        <ThemeColorField
           label="Brillo superior"
           value={colors.gradientTop}
           onChange={(c) => onPatch('gradientTop', c)}
         />
-        <ColorField
+        <ThemeColorField
           label="Color base inferior"
           value={colors.gradientBottom}
           onChange={(c) => onPatch('gradientBottom', c)}
@@ -75,12 +68,12 @@ function BackgroundColorFields({
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <ColorField
+      <ThemeColorField
         label="Fondo del patrón"
         value={colors.patternBase}
         onChange={(c) => onPatch('patternBase', c)}
       />
-      <ColorField label="Color de los puntos" value={colors.patternDot} onChange={(c) => onPatch('patternDot', c)} />
+      <ThemeColorField label="Color de los puntos" value={colors.patternDot} onChange={(c) => onPatch('patternDot', c)} />
     </div>
   )
 }
@@ -95,6 +88,8 @@ export function ThemePicker({
   const previewStyle = themeCssVars(value)
   const bgColors = resolveBackgroundColors(value)
   const selectedName = templateLabel(value.templateId)
+  const productFrame = resolveProductFrameColor(value)
+  const titleColor = resolveTitleColor(value)
 
   const patchBg = (key: keyof ShopBackgroundColors, color: string) => {
     onChange(patchBackgroundColor(value, key, color))
@@ -103,8 +98,8 @@ export function ThemePicker({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-400">
-        Elegí una plantilla por rubro (colores sugeridos y banner de ejemplo si no subiste el tuyo). Podés
-        cambiar fondo y colores cuando quieras.
+        Elegí una plantilla por rubro: cada una trae 4 colores sugeridos según la foto del rubro (botones,
+        detalle, tarjeta y títulos). Podés cambiar fondo y colores cuando quieras.
       </p>
 
       <SettingsCollapsible title="Plantillas por rubro" subtitle={selectedName} defaultOpen={false}>
@@ -117,8 +112,7 @@ export function ThemePicker({
                 onChange({
                   ...tpl.defaults,
                   productFrame: tpl.defaults.productFrame ?? '#ffffff',
-                  background: value.background,
-                  backgroundColors: value.backgroundColors,
+                  titleColor: tpl.defaults.titleColor ?? tpl.defaults.productFrame ?? '#3f3f46',
                 })
               }
               className={`overflow-hidden rounded-xl border text-left transition ${
@@ -128,15 +122,27 @@ export function ThemePicker({
               }`}
             >
               {tpl.bannerSrc ? (
-                <div className="relative aspect-[21/9] w-full bg-zinc-800">
-                  <Image
-                    src={tpl.bannerSrc}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 50vw, 200px"
-                  />
-                </div>
+                tpl.id === 'minimal' ? (
+                  <div className="flex aspect-[21/9] w-full items-center justify-center bg-zinc-900 p-4">
+                    <Image
+                      src={tpl.bannerSrc}
+                      alt=""
+                      width={180}
+                      height={54}
+                      className="h-12 w-auto max-w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative aspect-[21/9] w-full bg-zinc-800">
+                    <Image
+                      src={tpl.bannerSrc}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, 200px"
+                    />
+                  </div>
+                )
               ) : (
                 <div
                   className="aspect-[21/9] w-full"
@@ -147,23 +153,14 @@ export function ThemePicker({
               )}
               <div className="p-3">
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <span
-                    className="h-6 w-6 rounded-full border border-zinc-600"
-                    title="Principal (botones)"
-                    style={{ backgroundColor: tpl.defaults.primary }}
-                  />
-                  <span
-                    className="h-6 w-6 rounded-full border border-zinc-600"
-                    title="Acento (nombre y precios)"
-                    style={{ backgroundColor: tpl.defaults.accent }}
-                  />
-                  <span
-                    className="h-6 w-6 rounded-full border border-zinc-600"
-                    title="Tarjeta de producto (fondo)"
-                    style={{
-                      backgroundColor: tpl.defaults.productFrame ?? '#f4f4f5',
-                    }}
-                  />
+                  {templateSwatches(tpl.defaults).map((sw) => (
+                    <span
+                      key={sw.title}
+                      className="h-6 w-6 rounded-full border border-zinc-600"
+                      title={sw.title}
+                      style={{ backgroundColor: sw.color }}
+                    />
+                  ))}
                 </div>
                 <p className="font-medium">{tpl.name}</p>
                 <p className="text-xs text-zinc-500">{tpl.description}</p>
@@ -210,37 +207,31 @@ export function ThemePicker({
         </div>
       </div>
 
-      <label className="block text-sm">
-        Color principal (botones)
-        <input
-          type="color"
-          className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
-          value={value.primary}
-          onChange={(e) => onChange({ ...value, primary: e.target.value })}
-        />
-      </label>
-      <label className="block text-sm">
-        Color de acento (nombre, precios y detalles)
-        <input
-          type="color"
-          className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
-          value={value.accent}
-          onChange={(e) => onChange({ ...value, accent: e.target.value })}
-        />
-      </label>
-      <label className="block text-sm">
-        Tarjeta de producto (fondo y borde)
-        <input
-          type="color"
-          className="mt-1 h-10 w-full cursor-pointer rounded border border-zinc-700 bg-transparent"
-          value={value.productFrame ?? (value.background === 'light' ? '#f4f4f5' : '#27272a')}
-          onChange={(e) => onChange({ ...value, productFrame: e.target.value })}
-        />
-      </label>
+      <ThemeColorField
+        label="Color principal (botones)"
+        value={value.primary}
+        onChange={(primary) => onChange({ ...value, primary })}
+      />
+      <ThemeColorField
+        label="Color detalle (nombre, precios y detalles)"
+        value={value.accent}
+        onChange={(accent) => onChange({ ...value, accent })}
+      />
+      <ThemeColorField
+        label="Color producto (fondo y borde de tarjeta)"
+        value={productFrame}
+        onChange={(productFrame) => onChange({ ...value, productFrame })}
+        fallback={value.background === 'light' ? '#f4f4f5' : '#27272a'}
+      />
+      <ThemeColorField
+        label="Color título (tagline, secciones, categorías, ordenar)"
+        value={titleColor}
+        onChange={(titleColor) => onChange({ ...value, titleColor })}
+        fallback={productFrame}
+      />
       <p className="text-xs text-zinc-500">
-        Principal → botones · Acento → nombre y precio del producto · Tarjeta de producto → fondo del recuadro,
-        títulos de sección, categorías e iconos en la vitrina. Al elegir plantilla, el acento se ajusta si no contrasta
-        con el fondo de tarjeta.
+        Principal → botones · Detalle → nombre y precio · Producto → fondo del recuadro de cada producto · Título →
+        textos de sección, nombres de categoría e iconos (café, celular, etc.) en la vitrina.
       </p>
     </div>
   )

@@ -18,8 +18,13 @@ export function getStoreTemplateOrDefault(templateId: string) {
   return byId.get(templateId) ?? STORE_TEMPLATES[0]!
 }
 
+const BRAND_BANNER_BY_TEMPLATE: Record<string, string> = {
+  minimal: '/mendoshop-logo.png',
+}
+
 /** Banner de plantilla o null si es tema legacy sin imagen. */
 export function templateBannerSrc(templateId: string): string | null {
+  if (BRAND_BANNER_BY_TEMPLATE[templateId]) return BRAND_BANNER_BY_TEMPLATE[templateId]
   const tpl = byId.get(templateId)
   if (tpl) return tpl.bannerSrc
   const withSuffix = byId.get(`${templateId}-1`)

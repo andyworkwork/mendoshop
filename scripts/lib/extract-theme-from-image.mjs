@@ -202,6 +202,8 @@ export async function extractThemeFromImage(inputPath) {
 
   accent = ensureReadableAccentOnFill(accent, productFrame)
 
+  const titleColor = suggestTitleColor(vibrant, lightAvg, background, primary, productFrame)
+
   const backgroundColors = {}
   if (background === 'light') {
     backgroundColors.light = rgbToHex(
@@ -236,7 +238,28 @@ export async function extractThemeFromImage(inputPath) {
     primary,
     accent,
     productFrame,
+    titleColor,
     background,
     backgroundColors,
   }
+}
+
+/** Color de títulos / tagline / categorías, legible según el fondo de la vitrina. */
+function suggestTitleColor(vibrant, lightAvg, background, primary, productFrame) {
+  const warm = rgbToHsl(lightAvg.r, lightAvg.g, lightAvg.b)
+  const dom = rgbToHsl(vibrant.r, vibrant.g, vibrant.b)
+
+  if (background === 'light') {
+    const t = hslToRgb((warm.h + 22) % 360, Math.min(0.5, Math.max(0.22, warm.s + 0.12)), 0.3)
+    return rgbToHex(t.r, t.g, t.b)
+  }
+
+  const fillLum = hexLuminance(productFrame)
+  if (fillLum > 160) {
+    const t = hslToRgb((dom.h + 12) % 360, Math.min(0.45, dom.s * 0.85 + 0.1), 0.32)
+    return rgbToHex(t.r, t.g, t.b)
+  }
+
+  const t = hslToRgb(dom.h, Math.min(0.32, dom.s * 0.55 + 0.08), 0.78)
+  return rgbToHex(t.r, t.g, t.b)
 }

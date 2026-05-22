@@ -1,11 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeImageFocus } from '@/lib/image-focus'
-import type {
-  CategoryRow,
-  ProductRow,
-  SubcategoryRow,
-  SubsubcategoriaRow,
-} from '@/types/catalog'
+import type { CategoryRow, ProductRow, SubcategoryRow } from '@/types/catalog'
 
 function sortByOrder<T extends { sort_order: number }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => a.sort_order - b.sort_order)
@@ -21,9 +16,7 @@ export async function fetchCategoriesWithNested(
   shopId: string,
   opts?: { includeInactive?: boolean },
 ): Promise<CategoryRow[]> {
-  const productFilter = opts?.includeInactive ? '' : ', active.eq.true'
-
-  const [catRes, subRes, ssRes, prodRes] = await Promise.all([
+  const [catRes, subRes, prodRes] = await Promise.all([
     supabase
       .from('categories')
       .select('id, name, sort_order, icon')
@@ -32,11 +25,6 @@ export async function fetchCategoriesWithNested(
     supabase
       .from('subcategories')
       .select('id, category_id, name, sort_order')
-      .eq('shop_id', shopId)
-      .order('sort_order'),
-    supabase
-      .from('subsubcategorias')
-      .select('id, subcategory_id, name, sort_order')
       .eq('shop_id', shopId)
       .order('sort_order'),
     supabase
@@ -52,9 +40,6 @@ export async function fetchCategoriesWithNested(
 
   const cats = catRes.data as Pick<CategoryRow, 'id' | 'name' | 'sort_order' | 'icon'>[]
   const subs = sortByOrder((subRes.data ?? []) as (SubcategoryRow & { category_id: string })[])
-  const subsubs = sortByOrder(
-    (ssRes.data ?? []) as (SubsubcategoriaRow & { subcategory_id: string })[],
-  )
 
   let products = ((prodRes.data ?? []) as (Omit<ProductRow, 'image_gallery' | 'image_focus_x' | 'image_focus_y'> & {
     image_gallery?: unknown
@@ -64,6 +49,7 @@ export async function fetchCategoriesWithNested(
     const focus = normalizeImageFocus(r.image_focus_x, r.image_focus_y)
     return {
       ...r,
+      subsubcategoria_id: null,
       price: Number(r.price),
       image_focus_x: focus.x,
       image_focus_y: focus.y,
@@ -76,29 +62,9 @@ export async function fetchCategoriesWithNested(
   }
 
   const productsBySub = new Map<string, ProductRow[]>()
-  const productsBySubsub = new Map<string, ProductRow[]>()
-
   for (const p of products) {
-    if (p.subsubcategoria_id) {
-      const id = p.subsubcategoria_id
-      if (!productsBySubsub.has(id)) productsBySubsub.set(id, [])
-      productsBySubsub.get(id)!.push(p)
-    } else {
-      if (!productsBySub.has(p.subcategory_id)) productsBySub.set(p.subcategory_id, [])
-      productsBySub.get(p.subcategory_id)!.push(p)
-    }
-  }
-
-  const subsubBySub = new Map<string, SubsubcategoriaRow[]>()
-  for (const ss of subsubs) {
-    const row: SubsubcategoriaRow = {
-      id: ss.id,
-      name: ss.name,
-      sort_order: ss.sort_order,
-      products: sortByOrder(productsBySubsub.get(ss.id) ?? []),
-    }
-    if (!subsubBySub.has(ss.subcategory_id)) subsubBySub.set(ss.subcategory_id, [])
-    subsubBySub.get(ss.subcategory_id)!.push(row)
+    if (!productsBySub.has(p.subcategory_id)) productsBySub.set(p.subcategory_id, [])
+    productsBySub.get(p.subcategory_id)!.push(p)
   }
 
   const subsByCat = new Map<string, SubcategoryRow[]>()
@@ -108,7 +74,6 @@ export async function fetchCategoriesWithNested(
       name: s.name,
       sort_order: s.sort_order,
       products: sortByOrder(productsBySub.get(s.id) ?? []),
-      subsubcategorias: sortByOrder(subsubBySub.get(s.id) ?? []),
     }
     const catId = (s as { category_id: string }).category_id
     if (!subsByCat.has(catId)) subsByCat.set(catId, [])
@@ -127,7 +92,6 @@ export function countProducts(categories: CategoryRow[]): number {
   for (const c of categories) {
     for (const s of c.subcategories) {
       n += s.products.length
-      for (const ss of s.subsubcategorias) n += ss.products.length
     }
   }
   return n

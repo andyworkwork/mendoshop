@@ -14,6 +14,19 @@ import { categoryIconLabel } from '@/lib/category-icons'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 
+async function removeProductImages(
+  sb: ReturnType<typeof createClient>,
+  shopId: string,
+  products: { id: string; image_path: string | null }[],
+) {
+  for (const p of products) {
+    const toDelete = pathsToRemove(shopId, p.id, p.image_path)
+    if (toDelete.length > 0) {
+      await sb.storage.from('shop-images').remove(toDelete)
+    }
+  }
+}
+
 export function CatalogEditor({
   shop,
   initial,
@@ -28,24 +41,9 @@ export function CatalogEditor({
   const productCount = countProducts(categories)
 
   const refresh = useCallback(async () => {
-    const [catRes, subRes, ssRes, prodRes] = await Promise.all([
-      sb.from('categories').select('id, name, sort_order, icon').eq('shop_id', shop.id).order('sort_order'),
-      sb.from('subcategories').select('id, category_id, name, sort_order').eq('shop_id', shop.id),
-      sb.from('subsubcategorias').select('id, subcategory_id, name, sort_order').eq('shop_id', shop.id),
-      sb
-        .from('products')
-        .select(
-          'id, subcategory_id, subsubcategoria_id, name, description, price, stock_quantity, image_path, image_gallery, active, sort_order',
-        )
-        .eq('shop_id', shop.id),
-    ])
     const { fetchCategoriesWithNested } = await import('@/lib/fetch-catalog')
     const tree = await fetchCategoriesWithNested(sb, shop.id, { includeInactive: true })
     setCategories(tree)
-    void catRes
-    void subRes
-    void ssRes
-    void prodRes
   }, [sb, shop.id])
 
   const publishCatalog = useCallback(async () => {
@@ -75,6 +73,24 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
+  async function deleteCategory(categoryId: string, name: string) {
+    if (!confirm(`¿Eliminar la categoría "${name}" y todo su contenido (subcategorías y productos)?`)) {
+      return
+    }
+    setBusy(true)
+    const cat = categories.find((c) => c.id === categoryId)
+    const products: { id: string; image_path: string | null }[] = []
+    for (const sub of cat?.subcategories ?? []) {
+      for (const p of sub.products) {
+        products.push({ id: p.id, image_path: p.image_path })
+      }
+    }
+    await removeProductImages(sb, shop.id, products)
+    await sb.from('categories').delete().eq('id', categoryId).eq('shop_id', shop.id)
+    setBusy(false)
+    await publishCatalog()
+  }
+
   async function addSubcategory(categoryId: string) {
     const name = prompt('Nombre de la subcategoría')
     if (!name?.trim()) return
@@ -89,21 +105,21 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
-  async function addSubsub(subcategoryId: string) {
-    const name = prompt('Nombre de la sub-subcategoría')
-    if (!name?.trim()) return
+  async function deleteSubcategory(subcategoryId: string, name: string) {
+    if (!confirm(`¿Eliminar la subcategoría "${name}" y todos sus productos?`)) return
     setBusy(true)
-    await sb.from('subsubcategorias').insert({
-      shop_id: shop.id,
-      subcategory_id: subcategoryId,
-      name: name.trim(),
-      sort_order: 0,
-    })
+    const { data: prods } = await sb
+      .from('products')
+      .select('id, image_path')
+      .eq('subcategory_id', subcategoryId)
+      .eq('shop_id', shop.id)
+    await removeProductImages(sb, shop.id, prods ?? [])
+    await sb.from('subcategories').delete().eq('id', subcategoryId).eq('shop_id', shop.id)
     setBusy(false)
     await publishCatalog()
   }
 
-  async function addProduct(subcategoryId: string, subsubId: string | null) {
+  async function addProduct(subcategoryId: string) {
     if (productCount >= limits.maxProducts) {
       alert(`Tu plan permite hasta ${limits.maxProducts} productos.`)
       return
@@ -117,7 +133,7 @@ export function CatalogEditor({
     await sb.from('products').insert({
       shop_id: shop.id,
       subcategory_id: subcategoryId,
-      subsubcategoria_id: subsubId,
+      subsubcategoria_id: null,
       name: name.trim(),
       price,
       stock_quantity: 1,
@@ -213,14 +229,24 @@ export function CatalogEditor({
         <section key={cat.id} className="card space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold text-brand">{cat.name}</h2>
-            <button
-              type="button"
-              disabled={busy}
-              className="text-sm text-brand-accent"
-              onClick={() => addSubcategory(cat.id)}
-            >
-              + Subcategoría
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                className="text-sm text-brand-accent"
+                onClick={() => addSubcategory(cat.id)}
+              >
+                + Subcategoría
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className="text-sm text-red-400"
+                onClick={() => void deleteCategory(cat.id, cat.name)}
+              >
+                Eliminar categoría
+              </button>
+            </div>
           </div>
           <div className="space-y-1.5">
             <p className="text-xs text-zinc-500">
@@ -232,23 +258,28 @@ export function CatalogEditor({
               onChange={(icon) => void setCategoryIcon(cat.id, icon)}
             />
           </div>
+          {cat.subcategories.length === 0 && (
+            <p className="text-xs text-zinc-500">Sin subcategorías. Agregá una para cargar productos.</p>
+          )}
           {cat.subcategories.map((sub) => (
             <div key={sub.id} className="ml-2 border-l border-zinc-700 pl-4 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-medium">{sub.name}</h3>
                 <button
                   type="button"
-                  className="text-xs text-zinc-400"
-                  onClick={() => addSubsub(sub.id)}
+                  className="text-xs text-brand-accent"
+                  disabled={busy}
+                  onClick={() => addProduct(sub.id)}
                 >
-                  + Sub-sub
+                  + Producto
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-brand-accent"
-                  onClick={() => addProduct(sub.id, null)}
+                  disabled={busy}
+                  className="text-xs text-red-400"
+                  onClick={() => void deleteSubcategory(sub.id, sub.name)}
                 >
-                  + Producto
+                  Eliminar subcategoría
                 </button>
               </div>
               <ProductList
@@ -258,27 +289,6 @@ export function CatalogEditor({
                 onToggle={toggleActive}
                 onDelete={deleteProduct}
               />
-              {sub.subsubcategorias.map((ss) => (
-                <div key={ss.id} className="ml-2 space-y-2">
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-sm text-zinc-400">{ss.name}</span>
-                    <button
-                      type="button"
-                      className="text-xs text-brand-accent"
-                      onClick={() => addProduct(sub.id, ss.id)}
-                    >
-                      + Producto
-                    </button>
-                  </div>
-                  <ProductList
-                    products={ss.products}
-                    busy={busy}
-                    onUpload={uploadProductImage}
-                    onToggle={toggleActive}
-                    onDelete={deleteProduct}
-                  />
-                </div>
-              ))}
             </div>
           ))}
         </section>
@@ -356,4 +366,3 @@ function ProductList({
     </ul>
   )
 }
-

@@ -26,14 +26,39 @@ const carouselOut = path.join(root, 'public', CAROUSEL_DIR_NAME)
 const BANNER_W = 1080
 const BANNER_H = 520
 
-/** Ajustes manuales cuando la foto lo pide (ej. madera + blanco). */
+/** Ajustes manuales cuando la foto lo pide (4 colores de vitrina + fondo). */
 const THEME_OVERRIDES = {
   'deportivos-1': {
-    productFrame: '#ffffff',
     primary: '#8B5E3C',
     accent: '#1e4d6b',
+    productFrame: '#ffffff',
+    titleColor: '#3d2e24',
     background: 'light',
     backgroundColors: { light: '#f8f6f3' },
+  },
+  'manicura-1': {
+    primary: '#c9a227',
+    accent: '#a67c52',
+    productFrame: '#f5ebe0',
+    titleColor: '#5c4838',
+    background: 'gradient',
+    backgroundColors: { gradientTop: '#e8c89a', gradientBottom: '#1a1410' },
+  },
+  'bijuteria-1': {
+    primary: '#9a7b2e',
+    accent: '#6b4c9a',
+    productFrame: '#faf8f5',
+    titleColor: '#4a3d2a',
+    background: 'light',
+    backgroundColors: { light: '#f0ebe3' },
+  },
+  'ropa-1': {
+    primary: '#c41e5a',
+    accent: '#1a1a1a',
+    productFrame: '#f8f8f8',
+    titleColor: '#2d2d2d',
+    background: 'light',
+    backgroundColors: { light: '#f2f2f2' },
   },
 }
 
@@ -109,6 +134,7 @@ for (const { file, slug, input } of entries) {
     primary: override.primary ?? extracted.primary,
     accent: override.accent ?? extracted.accent,
     productFrame: override.productFrame ?? extracted.productFrame,
+    titleColor: override.titleColor ?? extracted.titleColor,
     background: override.background ?? extracted.background,
     backgroundColors: {
       ...extracted.backgroundColors,
@@ -125,7 +151,9 @@ for (const { file, slug, input } of entries) {
     defaults,
   })
 
-  console.log(`✓ ${file} → ${slug} (${defaults.background}, ${defaults.primary}, marco ${defaults.productFrame})`)
+  console.log(
+    `✓ ${file} → ${slug} (${defaults.background}, ${defaults.primary}, detalle ${defaults.accent}, título ${defaults.titleColor})`,
+  )
 }
 
 console.log('\nLimpiando archivos viejos…')
