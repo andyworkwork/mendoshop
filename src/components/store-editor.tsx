@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { updateProductImageFocus } from '@/app/actions/catalog'
 import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
@@ -16,9 +16,8 @@ import { compressImageForUpload } from '@/lib/image-compress'
 import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
 import { getProductImageUrl, productImagePaths } from '@/lib/product-images'
 import { getPublicUrlFromPath, shopPublicUrl } from '@/lib/publicUrl'
-import { shopBannerStoragePath } from '@/lib/shop-banner'
+import { resolveShopBannerCropSourceUrl, shopBannerStoragePath } from '@/lib/shop-banner'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
-import { resolveShopBannerUrl } from '@/lib/shops'
 import { createClient } from '@/lib/supabase/browser'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow, ShopTheme } from '@/types/shop'
@@ -104,6 +103,7 @@ export function StoreEditor({
   const [msg, setMsg] = useState<string | null>(null)
   const [featuredIds, setFeaturedIds] = useState<string[]>(() => [...shop.featured_product_ids])
   const [categoryViewIcon, setCategoryViewIcon] = useState(shop.category_view_icon)
+  const [bannerCropKey, setBannerCropKey] = useState(0)
 
   const productPanel = panel && typeof panel === 'object' ? panel : null
   const editingProduct = productPanel ? findProduct(categories, productPanel.productId) : null
@@ -125,26 +125,58 @@ export function StoreEditor({
     closePanel()
   }
 
+  const handleThemeChange = useCallback(
+    (next: ShopTheme) => {
+      if (next.templateId !== theme.templateId) {
+        setShop((s) => ({
+          ...s,
+          banner_path: null,
+          banner_focus_x: 50,
+          banner_focus_y: 50,
+        }))
+        setBannerFocus({ x: 50, y: 50 })
+      }
+      setTheme(next)
+    },
+    [theme.templateId],
+  )
+
   async function saveAppearance() {
     setBusy(true)
     setMsg(null)
+    const templateChanged = theme.templateId !== initialShop.theme.templateId
+    const useTemplateBanner = templateChanged && !shop.banner_path
     const res = await updateShopSettings(shop.id, {
       theme,
       category_view_icon: categoryViewIcon,
+      ...(useTemplateBanner
+        ? { banner_path: null, banner_focus_x: 50, banner_focus_y: 50 }
+        : {}),
     })
     setBusy(false)
     if ('error' in res && res.error) {
       setMsg(res.error)
       return
     }
-    setShop((s) => ({ ...s, theme, category_view_icon: categoryViewIcon }))
-    setMsg('Apariencia guardada.')
+    setShop((s) => ({
+      ...s,
+      theme,
+      category_view_icon: categoryViewIcon,
+      ...(useTemplateBanner
+        ? { banner_path: null, banner_focus_x: 50, banner_focus_y: 50 }
+        : {}),
+    }))
+    setMsg(
+      useTemplateBanner
+        ? 'Apariencia guardada. Banner actualizado al de la plantilla.'
+        : 'Apariencia guardada.',
+    )
     await revalidateStorefront(shop.slug)
     closePanel()
   }
 
   async function saveBannerCrop() {
-    const sourceUrl = resolveShopBannerUrl(shop)
+    const sourceUrl = resolveShopBannerCropSourceUrl(shop, Date.now())
     if (!sourceUrl) {
       setMsg('No hay imagen de banner para recortar.')
       return
@@ -182,6 +214,7 @@ export function StoreEditor({
         banner_focus_x: 50,
         banner_focus_y: 50,
       }))
+      setBannerCropKey((k) => k + 1)
       setMsg('Banner recortado y guardado (WebP).')
       await revalidateStorefront(shop.slug)
       closePanel()
@@ -241,7 +274,14 @@ export function StoreEditor({
     setBusy(false)
   }
 
-  const bannerPreviewUrl = useMemo(() => resolveShopBannerUrl(shop), [shop])
+  const bannerCropPreviewUrl = useMemo(
+    () => resolveShopBannerCropSourceUrl(shop, bannerCropKey),
+    [shop.banner_path, shop.theme.templateId, bannerCropKey],
+  )
+
+  useEffect(() => {
+    setBannerCropKey((k) => k + 1)
+  }, [shop.banner_path, shop.theme.templateId])
 
   return (
     <div className="space-y-4">
@@ -289,6 +329,7 @@ export function StoreEditor({
 
       <div className="overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-xl">
         <Storefront
+          key={`preview-${shop.banner_path ?? 'template'}-${bannerCropKey}`}
           shop={{ ...shop, theme, category_view_icon: categoryViewIcon }}
           categories={categories}
           mode="edit"
@@ -334,7 +375,7 @@ export function StoreEditor({
 
       {panel === 'appearance' && (
         <EditorSheet title="Colores y apariencia" onClose={closePanel}>
-          <ThemePicker value={theme} onChange={setTheme} />
+          <ThemePicker value={theme} onChange={handleThemeChange} />
           <div className="mt-6 space-y-2 border-t border-zinc-800 pt-4">
             <p className="text-sm font-medium text-zinc-200">Icono del botón &quot;Categorías&quot;</p>
             <p className="text-xs text-zinc-500">
@@ -368,11 +409,15 @@ export function StoreEditor({
           />
           <div className="mt-4 border-t border-zinc-800 pt-4">
             <p className="mb-2 text-sm font-medium text-zinc-200">Encuadre del banner</p>
+            <p className="mb-3 text-xs text-zinc-500">
+              Recorta la imagen que ves arriba (tu foto o la de la plantilla). Al guardar, se sube como banner
+              propio de la tienda.
+            </p>
             <ImageFocusControls
               value={bannerFocus}
               onChange={setBannerFocus}
               disabled={busy}
-              previewUrl={bannerPreviewUrl}
+              previewUrl={bannerCropPreviewUrl}
               aspectWidth={2}
               aspectHeight={1}
             />

@@ -175,7 +175,7 @@ export function Storefront({
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3 md:max-w-5xl">
           <button
             type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-zinc-600 text-white"
+            className="store-header-menu-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border"
             aria-label="Abrir menú"
             onClick={() => setMenuOpen(true)}
           >

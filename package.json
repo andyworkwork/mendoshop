@@ -14,7 +14,8 @@
     "carousel:normalize": "node scripts/upscale-hero-carousel.mjs",
     "carousel:sync-slides": "node scripts/sync-hero-carousel-slides.mjs",
     "templates:sync": "node scripts/sync-templates-from-carrusel.mjs",
-    "carousel:slide": "node scripts/regenerate-carousel-slide.mjs"
+    "carousel:slide": "node scripts/regenerate-carousel-slide.mjs",
+    "configure:auth": "node --env-file=.env.local scripts/configure-supabase-auth-domain.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

@@ -12,7 +12,7 @@ export function StoreHeaderBrand() {
       <MendoshopLogo size={36} priority />
       <span className="truncate text-lg font-bold tracking-tight">
         <span className="text-brand">Mendo</span>
-        <span className="text-white">shop</span>
+        <span className="store-vitrina-title-text">shop</span>
       </span>
     </Link>
   )

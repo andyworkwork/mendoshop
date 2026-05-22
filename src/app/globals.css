@@ -243,6 +243,16 @@ body {
   color: var(--shop-title-color, #f4f4f5);
 }
 
+.store-header-menu-btn {
+  color: var(--shop-title-color, #f4f4f5);
+  border-color: color-mix(in srgb, var(--shop-title-color, #a1a1aa) 55%, transparent);
+}
+
+.store-header-menu-btn:hover {
+  border-color: color-mix(in srgb, var(--shop-title-color, #f4f4f5) 75%, transparent);
+  background: color-mix(in srgb, var(--shop-title-color, #f4f4f5) 8%, transparent);
+}
+
 /* Compat: mismo uso que antes en bordes/rellenos que referencian el frame. */
 .store-vitrina-frame-text {
   color: var(--shop-product-frame, #f4f4f5);

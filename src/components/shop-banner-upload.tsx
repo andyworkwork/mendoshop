@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
 import { compressImageForUpload } from '@/lib/image-compress'
@@ -18,16 +18,11 @@ export function ShopBannerUpload({
   shop: ShopRow
   onShopChange?: (next: ShopRow) => void
 }) {
-  const [bannerPath, setBannerPath] = useState(shop.banner_path)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
 
-  const previewShop = useMemo(
-    () => ({ ...shop, banner_path: bannerPath }),
-    [shop, bannerPath],
-  )
-  const previewUrl = resolveShopBannerUrl(previewShop)
-  const hasCustom = Boolean(bannerPath)
+  const previewUrl = resolveShopBannerUrl(shop)
+  const hasCustom = Boolean(shop.banner_path)
 
   async function upload(file: File | null) {
     if (!file) return
@@ -45,11 +40,19 @@ export function ShopBannerUpload({
       const { error: upErr } = await sb.storage.from('shop-images').upload(path, webp, uploadOpts)
       if (upErr) throw upErr
 
-      const res = await updateShopSettings(shop.id, { banner_path: path })
+      const res = await updateShopSettings(shop.id, {
+        banner_path: path,
+        banner_focus_x: 50,
+        banner_focus_y: 50,
+      })
       if ('error' in res && res.error) throw new Error(res.error)
 
-      setBannerPath(path)
-      onShopChange?.({ ...shop, banner_path: path })
+      onShopChange?.({
+        ...shop,
+        banner_path: path,
+        banner_focus_x: 50,
+        banner_focus_y: 50,
+      })
       setMsg('Banner actualizado (WebP optimizado).')
       await revalidateStorefront(shop.slug)
     } catch (e) {
@@ -66,10 +69,19 @@ export function ShopBannerUpload({
     const path = shopBannerStoragePath(shop.id)
     try {
       await sb.storage.from('shop-images').remove([path])
-      const res = await updateShopSettings(shop.id, { banner_path: null })
+      const res = await updateShopSettings(shop.id, {
+        banner_path: null,
+        banner_focus_x: 50,
+        banner_focus_y: 50,
+      })
       if ('error' in res && res.error) throw new Error(res.error)
-      setBannerPath(null)
-      onShopChange?.({ ...shop, banner_path: null })
+
+      onShopChange?.({
+        ...shop,
+        banner_path: null,
+        banner_focus_x: 50,
+        banner_focus_y: 50,
+      })
       setMsg('Volviste a la imagen de la plantilla.')
       await revalidateStorefront(shop.slug)
     } catch (e) {
@@ -107,7 +119,9 @@ export function ShopBannerUpload({
         {hasCustom ? (
           <>
             Usás tu imagen:{' '}
-            <span className="text-zinc-400">{getPublicUrlFromPath(bannerPath) ?? bannerPath}</span>
+            <span className="text-zinc-400">
+              {getPublicUrlFromPath(shop.banner_path) ?? shop.banner_path}
+            </span>
           </>
         ) : (
           'Mostrando imagen sugerida de la plantilla.'

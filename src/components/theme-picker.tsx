@@ -173,7 +173,7 @@ export function ThemePicker({
       <div>
         <p className="mb-2 text-sm font-medium text-zinc-200">Fondo de la tienda</p>
         <p className="mb-3 text-xs text-zinc-500">
-          Elegí un estilo y personalizá sus colores. No cambia la imagen del banner.
+          Elegí un estilo y personalizá sus colores. Al cambiar de plantilla se usa el banner del rubro (podés subir el tuyo después).
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {VITRINA_BACKGROUND_OPTIONS.map((opt) => {

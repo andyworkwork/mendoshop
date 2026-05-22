@@ -56,9 +56,16 @@ En **Project → Settings → Environment Variables** agregá:
 | `NEXT_PUBLIC_SUPABASE_URL` | Igual que local |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Igual que local |
 | `SUPABASE_SERVICE_ROLE_KEY` | Igual que local |
-| `NEXT_PUBLIC_APP_URL` | `https://mendoshop.vercel.app` (tu dominio real) |
+| `NEXT_PUBLIC_APP_URL` | `https://mendoshop.online` (dominio canónico, sin www) |
 
-En Supabase **Authentication → URL Configuration**, agregá `https://mendoshop.vercel.app/**` en Redirect URLs.
+En Supabase **Authentication → URL Configuration** (o con el script):
+
+```bash
+# Agregá SUPABASE_ACCESS_TOKEN=sbp_... en .env.local y ejecutá:
+npm run configure:auth
+```
+
+Site URL: `https://mendoshop.online` · Redirect URLs: `https://mendoshop.online/**`, `https://www.mendoshop.online/**`, `http://localhost:3000/**`
 
 Sin `NEXT_PUBLIC_APP_URL`, la app intenta usar `VERCEL_URL` al desplegar; conviene fijar la URL igual por los QR y WhatsApp.
 
