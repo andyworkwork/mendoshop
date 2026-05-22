@@ -9,6 +9,7 @@ import { countProducts } from '@/lib/fetch-catalog'
 import { PLAN_LIMITS } from '@/lib/plans'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { pathsToRemove, productImagePaths } from '@/lib/product-images'
+import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
 import { categoryIconLabel } from '@/lib/category-icons'
 import type { CategoryRow } from '@/types/catalog'
@@ -163,7 +164,7 @@ export function CatalogEditor({
       const uploadOpts = {
         upsert: true,
         contentType: 'image/webp',
-        cacheControl: '86400',
+        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
       } as const
 
       const { error: upMain } = await sb.storage.from('shop-images').upload(main, mainFile, uploadOpts)

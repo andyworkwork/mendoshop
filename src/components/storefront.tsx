@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageFocusStyle } from '@/lib/image-focus'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
-import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { getProductImageUrl } from '@/lib/product-images'
+import { getShopBannerDisplayUrl } from '@/lib/shop-banner'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { CategoryIcon } from '@/lib/category-icons'
 import { resolveProductFrameColor, shopBackgroundClass, themeCssVars } from '@/lib/themes'
@@ -59,8 +59,10 @@ function productsForCategory(categories: CategoryRow[], categoryId: string): Fla
   return flattenProducts(categories).filter((p) => p.categoryId === categoryId)
 }
 
+const PRICE_PAGE_SIZE = 8
+
 function resolveBannerUrl(shop: ShopRow): string | null {
-  const custom = getPublicUrlFromPath(shop.banner_path)
+  const custom = getShopBannerDisplayUrl(shop.banner_path)
   if (custom) return custom
   return templateBannerSrc(shop.theme.templateId)
 }
@@ -80,11 +82,17 @@ export function Storefront({
   const [menuOpen, setMenuOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
   const [productViewMode, setProductViewMode] = useState<ProductViewMode>('category')
+  const [priceVisibleCount, setPriceVisibleCount] = useState(PRICE_PAGE_SIZE)
 
   useEffect(() => {
     if (!isEdit) return
     setExpandedCategories(new Set(categories.map((c) => c.id)))
   }, [isEdit, categories])
+
+  useEffect(() => {
+    if (productViewMode === 'category') return
+    setPriceVisibleCount(PRICE_PAGE_SIZE)
+  }, [productViewMode])
   const cartCount = useMemo(() => lines.reduce((s, l) => s + l.quantity, 0), [lines])
   const isLight = shop.theme.background === 'light'
   const themeStyle = themeCssVars(shop.theme)
@@ -140,7 +148,8 @@ export function Storefront({
   )
 
   const productsByPrice = useMemo(() => {
-    const list = [...products]
+    const featuredIds = new Set(featuredProducts.map((p) => p.id))
+    const list = products.filter((p) => !featuredIds.has(p.id))
     if (productViewMode === 'price_asc') {
       return list.sort((a, b) => Number(a.price) - Number(b.price))
     }
@@ -148,7 +157,14 @@ export function Storefront({
       return list.sort((a, b) => Number(b.price) - Number(a.price))
     }
     return list
-  }, [products, productViewMode])
+  }, [products, productViewMode, featuredProducts])
+
+  const visiblePriceProducts = useMemo(
+    () => productsByPrice.slice(0, priceVisibleCount),
+    [productsByPrice, priceVisibleCount],
+  )
+
+  const priceRemaining = productsByPrice.length - visiblePriceProducts.length
 
   return (
     <div
@@ -196,6 +212,8 @@ export function Storefront({
               <img
                 src={bannerUrl}
                 alt=""
+                decoding="async"
+                fetchPriority="high"
                 className={`absolute inset-0 h-full w-full ${
                   isBrandLogoBanner ? 'object-contain bg-zinc-950 p-6' : 'object-cover'
                 }`}
@@ -339,19 +357,44 @@ export function Storefront({
             )}
 
             {productViewMode !== 'category' && (
-              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {productsByPrice.map((p) => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    isLight={isLight}
-                    accentFrame={productFrame}
-                    isEdit={isEdit}
-                    onEditFocus={onOpenProductFocus}
-                    onAdd={() => addProduct(p)}
-                  />
-                ))}
-              </ul>
+              <div className="space-y-3">
+                {productsByPrice.length === 0 && featuredProducts.length > 0 ? (
+                  <p className="text-center text-sm text-zinc-500">
+                    Todos los productos están en destacados.
+                  </p>
+                ) : (
+                  <>
+                    <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      {visiblePriceProducts.map((p) => (
+                        <ProductCard
+                          key={p.id}
+                          product={p}
+                          isLight={isLight}
+                          accentFrame={productFrame}
+                          isEdit={isEdit}
+                          onEditFocus={onOpenProductFocus}
+                          onAdd={() => addProduct(p)}
+                        />
+                      ))}
+                    </ul>
+                    {priceRemaining > 0 && (
+                      <div className="flex justify-center pt-1">
+                        <button
+                          type="button"
+                          className="rounded-xl border border-zinc-600 px-5 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:bg-zinc-800/80"
+                          onClick={() =>
+                            setPriceVisibleCount((n) =>
+                              Math.min(n + PRICE_PAGE_SIZE, productsByPrice.length),
+                            )
+                          }
+                        >
+                          Ver más ({priceRemaining} restantes)
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             )}
 
             {productViewMode === 'category' && categoriesWithProducts.length === 0 && (
@@ -416,6 +459,8 @@ function ProductCard({
           <img
             src={img}
             alt={p.name}
+            loading="lazy"
+            decoding="async"
             className="store-product-card__media"
             style={mediaFocus}
           />

@@ -7,6 +7,7 @@ import { compressImageForUpload } from '@/lib/image-compress'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { resolveShopBannerUrl } from '@/lib/shops'
 import { shopBannerStoragePath } from '@/lib/shop-banner'
+import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { createClient } from '@/lib/supabase/browser'
 import type { ShopRow } from '@/types/shop'
 
@@ -39,7 +40,7 @@ export function ShopBannerUpload({
       const uploadOpts = {
         upsert: true,
         contentType: 'image/webp',
-        cacheControl: '86400',
+        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
       } as const
       const { error: upErr } = await sb.storage.from('shop-images').upload(path, webp, uploadOpts)
       if (upErr) throw upErr

@@ -42,18 +42,26 @@ export function getProductImageUrl(
   return renderImageUrl(path, { width: 480, quality: 70 })
 }
 
-function renderImageUrl(
+/** URL transformada (menos egress que servir el original en vitrina). */
+export function renderStorageImageUrl(
   path: string,
-  opts: { width: number; quality: number },
+  opts: { width: number; quality?: number },
 ): string | null {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '')
   if (!base) return getPublicUrlFromPath(path)
   const q = new URLSearchParams({
     width: String(opts.width),
-    quality: String(opts.quality),
+    quality: String(opts.quality ?? 72),
     format: 'webp',
   })
   return `${base}/storage/v1/render/image/public/${BUCKET}/${path}?${q}`
+}
+
+function renderImageUrl(
+  path: string,
+  opts: { width: number; quality: number },
+): string | null {
+  return renderStorageImageUrl(path, opts)
 }
 
 /** Paths a borrar al reemplazar o eliminar producto. */

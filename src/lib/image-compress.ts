@@ -15,9 +15,9 @@ const PRESETS: Record<
     qualities: [0.72, 0.62, 0.52],
   },
   banner: {
-    maxWidth: 1400,
-    maxBytes: 400_000,
-    qualities: [0.78, 0.68, 0.58, 0.48],
+    maxWidth: 1080,
+    maxBytes: 280_000,
+    qualities: [0.72, 0.62, 0.52, 0.45],
   },
 }
 
@@ -25,7 +25,7 @@ const PRESETS: Record<
  * Comprime imágenes en el navegador antes de subir (WebP).
  * - main: catálogo completo (~380 KB, 1200px)
  * - thumb: grilla de la tienda (~90 KB, 480px)
- * - banner: portada de la tienda (~400 KB, 1400px)
+ * - banner: portada de la tienda (~280 KB, 1080px)
  */
 export async function compressImageForUpload(
   file: File,

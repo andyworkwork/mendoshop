@@ -8,6 +8,7 @@ import { extendPlanUntil, planLabel } from '@/lib/plans'
 import { expireAllStalePendingPlanPayments, expireStalePendingPlanPayments } from '@/lib/plan-payments'
 import { checkoutProductLabel, isPlanCheckoutProduct } from '@/lib/plan-checkout'
 import { revalidatePath } from 'next/cache'
+import { buildInfraUsageReport, type InfraUsageReport } from '@/lib/infra-usage'
 import type { ShopPlan } from '@/types/shop'
 
 export type AdminActionResult = { ok: true } | { error: string }
@@ -444,4 +445,10 @@ export async function listGlobalPlanActivityForAdmin(): Promise<
   )
 
   return entries.slice(0, GLOBAL_PLAN_LOG_LIMIT)
+}
+
+export async function getInfraUsageForAdmin(): Promise<InfraUsageReport | { error: string }> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+  return buildInfraUsageReport()
 }

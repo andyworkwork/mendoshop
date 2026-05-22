@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/admin', label: 'Todas las tiendas' },
   { href: '/admin/crear-cuenta', label: 'Crear cuenta' },
   { href: '/admin/historial-planes', label: 'Historial de planes' },
+  { href: '/admin/gasto', label: 'Gasto' },
 ] as const
 
 export function AdminSubNav() {

@@ -17,6 +17,7 @@ import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
 import { getProductImageUrl, productImagePaths } from '@/lib/product-images'
 import { getPublicUrlFromPath, shopPublicUrl } from '@/lib/publicUrl'
 import { shopBannerStoragePath } from '@/lib/shop-banner'
+import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { resolveShopBannerUrl } from '@/lib/shops'
 import { createClient } from '@/lib/supabase/browser'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
@@ -163,7 +164,7 @@ export function StoreEditor({
       const { error: upErr } = await sb.storage.from('shop-images').upload(path, file, {
         upsert: true,
         contentType: 'image/webp',
-        cacheControl: '86400',
+        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
       })
       if (upErr) throw upErr
 
@@ -215,7 +216,7 @@ export function StoreEditor({
       const uploadOpts = {
         upsert: true,
         contentType: 'image/webp',
-        cacheControl: '86400',
+        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
       } as const
       const { error: upMain } = await sb.storage.from('shop-images').upload(paths.main, mainFile, uploadOpts)
       if (upMain) throw upMain
