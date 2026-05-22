@@ -135,6 +135,58 @@ export async function updateShopAdmin(
   return { ok: true }
 }
 
+export async function updateShopSlugAdmin(input: {
+  shopId: string
+  slug: string
+}): Promise<AdminActionResult> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const cleanSlug = slugify(input.slug)
+  if (cleanSlug.length < 3) {
+    return { error: 'El link debe tener al menos 3 caracteres (solo letras, números y guiones).' }
+  }
+
+  const service = createServiceClient()
+  const { data: shop, error: fetchErr } = await service
+    .from('shops')
+    .select('slug')
+    .eq('id', input.shopId)
+    .maybeSingle()
+
+  if (fetchErr || !shop) return { error: fetchErr?.message ?? 'Tienda no encontrada.' }
+  const oldSlug = shop.slug as string
+  if (oldSlug === cleanSlug) return { error: 'El link es el mismo que el actual.' }
+
+  const { data: taken } = await service
+    .from('shops')
+    .select('id')
+    .eq('slug', cleanSlug)
+    .neq('id', input.shopId)
+    .maybeSingle()
+
+  if (taken) return { error: 'Ese link de tienda ya está en uso.' }
+
+  const { error } = await service.from('shops').update({ slug: cleanSlug }).eq('id', input.shopId)
+  if (error) {
+    if (error.message.includes('unique') || error.code === '23505') {
+      return { error: 'Ese link de tienda ya está en uso.' }
+    }
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/crear-cuenta')
+  revalidatePath('/admin/historial-planes')
+  revalidatePath(`/tienda/${oldSlug}`)
+  revalidatePath(`/tienda/${cleanSlug}`)
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/editar-tienda')
+  revalidatePath('/dashboard/settings')
+  revalidatePath('/dashboard/catalog')
+  return { ok: true }
+}
+
 export async function grantPlanDaysToShop(input: {
   shopId: string
   days: number

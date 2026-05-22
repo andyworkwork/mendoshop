@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { updateShopAdmin } from '@/app/actions/admin'
 import { AdminAddPlanDaysDialog } from '@/components/admin-add-plan-days-dialog'
 import { AdminEditShopPlanDialog } from '@/components/admin-edit-shop-plan-dialog'
+import { AdminChangeShopUrlDialog } from '@/components/admin-change-shop-url-dialog'
 import { AdminShopPlanHistoryDialog } from '@/components/admin-shop-plan-history-dialog'
 import { shopPublicUrl } from '@/lib/publicUrl'
 import {
@@ -66,6 +67,7 @@ function ShopAdminActions({
   onAddDays,
   onChangePlan,
   onHistory,
+  onChangeUrl,
 }: {
   shop: AdminShopRow
   pending: boolean
@@ -73,6 +75,7 @@ function ShopAdminActions({
   onAddDays: () => void
   onChangePlan: () => void
   onHistory: () => void
+  onChangeUrl: () => void
 }) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -99,6 +102,15 @@ function ShopAdminActions({
         className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs hover:bg-zinc-800"
       >
         Historial
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={onChangeUrl}
+        className="rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs hover:bg-zinc-800"
+        title="Cambiar el link público /tienda/..."
+      >
+        URL
       </button>
       <button
         type="button"
@@ -172,6 +184,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
   const [addDaysShop, setAddDaysShop] = useState<AdminShopRow | null>(null)
   const [editPlanShop, setEditPlanShop] = useState<AdminShopRow | null>(null)
   const [historyShop, setHistoryShop] = useState<AdminShopRow | null>(null)
+  const [urlShop, setUrlShop] = useState<AdminShopRow | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -237,6 +250,13 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
         open={historyShop !== null}
         onClose={() => setHistoryShop(null)}
       />
+      <AdminChangeShopUrlDialog
+        shopId={urlShop?.id ?? ''}
+        shopName={urlShop?.name ?? ''}
+        currentSlug={urlShop?.slug ?? ''}
+        open={urlShop !== null}
+        onClose={() => setUrlShop(null)}
+      />
 
       <ul className="space-y-3 md:hidden">
         {filtered.map((s) => (
@@ -270,6 +290,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
               onAddDays={() => setAddDaysShop(s)}
               onChangePlan={() => setEditPlanShop(s)}
               onHistory={() => setHistoryShop(s)}
+              onChangeUrl={() => setUrlShop(s)}
             />
           </li>
         ))}
@@ -314,6 +335,7 @@ export function AdminShopsTable({ shops }: { shops: AdminShopRow[] }) {
                     onAddDays={() => setAddDaysShop(s)}
                     onChangePlan={() => setEditPlanShop(s)}
                     onHistory={() => setHistoryShop(s)}
+                    onChangeUrl={() => setUrlShop(s)}
                   />
                 </td>
               </tr>
