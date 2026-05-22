@@ -11,6 +11,8 @@ import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { pathsToRemove, productImagePaths } from '@/lib/product-images'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
+import { ProductDetailsEditorDialog } from '@/components/product-details-editor-dialog'
+import { updateProductDetails } from '@/app/actions/catalog'
 import { categoryIconLabel } from '@/lib/category-icons'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
@@ -37,6 +39,12 @@ export function CatalogEditor({
 }) {
   const [categories, setCategories] = useState(initial)
   const [busy, setBusy] = useState(false)
+  const [detailsEditor, setDetailsEditor] = useState<{
+    productId: string
+    productName: string
+    details: string
+  } | null>(null)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
   const sb = createClient()
   const limits = PLAN_LIMITS[shop.plan]
   const productCount = countProducts(categories)
@@ -187,19 +195,26 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
-  async function editProductDetails(productId: string, current: string | null) {
-    const text = prompt(
-      'Detalles del producto (talle, material, envíos…)\nDejá vacío para quitar.',
-      current ?? '',
-    )
-    if (text === null) return
+  function openDetailsEditor(productId: string, productName: string, current: string | null) {
+    setDetailsError(null)
+    setDetailsEditor({
+      productId,
+      productName,
+      details: current ?? '',
+    })
+  }
+
+  async function saveProductDetails(text: string) {
+    if (!detailsEditor) return
     setBusy(true)
-    await sb
-      .from('products')
-      .update({ product_details: text.trim() || null })
-      .eq('id', productId)
-      .eq('shop_id', shop.id)
+    setDetailsError(null)
+    const res = await updateProductDetails(shop.id, detailsEditor.productId, text.trim() || null)
     setBusy(false)
+    if ('error' in res) {
+      setDetailsError(res.error)
+      return
+    }
+    setDetailsEditor(null)
     await publishCatalog()
   }
 
@@ -303,7 +318,7 @@ export function CatalogEditor({
                 products={sub.products}
                 busy={busy}
                 onUpload={uploadProductImage}
-                onEditDetails={editProductDetails}
+                onEditDetails={openDetailsEditor}
                 onToggle={toggleActive}
                 onDelete={deleteProduct}
               />
@@ -311,6 +326,23 @@ export function CatalogEditor({
           ))}
         </section>
       ))}
+
+      {detailsError && (
+        <p className="text-sm text-red-400" role="alert">
+          {detailsError}
+        </p>
+      )}
+
+      <ProductDetailsEditorDialog
+        open={Boolean(detailsEditor)}
+        productName={detailsEditor?.productName ?? ''}
+        initialDetails={detailsEditor?.details ?? ''}
+        busy={busy}
+        onClose={() => {
+          if (!busy) setDetailsEditor(null)
+        }}
+        onSave={(text) => void saveProductDetails(text)}
+      />
     </div>
   )
 }
@@ -326,7 +358,7 @@ function ProductList({
   products: CategoryRow['subcategories'][0]['products']
   busy: boolean
   onUpload: (id: string, f: File | null) => void
-  onEditDetails: (id: string, current: string | null) => void
+  onEditDetails: (id: string, name: string, current: string | null) => void
   onToggle: (id: string, active: boolean) => void
   onDelete: (id: string) => void
 }) {
@@ -368,7 +400,7 @@ function ProductList({
               type="button"
               disabled={busy}
               className="text-xs text-brand-accent"
-              onClick={() => onEditDetails(p.id, p.product_details)}
+              onClick={() => onEditDetails(p.id, p.name, p.product_details)}
             >
               Detalles{p.product_details?.trim() ? ' ✓' : ''}
             </button>

@@ -46,7 +46,7 @@ export function DashboardShell({
                   aria-current={active ? 'page' : undefined}
                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-wide transition sm:text-sm ${
                     active
-                      ? 'border-brand/60 bg-brand/15 text-brand shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--brand-orange)_35%,transparent)]'
+                      ? 'border-zinc-600/80 bg-white/5 text-white'
                       : 'border-transparent text-zinc-400 hover:border-zinc-600/80 hover:bg-white/5 hover:text-zinc-100'
                   }`}
                 >
