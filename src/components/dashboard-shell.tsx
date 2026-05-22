@@ -8,6 +8,7 @@ import type { ShopRow } from '@/types/shop'
 
 const links = [
   { href: '/dashboard', label: 'INICIO' },
+  { href: '/dashboard/mis-redes', label: 'MIS REDES' },
   { href: '/dashboard/editar-tienda', label: 'EDITAR TIENDA' },
   { href: '/dashboard/catalog', label: 'CATÁLOGO' },
   { href: '/dashboard/settings', label: 'AJUSTES' },

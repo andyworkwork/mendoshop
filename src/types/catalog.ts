@@ -4,6 +4,9 @@ export type ProductRow = {
   subsubcategoria_id: string | null
   name: string
   description: string | null
+  /** Texto largo para el modal de detalle (talle, material, etc.). */
+  product_details: string | null
+  detail_view_count: number
   price: number
   stock_quantity: number
   image_path: string | null

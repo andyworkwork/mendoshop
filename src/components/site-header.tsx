@@ -14,6 +14,9 @@ export async function SiteHeader() {
           <Link href="/#tiendas" className="rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-white/5 hover:text-white">
             Tiendas
           </Link>
+          <Link href="/precios" className="rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-white/5 hover:text-white">
+            Precios
+          </Link>
 
           {loggedIn ? (
             <>

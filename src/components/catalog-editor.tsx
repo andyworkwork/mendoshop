@@ -187,6 +187,22 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
+  async function editProductDetails(productId: string, current: string | null) {
+    const text = prompt(
+      'Detalles del producto (talle, material, envíos…)\nDejá vacío para quitar.',
+      current ?? '',
+    )
+    if (text === null) return
+    setBusy(true)
+    await sb
+      .from('products')
+      .update({ product_details: text.trim() || null })
+      .eq('id', productId)
+      .eq('shop_id', shop.id)
+    setBusy(false)
+    await publishCatalog()
+  }
+
   async function toggleActive(productId: string, active: boolean) {
     setBusy(true)
     await sb.from('products').update({ active: !active }).eq('id', productId)
@@ -287,6 +303,7 @@ export function CatalogEditor({
                 products={sub.products}
                 busy={busy}
                 onUpload={uploadProductImage}
+                onEditDetails={editProductDetails}
                 onToggle={toggleActive}
                 onDelete={deleteProduct}
               />
@@ -302,12 +319,14 @@ function ProductList({
   products,
   busy,
   onUpload,
+  onEditDetails,
   onToggle,
   onDelete,
 }: {
   products: CategoryRow['subcategories'][0]['products']
   busy: boolean
   onUpload: (id: string, f: File | null) => void
+  onEditDetails: (id: string, current: string | null) => void
   onToggle: (id: string, active: boolean) => void
   onDelete: (id: string) => void
 }) {
@@ -345,6 +364,17 @@ function ProductList({
                 onChange={(e) => onUpload(p.id, e.target.files?.[0] ?? null)}
               />
             </label>
+            <button
+              type="button"
+              disabled={busy}
+              className="text-xs text-brand-accent"
+              onClick={() => onEditDetails(p.id, p.product_details)}
+            >
+              Detalles{p.product_details?.trim() ? ' ✓' : ''}
+            </button>
+            {p.detail_view_count > 0 && (
+              <span className="text-xs text-zinc-500">{p.detail_view_count} vistas</span>
+            )}
             <button
               type="button"
               disabled={busy}

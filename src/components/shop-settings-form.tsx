@@ -2,11 +2,10 @@
 
 import { useState } from 'react'
 import { updateShopSettings } from '@/app/actions/shop'
-import { QrPanel } from '@/components/qr-panel'
+import Link from 'next/link'
 import { RubroField } from '@/components/rubro-field'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { shopPublicUrl } from '@/lib/publicUrl'
-import { PLAN_LIMITS } from '@/lib/plans'
 import type { ShopRow } from '@/types/shop'
 
 export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
@@ -16,13 +15,8 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
   const [rubro, setRubro] = useState(shop.category_label ?? '')
   const [seoTitle, setSeoTitle] = useState(shop.seo_title ?? '')
   const [seoDesc, setSeoDesc] = useState(shop.seo_description ?? '')
-  const [instagram, setInstagram] = useState(shop.instagram_url ?? '')
-  const [tiktok, setTiktok] = useState(shop.tiktok_url ?? '')
-  const [website, setWebsite] = useState(shop.website_url ?? '')
-  const [showWhatsappSocial, setShowWhatsappSocial] = useState(() => shop.social_whatsapp_visible === true)
   const [msg, setMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const socialLimit = PLAN_LIMITS[shop.plan].maxSocialLinks
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
@@ -35,10 +29,6 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
       category_label: rubro.trim() || null,
       seo_title: seoTitle.trim() || null,
       seo_description: seoDesc.trim() || null,
-      instagram_url: instagram.trim() || null,
-      tiktok_url: tiktok.trim() || null,
-      website_url: website.trim() || null,
-      social_whatsapp_visible: showWhatsappSocial,
     })
     setLoading(false)
     setMsg('error' in res && res.error ? res.error : 'Guardado correctamente')
@@ -77,64 +67,15 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
           </div>
         </SettingsCollapsible>
 
-        <SettingsCollapsible title="Mis redes sociales" defaultOpen={false}>
-          <div className="space-y-3">
-            {socialLimit === 0 ? (
-              <p className="text-sm text-zinc-400">
-                Disponible desde el plan Básico. En Cuenta podés ver cómo activarlo.
-              </p>
-            ) : (
-              <p className="text-sm text-zinc-400">
-                Aparecen al final de tu tienda.{' '}
-                {shop.plan === 'pro'
-                  ? 'Podés mostrar todas las redes que configures.'
-                  : `Tu plan muestra hasta ${socialLimit} enlaces en el pie de la tienda.`}
-              </p>
-            )}
-            <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
-              Instagram (usuario o link)
-              <input
-                className="input mt-1"
-                placeholder="@mitienda o https://instagram.com/mitienda"
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                disabled={socialLimit === 0}
-              />
-            </label>
-            <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
-              TikTok (usuario o link)
-              <input
-                className="input mt-1"
-                placeholder="@mitienda o https://tiktok.com/@mitienda"
-                value={tiktok}
-                onChange={(e) => setTiktok(e.target.value)}
-                disabled={socialLimit === 0}
-              />
-            </label>
-            <label className={`block text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}>
-              Web personal
-              <input
-                className="input mt-1"
-                placeholder="luminamendoza.shop o https://tusitio.com"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                disabled={socialLimit === 0}
-              />
-            </label>
-            <label
-              className={`flex cursor-pointer items-center gap-2 text-sm ${socialLimit === 0 ? 'opacity-50' : ''}`}
-            >
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-zinc-600"
-                checked={showWhatsappSocial}
-                onChange={(e) => setShowWhatsappSocial(e.target.checked)}
-                disabled={socialLimit === 0}
-              />
-              Mostrar WhatsApp en el pie (usa el número de pedidos de arriba)
-            </label>
-          </div>
-        </SettingsCollapsible>
+        <div className="border-t border-zinc-800 px-4 py-4">
+          <p className="text-sm text-zinc-400">
+            Link para compartir, QR y redes sociales están en{' '}
+            <Link href="/dashboard/mis-redes" className="text-brand-accent font-medium underline">
+              Mis redes
+            </Link>
+            .
+          </p>
+        </div>
 
         <SettingsCollapsible
           title="SEO"
@@ -170,9 +111,6 @@ export function ShopSettingsForm({ shop }: { shop: ShopRow }) {
           </div>
         </SettingsCollapsible>
 
-        <SettingsCollapsible title="QR" subtitle="Código para imprimir o mostrar en tu local" defaultOpen={false}>
-          <QrPanel slug={shop.slug} shopName={shop.name} />
-        </SettingsCollapsible>
       </div>
 
       {msg && (

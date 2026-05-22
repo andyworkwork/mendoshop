@@ -22,6 +22,9 @@ export async function HomeHeroCta() {
       <Link href="/registro" className="btn-primary min-w-[200px] px-6 py-3 text-base">
         Crear mi tienda gratis
       </Link>
+      <Link href="/precios" className="btn-secondary-outline min-w-[200px]">
+        Ver precios
+      </Link>
       <Link href="#tiendas" className="btn-secondary-outline min-w-[200px]">
         Ver tiendas
       </Link>

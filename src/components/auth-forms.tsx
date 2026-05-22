@@ -78,7 +78,7 @@ export function LoginForm({
   )
 }
 
-export function RegisterForm() {
+export function RegisterForm({ referralSlug }: { referralSlug?: string | null }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -128,6 +128,7 @@ export function RegisterForm() {
     }
 
     const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+    const ref = referralSlug?.trim() ? slugify(referralSlug.trim()) : null
 
     const { data: shop, error: shopErr } = await sb
       .from('shops')
@@ -140,6 +141,7 @@ export function RegisterForm() {
         plan: 'free_trial',
         plan_until: trialEnd,
         active: true,
+        referred_by_slug: ref && ref.length >= 3 ? ref : null,
       })
       .select('id')
       .single()
@@ -170,6 +172,9 @@ export function RegisterForm() {
     <form onSubmit={onSubmit} className="card mx-auto max-w-lg space-y-4">
       <h1 className="text-xl font-bold">Crear tu tienda en Mendoshop</h1>
       <p className="text-sm text-zinc-400">7 días de prueba gratis. Sin tarjeta.</p>
+      {referralSlug?.trim() && (
+        <p className="text-xs text-brand-accent">Te invitó una tienda de Mendoshop — ¡bienvenido!</p>
+      )}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <label className="block text-sm">

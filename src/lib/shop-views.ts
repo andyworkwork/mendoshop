@@ -13,4 +13,7 @@ export async function recordShopViewIfAllowed(shopId: string, headers: Headers):
   const service = createServiceClient()
   const { error } = await service.rpc('increment_shop_views', { p_shop_id: shopId })
   if (error) console.error('increment_shop_views', error.message)
+
+  const { error: dailyErr } = await service.rpc('record_shop_view_daily', { p_shop_id: shopId })
+  if (dailyErr) console.error('record_shop_view_daily', dailyErr.message)
 }

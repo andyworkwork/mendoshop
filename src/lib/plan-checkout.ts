@@ -32,9 +32,10 @@ export const CHECKOUT_PRODUCTS: Record<PlanCheckoutProduct, CheckoutProductMeta>
       '+50 productos (hasta 80 en total)',
       '30 días de tienda',
       'Todas tus redes sociales y más',
-      'Prioridad de publicidad en la página',
-      'Contador de visitas',
-      'Personalización exclusiva',
+      'Prioridad en el directorio Mendoshop',
+      'Visitas (7 y 30 días) y productos más consultados',
+      'Detalle por producto en la vitrina',
+      'Sin marca Mendoshop en el pie',
     ],
   },
   test_andy: {

@@ -30,7 +30,7 @@ export async function fetchCategoriesWithNested(
     supabase
       .from('products')
       .select(
-        'id, subcategory_id, subsubcategoria_id, name, description, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order',
+        'id, subcategory_id, subsubcategoria_id, name, description, product_details, detail_view_count, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order',
       )
       .eq('shop_id', shopId)
       .order('sort_order'),
@@ -41,16 +41,23 @@ export async function fetchCategoriesWithNested(
   const cats = catRes.data as Pick<CategoryRow, 'id' | 'name' | 'sort_order' | 'icon'>[]
   const subs = sortByOrder((subRes.data ?? []) as (SubcategoryRow & { category_id: string })[])
 
-  let products = ((prodRes.data ?? []) as (Omit<ProductRow, 'image_gallery' | 'image_focus_x' | 'image_focus_y'> & {
+  let products = ((prodRes.data ?? []) as (Omit<
+    ProductRow,
+    'image_gallery' | 'image_focus_x' | 'image_focus_y'
+  > & {
     image_gallery?: unknown
     image_focus_x?: number | null
     image_focus_y?: number | null
+    product_details?: string | null
+    detail_view_count?: number | null
   })[]).map((r) => {
     const focus = normalizeImageFocus(r.image_focus_x, r.image_focus_y)
     return {
       ...r,
       subsubcategoria_id: null,
       price: Number(r.price),
+      product_details: r.product_details?.trim() || null,
+      detail_view_count: Number(r.detail_view_count ?? 0),
       image_focus_x: focus.x,
       image_focus_y: focus.y,
       image_gallery: normalizeGallery(r.image_gallery),

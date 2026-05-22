@@ -20,6 +20,8 @@ import {
   type ProductViewMode,
 } from '@/components/store-product-view-selector'
 import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
+import { StorePoweredBy } from '@/components/store-powered-by'
+import { ProductDetailModal } from '@/components/product-detail-modal'
 import { resolveFeaturedProducts } from '@/lib/featured-products'
 
 type Props = {
@@ -81,6 +83,7 @@ export function Storefront({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
   const [productViewMode, setProductViewMode] = useState<ProductViewMode>('category')
   const [priceVisibleCount, setPriceVisibleCount] = useState(PRICE_PAGE_SIZE)
+  const [detailProduct, setDetailProduct] = useState<FlatProduct | null>(null)
 
   useEffect(() => {
     if (!isEdit) return
@@ -287,10 +290,12 @@ export function Storefront({
                 <ProductCard
                   key={p.id}
                   product={p}
+                  shopId={shop.id}
                   isLight={isLight}
                   accentFrame={productFrame}
                   isEdit={isEdit}
                   onAdd={() => addProduct(p)}
+                  onOpenDetail={() => setDetailProduct(p)}
                 />
               ))}
             </ul>
@@ -338,10 +343,12 @@ export function Storefront({
                           <ProductCard
                             key={p.id}
                             product={p}
+                            shopId={shop.id}
                             isLight={isLight}
                             accentFrame={productFrame}
                             isEdit={isEdit}
                             onAdd={() => addProduct(p)}
+                            onOpenDetail={() => setDetailProduct(p)}
                           />
                         ))}
                       </ul>
@@ -365,10 +372,12 @@ export function Storefront({
                         <ProductCard
                           key={p.id}
                           product={p}
+                          shopId={shop.id}
                           isLight={isLight}
                           accentFrame={productFrame}
                           isEdit={isEdit}
                           onAdd={() => addProduct(p)}
+                          onOpenDetail={() => setDetailProduct(p)}
                         />
                       ))}
                     </ul>
@@ -400,9 +409,24 @@ export function Storefront({
 
       </main>
 
+      <StorePoweredBy shop={shop} />
       <StoreSocialFooter shop={shop} isLight={isLight} />
 
       <StoreWhatsAppBar shop={shop} />
+      {detailProduct && (
+        <ProductDetailModal
+          product={detailProduct}
+          shopId={shop.id}
+          isLight={isLight}
+          accentFrame={productFrame}
+          open={Boolean(detailProduct)}
+          onClose={() => setDetailProduct(null)}
+          onAdd={() => {
+            addProduct(detailProduct)
+            setDetailProduct(null)
+          }}
+        />
+      )}
       <StoreCategoryDrawer
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -417,16 +441,20 @@ export function Storefront({
 
 function ProductCard({
   product: p,
+  shopId: _shopId,
   isLight,
   accentFrame,
   isEdit,
   onAdd,
+  onOpenDetail,
 }: {
   product: FlatProduct
+  shopId: string
   isLight: boolean
   accentFrame: string
   isEdit?: boolean
   onAdd: () => void
+  onOpenDetail: () => void
 }) {
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -447,18 +475,30 @@ function ProductCard({
   return (
     <li className={cardClass} style={{ ['--shop-product-frame' as string]: frameVar }}>
       <div className="relative">
-        {img ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={img}
-            alt={p.name}
-            loading="lazy"
-            decoding="async"
-            className="store-product-card__media"
-            style={mediaFocus}
-          />
-        ) : (
-          <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
+        <button
+          type="button"
+          className="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
+          onClick={onOpenDetail}
+          aria-label={`Ver detalle de ${p.name}`}
+        >
+          {img ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={img}
+              alt={p.name}
+              loading="lazy"
+              decoding="async"
+              className="store-product-card__media"
+              style={mediaFocus}
+            />
+          ) : (
+            <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
+          )}
+        </button>
+        {(p.product_details?.trim() || p.description?.trim()) && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
+            Ver más
+          </span>
         )}
       </div>
       <div className="store-product-card__body">

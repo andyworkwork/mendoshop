@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
 export default function DashboardQrPage() {
-  redirect('/dashboard/settings')
+  redirect('/dashboard/mis-redes')
 }
