@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server'
-import { fetchMercadoPagoPayment, isMercadoPagoConfigured } from '@/lib/mercadopago'
-import { fulfillPlanPayment } from '@/lib/plan-payments'
-import { createServiceClient } from '@/lib/supabase/service'
-import { revalidatePath } from 'next/cache'
+import { isMercadoPagoConfigured } from '@/lib/mercadopago'
+import {
+  isMercadoPagoWebhookSignatureRequired,
+  mercadoPagoWebhookDataIdFromUrl,
+  mercadoPagoWebhookSecret,
+  verifyMercadoPagoWebhookSignature,
+} from '@/lib/mercadopago-webhook-signature'
+import {
+  patchPlanPaymentFromMercadoPago,
+  syncApprovedPlanPaymentFromMercadoPago,
+} from '@/lib/mercadopago-plan-sync'
+
+const SIGNATURE_MAX_AGE_SECONDS = 60 * 60 * 24
 
 function paymentIdFromRequest(req: Request, body: Record<string, unknown>): string | null {
   const url = new URL(req.url)
@@ -17,63 +26,43 @@ function paymentIdFromRequest(req: Request, body: Record<string, unknown>): stri
   return null
 }
 
+function unauthorized(reason: string) {
+  console.warn('mercadopago webhook: unauthorized', reason)
+  return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
+}
+
+function verifyRequestSignature(req: Request): NextResponse | null {
+  const secret = mercadoPagoWebhookSecret()
+  if (!secret) return null
+
+  const url = new URL(req.url)
+  const ok = verifyMercadoPagoWebhookSignature({
+    xSignature: req.headers.get('x-signature'),
+    xRequestId: req.headers.get('x-request-id'),
+    dataId: mercadoPagoWebhookDataIdFromUrl(url),
+    secret,
+    maxAgeSeconds: SIGNATURE_MAX_AGE_SECONDS,
+  })
+
+  if (!ok) return unauthorized('invalid or missing x-signature')
+  return null
+}
+
 async function syncPayment(mpPaymentId: string) {
-  const mpPayment = await fetchMercadoPagoPayment(mpPaymentId)
-  const externalRef = mpPayment.external_reference?.trim()
-  if (!externalRef) return
+  const approved = await syncApprovedPlanPaymentFromMercadoPago(mpPaymentId)
+  if ('error' in approved) throw new Error(approved.error)
+  if (approved.activated) return
 
-  const service = createServiceClient()
-
-  const { data: row } = await service
-    .from('shop_plan_payments')
-    .select('id, status')
-    .eq('id', externalRef)
-    .maybeSingle()
-
-  if (!row) return
-
-  const patch: Record<string, unknown> = {
-    mp_payment_id: String(mpPayment.id),
-    updated_at: new Date().toISOString(),
-  }
-
-  if (mpPayment.status === 'approved') {
-    const { data: fullRow } = await service
-      .from('shop_plan_payments')
-      .select('amount_ars')
-      .eq('id', row.id)
-      .maybeSingle()
-
-    const expected = fullRow ? Number(fullRow.amount_ars) : null
-    const paid = mpPayment.transaction_amount
-    if (
-      expected != null &&
-      paid != null &&
-      Math.abs(paid - expected) > 0.02
-    ) {
-      console.error('mercadopago amount mismatch', { expected, paid, paymentId: row.id })
-      return
-    }
-
-    await service.from('shop_plan_payments').update(patch).eq('id', row.id)
-    await fulfillPlanPayment(row.id)
-    revalidatePath('/dashboard/account')
-    return
-  }
-
-  if (mpPayment.status === 'rejected' || mpPayment.status === 'cancelled') {
-    patch.status = 'rejected'
-    await service.from('shop_plan_payments').update(patch).eq('id', row.id)
-    return
-  }
-
-  await service.from('shop_plan_payments').update(patch).eq('id', row.id)
+  await patchPlanPaymentFromMercadoPago(mpPaymentId)
 }
 
 export async function POST(req: Request) {
   if (!isMercadoPagoConfigured()) {
     return NextResponse.json({ ok: false }, { status: 503 })
   }
+
+  const authError = verifyRequestSignature(req)
+  if (authError) return authError
 
   let body: Record<string, unknown> = {}
   try {
@@ -96,10 +85,18 @@ export async function POST(req: Request) {
   }
 }
 
-/** IPN legacy (query topic=payment&id=...) */
+/**
+ * IPN legacy (topic=payment&id=…). Sin x-signature: solo si no hay secret configurado.
+ * Preferí webhooks POST firmados en el panel de MP.
+ */
 export async function GET(req: Request) {
   if (!isMercadoPagoConfigured()) {
     return NextResponse.json({ ok: false }, { status: 503 })
+  }
+
+  if (isMercadoPagoWebhookSignatureRequired()) {
+    const authError = verifyRequestSignature(req)
+    if (authError) return authError
   }
 
   const url = new URL(req.url)

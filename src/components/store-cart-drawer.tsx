@@ -38,10 +38,10 @@ export function StoreCartDrawer({ shop, open, onClose }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shop_id: shop.id, items }),
       })
-      const js = (await res.json()) as { id?: string; error?: string }
-      if (!res.ok || !js.id) throw new Error(js.error ?? 'Error')
+      const js = (await res.json()) as { id?: string; token?: string; error?: string }
+      if (!res.ok || !js.id || !js.token) throw new Error(js.error ?? 'Error')
 
-      const cartUrl = `${appBaseUrl()}/tienda/${shop.slug}/c/${js.id}`
+      const cartUrl = `${appBaseUrl()}/tienda/${shop.slug}/c/${js.id}?t=${encodeURIComponent(js.token)}`
       const detail = formatWhatsAppDetailFromStoreLines(lines)
       const msg = [
         `Hola! Quiero comprar en *${shop.name}*:`,

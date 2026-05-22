@@ -69,11 +69,14 @@ Variables en Vercel / `.env.local`:
 | Variable | Uso |
 |----------|-----|
 | `MERCADOPAGO_ACCESS_TOKEN` | Access token de tu aplicación MP (producción o `TEST-…` en sandbox) |
+| `MERCADOPAGO_WEBHOOK_SECRET` | Secret de firma del mismo panel Webhooks (valida `x-signature`) |
 | `NEXT_PUBLIC_APP_URL` | URL pública, ej. `https://mendoshop.vercel.app` (webhook y vuelta post-pago) |
 
 En [Mercado Pago Developers](https://www.mercadopago.com.ar/developers) → tu app → **Webhooks**, configurá la URL:
 
 `https://TU_DOMINIO/api/payments/mercadopago/webhook`
+
+Copiá el **secret** que muestra MP a `MERCADOPAGO_WEBHOOK_SECRET` en Vercel. Sin eso, el endpoint acepta POST sin verificar firma (solo recomendable en pruebas locales).
 
 Aplicá la migración `supabase/migrations/006_shop_plan_payments.sql` en Supabase.
 

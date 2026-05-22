@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { fetchShopBySlug } from '@/lib/shops'
 import { fetchCategoriesWithNested } from '@/lib/fetch-catalog'
 import { isShopSubscriptionActive, planHasViewCount } from '@/lib/plans'
+import { recordShopViewIfAllowed } from '@/lib/shop-views'
 import { Storefront } from '@/components/storefront'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -20,7 +22,7 @@ export default async function ShopPage({ params }: Props) {
   }
 
   if (planHasViewCount(shop.plan)) {
-    await supabase.rpc('increment_shop_views', { p_shop_id: shop.id })
+    await recordShopViewIfAllowed(shop.id, await headers())
   }
 
   const categories = await fetchCategoriesWithNested(supabase, shop.id)

@@ -2,6 +2,7 @@
 
 import { clampFocusPercent } from '@/lib/image-focus'
 import { createClient } from '@/lib/supabase/server'
+import { consumeRateLimit } from '@/lib/rate-limit'
 import { slugify } from '@/lib/format'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -100,10 +101,20 @@ export async function signOutAction() {
   redirect('/')
 }
 
-export async function validateSlug(slug: string): Promise<boolean> {
+/** Solo usuarios autenticados; respuesta opaca (no distingue “ocupado” de “formato inválido”). */
+export async function validateSlug(slug: string): Promise<{ acceptable: boolean }> {
   const s = slugify(slug)
-  if (s.length < 3) return false
+  if (s.length < 3 || s.length > 60) return { acceptable: false }
+
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { acceptable: false }
+
+  const allowed = await consumeRateLimit(`slug-check:${user.id}`, 30, 60)
+  if (!allowed) return { acceptable: false }
+
   const { data } = await supabase.from('shops').select('id').eq('slug', s).maybeSingle()
-  return !data
+  return { acceptable: !data }
 }

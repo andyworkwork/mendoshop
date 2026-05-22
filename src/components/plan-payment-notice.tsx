@@ -31,15 +31,13 @@ export function PlanPaymentNotice() {
     if (status !== 'success') return
 
     const mpPaymentId = params.get('payment_id') ?? params.get('collection_id')
-    const externalReference = params.get('external_reference')
-
-    if (!mpPaymentId && !externalReference) return
+    if (!mpPaymentId) return
 
     let cancelled = false
     setSyncing(true)
     setSyncError(null)
 
-    confirmPlanPaymentFromReturn({ mpPaymentId, externalReference }).then((res) => {
+    confirmPlanPaymentFromReturn({ mpPaymentId }).then((res) => {
       if (cancelled) return
       if ('error' in res) {
         setSyncError(res.error)

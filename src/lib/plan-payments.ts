@@ -53,9 +53,10 @@ export async function expireAllStalePendingPlanPayments(
     .lt('created_at', cutoff)
 }
 
-/** Activa o renueva tras un pago aprobado (idempotente por mp_payment_id). */
+/** Activa o renueva tras un pago aprobado (un solo grant por pago pending). */
 export async function fulfillPlanPayment(paymentId: string): Promise<{ ok: true } | { error: string }> {
   const service = createServiceClient()
+  const now = new Date().toISOString()
 
   const { data: row, error: fetchErr } = await service
     .from('shop_plan_payments')
@@ -67,16 +68,35 @@ export async function fulfillPlanPayment(paymentId: string): Promise<{ ok: true 
   if (!row) return { error: 'Pago no encontrado.' }
   if (row.status === 'approved') return { ok: true }
 
-  const product = row.plan as PlanCheckoutProduct
+  const { data: claimed, error: claimErr } = await service
+    .from('shop_plan_payments')
+    .update({ status: 'approved', updated_at: now })
+    .eq('id', paymentId)
+    .eq('status', 'pending')
+    .select('id, shop_id, plan, days_added')
+    .maybeSingle()
+
+  if (claimErr) return { error: claimErr.message }
+  if (!claimed) {
+    const { data: again } = await service
+      .from('shop_plan_payments')
+      .select('status')
+      .eq('id', paymentId)
+      .maybeSingle()
+    if (again?.status === 'approved') return { ok: true }
+    return { error: 'El pago no está pendiente.' }
+  }
+
+  const product = claimed.plan as PlanCheckoutProduct
   const meta = CHECKOUT_PRODUCTS[product]
   if (!meta) return { error: 'Producto de pago desconocido.' }
 
-  const days = row.days_added ?? meta.daysAdded
+  const days = claimed.days_added ?? meta.daysAdded
 
   const { data: shop, error: shopErr } = await service
     .from('shops')
     .select('plan, plan_until')
-    .eq('id', row.shop_id)
+    .eq('id', claimed.shop_id)
     .maybeSingle()
 
   if (shopErr) return { error: shopErr.message }
@@ -89,7 +109,7 @@ export async function fulfillPlanPayment(paymentId: string): Promise<{ ok: true 
       : `Pago Mercado Pago — plan ${checkoutProductLabel(product)} (${days} días)`
 
   const { error: grantErr } = await service.from('shop_plan_grants').insert({
-    shop_id: row.shop_id,
+    shop_id: claimed.shop_id,
     days_added: days,
     reason,
   })
@@ -103,19 +123,9 @@ export async function fulfillPlanPayment(paymentId: string): Promise<{ ok: true 
     shopPatch.plan = meta.shopPlanOnPay
   }
 
-  const { error: shopUpdateErr } = await service.from('shops').update(shopPatch).eq('id', row.shop_id)
+  const { error: shopUpdateErr } = await service.from('shops').update(shopPatch).eq('id', claimed.shop_id)
 
   if (shopUpdateErr) return { error: shopUpdateErr.message }
-
-  const { error: payUpdateErr } = await service
-    .from('shop_plan_payments')
-    .update({
-      status: 'approved',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId)
-
-  if (payUpdateErr) return { error: payUpdateErr.message }
 
   return { ok: true }
 }
