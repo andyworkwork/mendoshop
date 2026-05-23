@@ -83,6 +83,7 @@ export async function updateShopSettings(
     .select('slug')
     .single()
   if (error) return { error: error.message }
+  revalidatePath('/')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/settings')
   revalidatePath('/dashboard/editar-tienda')

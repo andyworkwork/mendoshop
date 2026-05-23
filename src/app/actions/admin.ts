@@ -129,6 +129,7 @@ export async function updateShopAdmin(
   const service = createServiceClient()
   const { error } = await service.from('shops').update(patch).eq('id', shopId)
   if (error) return { error: error.message }
+  revalidatePath('/')
   revalidatePath('/admin')
   revalidatePath('/admin/crear-cuenta')
   revalidatePath('/admin/historial-planes')

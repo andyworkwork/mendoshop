@@ -5,12 +5,12 @@ import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { SiteFooter } from '@/components/site-footer'
-import { createClient } from '@/lib/supabase/server'
-import { fetchFeaturedShops } from '@/lib/shops'
+import { fetchPublicDirectoryShops } from '@/lib/shops'
+
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
-  const supabase = await createClient()
-  const shops = await fetchFeaturedShops(supabase, 24)
+  const shops = await fetchPublicDirectoryShops(24)
 
   return (
     <div className="relative min-h-screen mendoshop-page-bg">

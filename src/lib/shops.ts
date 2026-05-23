@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getShopBannerDisplayUrl } from '@/lib/shop-banner'
+import { createServiceClient } from '@/lib/supabase/service'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { normalizeImageFocus } from '@/lib/image-focus'
 import { normalizeCategoryIcon } from '@/lib/category-icons'
@@ -9,7 +10,9 @@ import type { ShopRow } from '@/types/shop'
 import { DEFAULT_THEME } from '@/types/shop'
 
 export function resolveShopBannerUrl(shop: ShopRow): string | null {
-  const custom = getShopBannerDisplayUrl(shop.banner_path)
+  const custom = getShopBannerDisplayUrl(shop.banner_path, {
+    cacheKey: shop.banner_path ? shop.updated_at : null,
+  })
   if (custom) return custom
   return templateBannerSrc(shop.theme.templateId)
 }
@@ -47,6 +50,7 @@ export function mapShopRow(raw: Record<string, unknown>): ShopRow {
     category_view_icon: normalizeCategoryIcon(
       (raw.category_view_icon as string | null | undefined) ?? undefined,
     ),
+    updated_at: String(raw.updated_at ?? ''),
   }
 }
 
@@ -64,19 +68,57 @@ export async function fetchShopBySlug(
   return mapShopRow(data as Record<string, unknown>)
 }
 
-export async function fetchFeaturedShops(supabase: SupabaseClient, limit = 12): Promise<ShopRow[]> {
-  const { data } = await supabase
+function sortDirectoryShops(shops: ShopRow[], limit: number): ShopRow[] {
+  const pro = shops.filter((s) => s.plan === 'pro')
+  const rest = shops.filter((s) => s.plan !== 'pro')
+  return [...pro, ...rest].slice(0, limit)
+}
+
+/** Tiendas visibles en el directorio público (misma regla que RLS / vitrina). */
+export async function fetchPublicDirectoryShops(limit = 24): Promise<ShopRow[]> {
+  const supabase = createServiceClient()
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
     .from('shops')
     .select('*')
     .eq('active', true)
+    .or(`plan_until.is.null,plan_until.gt.${now}`)
     .order('featured', { ascending: false })
     .order('view_count', { ascending: false })
     .limit(Math.max(limit * 3, limit))
 
+  if (error) {
+    console.error('fetchPublicDirectoryShops', error.message)
+    return []
+  }
+
+  return sortDirectoryShops(
+    (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>)),
+    limit,
+  )
+}
+
+export async function fetchFeaturedShops(supabase: SupabaseClient, limit = 12): Promise<ShopRow[]> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('shops')
+    .select('*')
+    .eq('active', true)
+    .or(`plan_until.is.null,plan_until.gt.${now}`)
+    .order('featured', { ascending: false })
+    .order('view_count', { ascending: false })
+    .limit(Math.max(limit * 3, limit))
+
+  if (error) {
+    console.error('fetchFeaturedShops', error.message)
+    return fetchPublicDirectoryShops(limit)
+  }
+
   const shops = (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>))
-  const pro = shops.filter((s) => s.plan === 'pro')
-  const rest = shops.filter((s) => s.plan !== 'pro')
-  return [...pro, ...rest].slice(0, limit)
+  if (shops.length === 0) {
+    return fetchPublicDirectoryShops(limit)
+  }
+  return sortDirectoryShops(shops, limit)
 }
 
 export async function fetchUserShops(supabase: SupabaseClient): Promise<ShopRow[]> {

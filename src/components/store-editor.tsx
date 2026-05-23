@@ -299,6 +299,7 @@ export function StoreEditor({
               setShop(next)
               setBannerFocus(normalizeImageFocus(next.banner_focus_x, next.banner_focus_y))
             }}
+            onUploaded={() => setBannerMediaKey((k) => k + 1)}
           />
           <div className="mt-4 border-t border-zinc-800 pt-4">
             <p className="mb-2 text-sm font-medium text-zinc-200">Vista en el banner</p>

@@ -52,6 +52,8 @@ export type ShopRow = {
   featured_product_ids: string[]
   /** Icono del botón "Categorías" en el selector de orden de la vitrina. */
   category_view_icon: string
+  /** ISO timestamp; sirve para invalidar caché del banner en CDN. */
+  updated_at: string
 }
 
 export const DEFAULT_THEME: ShopTheme = {

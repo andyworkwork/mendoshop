@@ -6,7 +6,7 @@ import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
 import { compressImageForUpload } from '@/lib/image-compress'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { resolveShopBannerUrl } from '@/lib/shops'
-import { shopBannerStoragePath } from '@/lib/shop-banner'
+import { newShopBannerRevision, shopBannerStoragePath } from '@/lib/shop-banner'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { createClient } from '@/lib/supabase/browser'
 import type { ShopRow } from '@/types/shop'
@@ -14,9 +14,11 @@ import type { ShopRow } from '@/types/shop'
 export function ShopBannerUpload({
   shop,
   onShopChange,
+  onUploaded,
 }: {
   shop: ShopRow
   onShopChange?: (next: ShopRow) => void
+  onUploaded?: () => void
 }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -29,11 +31,12 @@ export function ShopBannerUpload({
     setBusy(true)
     setMsg(null)
     const sb = createClient()
-    const path = shopBannerStoragePath(shop.id)
+    const previousPath = shop.banner_path
+    const path = shopBannerStoragePath(shop.id, newShopBannerRevision())
     try {
       const webp = await compressImageForUpload(file, 'banner')
       const uploadOpts = {
-        upsert: true,
+        upsert: false,
         contentType: 'image/webp',
         cacheControl: SHOP_IMAGES_CACHE_CONTROL,
       } as const
@@ -47,12 +50,19 @@ export function ShopBannerUpload({
       })
       if ('error' in res && res.error) throw new Error(res.error)
 
+      if (previousPath && previousPath !== path) {
+        await sb.storage.from('shop-images').remove([previousPath])
+      }
+
+      const updatedAt = new Date().toISOString()
       onShopChange?.({
         ...shop,
         banner_path: path,
         banner_focus_x: 50,
         banner_focus_y: 50,
+        updated_at: updatedAt,
       })
+      onUploaded?.()
       setMsg('Banner actualizado (WebP optimizado).')
       await revalidateStorefront(shop.slug)
     } catch (e) {
@@ -66,9 +76,10 @@ export function ShopBannerUpload({
     setBusy(true)
     setMsg(null)
     const sb = createClient()
-    const path = shopBannerStoragePath(shop.id)
     try {
-      await sb.storage.from('shop-images').remove([path])
+      if (shop.banner_path) {
+        await sb.storage.from('shop-images').remove([shop.banner_path])
+      }
       const res = await updateShopSettings(shop.id, {
         banner_path: null,
         banner_focus_x: 50,
@@ -81,7 +92,9 @@ export function ShopBannerUpload({
         banner_path: null,
         banner_focus_x: 50,
         banner_focus_y: 50,
+        updated_at: new Date().toISOString(),
       })
+      onUploaded?.()
       setMsg('Volviste a la imagen de la plantilla.')
       await revalidateStorefront(shop.slug)
     } catch (e) {
