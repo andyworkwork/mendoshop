@@ -17,6 +17,42 @@ import { categoryIconLabel } from '@/lib/category-icons'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 
+type NamePriceDraft = {
+  categories: {
+    id: string
+    name: string
+    subcategories: {
+      id: string
+      name: string
+      products: { id: string; name: string; price: string }[]
+    }[]
+  }[]
+}
+
+function buildNamePriceDraft(categories: CategoryRow[]): NamePriceDraft {
+  return {
+    categories: categories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      subcategories: cat.subcategories.map((sub) => ({
+        id: sub.id,
+        name: sub.name,
+        products: sub.products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price: String(p.price),
+        })),
+      })),
+    })),
+  }
+}
+
+function parsePriceInput(raw: string): number | null {
+  const n = Number(raw.replace(',', '.').trim())
+  if (!Number.isFinite(n) || n < 0) return null
+  return n
+}
+
 async function removeProductImages(
   sb: ReturnType<typeof createClient>,
   shopId: string,
@@ -45,6 +81,9 @@ export function CatalogEditor({
     details: string
   } | null>(null)
   const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [bulkEdit, setBulkEdit] = useState(false)
+  const [draft, setDraft] = useState<NamePriceDraft | null>(null)
+  const [bulkError, setBulkError] = useState<string | null>(null)
   const sb = createClient()
   const limits = PLAN_LIMITS[shop.plan]
   const productCount = countProducts(categories)
@@ -242,90 +281,347 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
+  function startBulkEdit() {
+    setBulkError(null)
+    setDraft(buildNamePriceDraft(categories))
+    setBulkEdit(true)
+  }
+
+  function cancelBulkEdit() {
+    setBulkEdit(false)
+    setDraft(null)
+    setBulkError(null)
+  }
+
+  async function saveBulkEdit() {
+    if (!draft) return
+    setBulkError(null)
+    setBusy(true)
+
+    for (const cat of draft.categories) {
+      const catName = cat.name.trim()
+      if (!catName) {
+        setBulkError('Todas las categorías necesitan un nombre.')
+        setBusy(false)
+        return
+      }
+      for (const sub of cat.subcategories) {
+        const subName = sub.name.trim()
+        if (!subName) {
+          setBulkError('Todas las subcategorías necesitan un nombre.')
+          setBusy(false)
+          return
+        }
+        for (const p of sub.products) {
+          const pName = p.name.trim()
+          if (!pName) {
+            setBulkError('Todos los productos necesitan un nombre.')
+            setBusy(false)
+            return
+          }
+          const price = parsePriceInput(p.price)
+          if (price === null) {
+            setBulkError(`Precio inválido en «${pName}». Usá un número ≥ 0.`)
+            setBusy(false)
+            return
+          }
+        }
+      }
+    }
+
+    try {
+      for (const cat of draft.categories) {
+        const { error } = await sb
+          .from('categories')
+          .update({ name: cat.name.trim() })
+          .eq('id', cat.id)
+          .eq('shop_id', shop.id)
+        if (error) throw new Error(error.message)
+
+        for (const sub of cat.subcategories) {
+          const { error: subErr } = await sb
+            .from('subcategories')
+            .update({ name: sub.name.trim() })
+            .eq('id', sub.id)
+            .eq('shop_id', shop.id)
+          if (subErr) throw new Error(subErr.message)
+
+          for (const p of sub.products) {
+            const price = parsePriceInput(p.price)!
+            const { error: prodErr } = await sb
+              .from('products')
+              .update({ name: p.name.trim(), price })
+              .eq('id', p.id)
+              .eq('shop_id', shop.id)
+            if (prodErr) throw new Error(prodErr.message)
+          }
+        }
+      }
+
+      setBulkEdit(false)
+      setDraft(null)
+      await publishCatalog()
+    } catch (e) {
+      setBulkError(e instanceof Error ? e.message : 'No se pudieron guardar los cambios.')
+    }
+    setBusy(false)
+  }
+
+  const catalogView = bulkEdit && draft ? draft.categories : null
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-zinc-400">
           Productos: {productCount} / {limits.maxProducts}
         </p>
-        <button type="button" disabled={busy} onClick={addCategory} className="btn-primary text-sm">
-          + Categoría
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {bulkEdit ? (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void saveBulkEdit()}
+                className="btn-primary text-sm"
+              >
+                {busy ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={cancelBulkEdit}
+                className="rounded-xl border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={busy || categories.length === 0}
+                onClick={startBulkEdit}
+                className="rounded-xl border border-zinc-600 px-4 py-2 text-sm hover:bg-zinc-800"
+              >
+                Editar nombres y precios
+              </button>
+              <button type="button" disabled={busy} onClick={addCategory} className="btn-primary text-sm">
+                + Categoría
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {bulkEdit && (
+        <p className="rounded-xl border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-zinc-200">
+          Modo edición: cambiá nombres y precios abajo. Al terminar, tocá{' '}
+          <span className="font-semibold text-brand">Guardar cambios</span>.
+        </p>
+      )}
+
+      {bulkError && (
+        <p className="text-sm text-red-400" role="alert">
+          {bulkError}
+        </p>
+      )}
 
       {categories.length === 0 && (
         <p className="text-zinc-500">Empezá creando una categoría (ej. Ropa, Accesorios, Comida).</p>
       )}
 
-      {categories.map((cat) => (
-        <section key={cat.id} className="card space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold text-brand">{cat.name}</h2>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                className="text-sm text-brand-accent"
-                onClick={() => addSubcategory(cat.id)}
-              >
-                + Subcategoría
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                className="text-sm text-red-400"
-                onClick={() => void deleteCategory(cat.id, cat.name)}
-              >
-                Eliminar categoría
-              </button>
+      {(catalogView ?? categories).map((cat, catIdx) => {
+        const fullCat = categories[catIdx]!
+        const catName = bulkEdit && draft ? cat.name : fullCat.name
+        const subs = bulkEdit && draft ? cat.subcategories : fullCat.subcategories
+
+        return (
+          <section key={fullCat.id} className="card space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {bulkEdit && draft ? (
+                <input
+                  className="input max-w-md flex-1 font-semibold text-brand"
+                  value={catName}
+                  disabled={busy}
+                  onChange={(e) => {
+                    const name = e.target.value
+                    setDraft((d) => {
+                      if (!d) return d
+                      return {
+                        categories: d.categories.map((c) =>
+                          c.id === fullCat.id ? { ...c, name } : c,
+                        ),
+                      }
+                    })
+                  }}
+                  aria-label="Nombre de categoría"
+                />
+              ) : (
+                <h2 className="font-semibold text-brand">{fullCat.name}</h2>
+              )}
+              {!bulkEdit && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="text-sm text-brand-accent"
+                    onClick={() => addSubcategory(fullCat.id)}
+                  >
+                    + Subcategoría
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="text-sm text-red-400"
+                    onClick={() => void deleteCategory(fullCat.id, fullCat.name)}
+                  >
+                    Eliminar categoría
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-xs text-zinc-500">
-              Icono en la tienda ({categoryIconLabel(cat.icon)})
-            </p>
-            <CategoryIconPicker
-              value={cat.icon}
-              disabled={busy}
-              onChange={(icon) => void setCategoryIcon(cat.id, icon)}
-            />
-          </div>
-          {cat.subcategories.length === 0 && (
-            <p className="text-xs text-zinc-500">Sin subcategorías. Agregá una para cargar productos.</p>
-          )}
-          {cat.subcategories.map((sub) => (
-            <div key={sub.id} className="ml-2 border-l border-zinc-700 pl-4 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-medium">{sub.name}</h3>
-                <button
-                  type="button"
-                  className="text-xs text-brand-accent"
+            {!bulkEdit && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-zinc-500">
+                  Icono en la tienda ({categoryIconLabel(fullCat.icon)})
+                </p>
+                <CategoryIconPicker
+                  value={fullCat.icon}
                   disabled={busy}
-                  onClick={() => addProduct(sub.id)}
-                >
-                  + Producto
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="text-xs text-red-400"
-                  onClick={() => void deleteSubcategory(sub.id, sub.name)}
-                >
-                  Eliminar subcategoría
-                </button>
+                  onChange={(icon) => void setCategoryIcon(fullCat.id, icon)}
+                />
               </div>
-              <ProductList
-                products={sub.products}
-                busy={busy}
-                onUpload={uploadProductImage}
-                onEditDetails={openDetailsEditor}
-                onToggle={toggleActive}
-                onDelete={deleteProduct}
-              />
-            </div>
-          ))}
-        </section>
-      ))}
+            )}
+            {subs.length === 0 && (
+              <p className="text-xs text-zinc-500">Sin subcategorías. Agregá una para cargar productos.</p>
+            )}
+            {subs.map((sub, subIdx) => {
+              const fullSub = fullCat.subcategories[subIdx]!
+              const subName = bulkEdit && draft ? sub.name : fullSub.name
+              const draftProducts =
+                bulkEdit && draft ? draft.categories[catIdx]!.subcategories[subIdx]!.products : null
+
+              return (
+                <div key={fullSub.id} className="ml-2 border-l border-zinc-700 pl-4 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {bulkEdit && draft ? (
+                      <input
+                        className="input max-w-xs flex-1 font-medium"
+                        value={subName}
+                        disabled={busy}
+                        onChange={(e) => {
+                          const name = e.target.value
+                          setDraft((d) => {
+                            if (!d) return d
+                            return {
+                              categories: d.categories.map((c) =>
+                                c.id !== fullCat.id
+                                  ? c
+                                  : {
+                                      ...c,
+                                      subcategories: c.subcategories.map((s) =>
+                                        s.id === fullSub.id ? { ...s, name } : s,
+                                      ),
+                                    },
+                              ),
+                            }
+                          })
+                        }}
+                        aria-label="Nombre de subcategoría"
+                      />
+                    ) : (
+                      <h3 className="font-medium">{fullSub.name}</h3>
+                    )}
+                    {!bulkEdit && (
+                      <>
+                        <button
+                          type="button"
+                          className="text-xs text-brand-accent"
+                          disabled={busy}
+                          onClick={() => addProduct(fullSub.id)}
+                        >
+                          + Producto
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          className="text-xs text-red-400"
+                          onClick={() => void deleteSubcategory(fullSub.id, fullSub.name)}
+                        >
+                          Eliminar subcategoría
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {draftProducts ? (
+                    <BulkEditProductList
+                      products={draftProducts}
+                      busy={busy}
+                      onChangeName={(productId, name) => {
+                        setDraft((d) => {
+                          if (!d) return d
+                          return {
+                            categories: d.categories.map((c) =>
+                              c.id !== fullCat.id
+                                ? c
+                                : {
+                                    ...c,
+                                    subcategories: c.subcategories.map((s) =>
+                                      s.id !== fullSub.id
+                                        ? s
+                                        : {
+                                            ...s,
+                                            products: s.products.map((p) =>
+                                              p.id === productId ? { ...p, name } : p,
+                                            ),
+                                          },
+                                    ),
+                                  },
+                            ),
+                          }
+                        })
+                      }}
+                      onChangePrice={(productId, price) => {
+                        setDraft((d) => {
+                          if (!d) return d
+                          return {
+                            categories: d.categories.map((c) =>
+                              c.id !== fullCat.id
+                                ? c
+                                : {
+                                    ...c,
+                                    subcategories: c.subcategories.map((s) =>
+                                      s.id !== fullSub.id
+                                        ? s
+                                        : {
+                                            ...s,
+                                            products: s.products.map((p) =>
+                                              p.id === productId ? { ...p, price } : p,
+                                            ),
+                                          },
+                                    ),
+                                  },
+                            ),
+                          }
+                        })
+                      }}
+                    />
+                  ) : (
+                    <ProductList
+                      products={fullSub.products}
+                      busy={busy}
+                      onUpload={uploadProductImage}
+                      onEditDetails={openDetailsEditor}
+                      onToggle={toggleActive}
+                      onDelete={deleteProduct}
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </section>
+        )
+      })}
 
       {detailsError && (
         <p className="text-sm text-red-400" role="alert">
@@ -344,6 +640,49 @@ export function CatalogEditor({
         onSave={(text) => void saveProductDetails(text)}
       />
     </div>
+  )
+}
+
+function BulkEditProductList({
+  products,
+  busy,
+  onChangeName,
+  onChangePrice,
+}: {
+  products: { id: string; name: string; price: string }[]
+  busy: boolean
+  onChangeName: (id: string, name: string) => void
+  onChangePrice: (id: string, price: string) => void
+}) {
+  if (products.length === 0) return null
+  return (
+    <ul className="space-y-2">
+      {products.map((p) => (
+        <li
+          key={p.id}
+          className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 p-2"
+        >
+          <input
+            className="input min-w-[8rem] flex-1 text-sm"
+            value={p.name}
+            disabled={busy}
+            onChange={(e) => onChangeName(p.id, e.target.value)}
+            aria-label="Nombre del producto"
+          />
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-zinc-500">$</span>
+            <input
+              className="input w-28 text-sm"
+              inputMode="decimal"
+              value={p.price}
+              disabled={busy}
+              onChange={(e) => onChangePrice(p.id, e.target.value)}
+              aria-label="Precio del producto"
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }
 
