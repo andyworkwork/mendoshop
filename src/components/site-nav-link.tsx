@@ -11,10 +11,6 @@ type Props = {
   className?: string
 }
 
-const base =
-  'rounded-lg px-3 py-1.5 transition border border-transparent text-zinc-400 hover:border-zinc-600/80 hover:bg-white/5 hover:text-zinc-100'
-const activeCls = 'border-zinc-600/80 bg-white/5 text-white'
-
 export function SiteNavLink({ href, children, activePrefixes, className }: Props) {
   const pathname = usePathname()
   const prefixes = activePrefixes ?? []
@@ -23,7 +19,11 @@ export function SiteNavLink({ href, children, activePrefixes, className }: Props
     prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
   return (
-    <Link href={href} className={`${base} ${isActive ? activeCls : ''} ${className ?? ''}`}>
+    <Link
+      href={href}
+      aria-current={isActive ? 'page' : undefined}
+      className={`caps-nav-btn ${isActive ? 'caps-nav-btn--active-glass' : 'caps-nav-btn--ghost-glass'} ${className ?? ''}`}
+    >
       {children}
     </Link>
   )

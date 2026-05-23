@@ -14,28 +14,24 @@ export function AdminShell({
       <header className="border-b border-zinc-800 bg-zinc-950/95">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-            <MendoshopLogoLink size={36} className="sm:hidden" />
-            <MendoshopLogoLink size={40} className="hidden sm:inline-flex" />
+            <MendoshopLogoLink size={40} className="shrink-0" />
             <div className="min-w-0">
               <p className="font-semibold text-brand">Panel admin</p>
               <p className="truncate text-xs text-zinc-500">{adminEmail}</p>
             </div>
           </div>
-          <nav className="-mx-1 flex items-center gap-1 overflow-x-auto pb-0.5 text-sm sm:mx-0 sm:flex-wrap sm:overflow-visible sm:pb-0">
-            <Link
-              href="/"
-              className="shrink-0 rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-            >
+          <nav
+            className="-mx-1 flex flex-wrap items-center justify-end gap-1.5 sm:mx-0 sm:gap-2"
+            aria-label="Acciones de administración"
+          >
+            <Link href="/" className="caps-nav-btn caps-nav-btn--ghost">
               Sitio público
             </Link>
-            <Link
-              href="/dashboard"
-              className="shrink-0 rounded-lg px-3 py-1.5 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-            >
+            <Link href="/dashboard" className="caps-nav-btn caps-nav-btn--ghost">
               Mi dashboard
             </Link>
-            <form action={signOutAction} className="shrink-0">
-              <button type="submit" className="rounded-lg px-3 py-1.5 text-zinc-500 hover:text-white">
+            <form action={signOutAction} className="inline">
+              <button type="submit" className="caps-nav-btn caps-nav-btn--muted">
                 Salir
               </button>
             </form>

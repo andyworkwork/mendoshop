@@ -15,7 +15,7 @@ export function AdminSubNav() {
 
   return (
     <nav
-      className="flex flex-wrap gap-1 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1"
+      className="flex flex-wrap gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1.5 sm:gap-2"
       aria-label="Secciones de administración"
     >
       {LINKS.map(({ href, label }) => {
@@ -24,11 +24,8 @@ export function AdminSubNav() {
           <Link
             key={href}
             href={href}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
-              isActive
-                ? 'bg-brand/15 text-brand'
-                : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-            }`}
+            aria-current={isActive ? 'page' : undefined}
+            className={`caps-nav-btn ${isActive ? 'caps-nav-btn--active' : 'caps-nav-btn--ghost'}`}
           >
             {label}
           </Link>

@@ -4,11 +4,6 @@ import { MendoshopLogoLink } from '@/components/mendoshop-logo'
 import { SiteNavLink } from '@/components/site-nav-link'
 import { getSessionNavState } from '@/lib/session-nav'
 
-const navLinkCompact = 'px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm'
-const btnCompact = 'btn-primary px-2.5 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm'
-const textBtnCompact =
-  'rounded-lg px-2 py-1 text-xs text-zinc-400 hover:bg-white/5 hover:text-white sm:px-3 sm:py-1.5 sm:text-sm'
-
 export async function SiteHeader() {
   const { loggedIn, hasShop, admin } = await getSessionNavState()
 
@@ -19,58 +14,54 @@ export async function SiteHeader() {
 
         <div className="site-header-bar__nav">
           <div className="site-header-bar__nav-row site-header-bar__nav-row--primary">
-          <SiteNavLink href="/" className={navLinkCompact}>
-            Tiendas
-          </SiteNavLink>
-          <SiteNavLink href="/precios" className={navLinkCompact}>
-            Precios
-          </SiteNavLink>
-          {loggedIn && hasShop && (
-            <Link href="/dashboard" className={`${btnCompact} max-sm:hidden`}>
-              Mi tienda
-            </Link>
-          )}
-          {loggedIn && admin && (
-            <SiteNavLink href="/admin" activePrefixes={['/admin']} className={`${navLinkCompact} max-sm:hidden`}>
-              Admin
-            </SiteNavLink>
-          )}
-        </div>
+            <SiteNavLink href="/">Tiendas</SiteNavLink>
+            <SiteNavLink href="/precios">Precios</SiteNavLink>
+            {loggedIn && hasShop && (
+              <Link href="/dashboard" className="caps-nav-btn caps-nav-btn--cta max-sm:hidden">
+                Mi tienda
+              </Link>
+            )}
+            {loggedIn && admin && (
+              <SiteNavLink href="/admin" activePrefixes={['/admin']} className="max-sm:hidden">
+                Admin
+              </SiteNavLink>
+            )}
+          </div>
 
-        <div className="site-header-bar__nav-row site-header-bar__nav-row--secondary">
-          {loggedIn ? (
-            <>
-              {hasShop && (
-                <Link href="/dashboard" className={`${btnCompact} sm:hidden`}>
-                  Mi tienda
+          <div className="site-header-bar__nav-row site-header-bar__nav-row--secondary">
+            {loggedIn ? (
+              <>
+                {hasShop && (
+                  <Link href="/dashboard" className="caps-nav-btn caps-nav-btn--cta sm:hidden">
+                    Mi tienda
+                  </Link>
+                )}
+                {admin && (
+                  <SiteNavLink href="/admin" activePrefixes={['/admin']} className="sm:hidden">
+                    Admin
+                  </SiteNavLink>
+                )}
+                {!hasShop && (
+                  <Link href="/registro" className="caps-nav-btn caps-nav-btn--cta">
+                    Crear mi tienda
+                  </Link>
+                )}
+                <form action={signOutAction} className="inline">
+                  <button type="submit" className="caps-nav-btn caps-nav-btn--ghost-glass">
+                    Salir
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="caps-nav-btn caps-nav-btn--ghost-glass">
+                  Entrar
                 </Link>
-              )}
-              {admin && (
-                <SiteNavLink href="/admin" activePrefixes={['/admin']} className={`${navLinkCompact} sm:hidden`}>
-                  Admin
-                </SiteNavLink>
-              )}
-              {!hasShop && (
-                <Link href="/registro" className={btnCompact}>
+                <Link href="/registro" className="caps-nav-btn caps-nav-btn--cta">
                   Crear mi tienda
                 </Link>
-              )}
-              <form action={signOutAction} className="inline">
-                <button type="submit" className={textBtnCompact}>
-                  Salir
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <Link href="/login" className={textBtnCompact}>
-                Entrar
-              </Link>
-              <Link href="/registro" className={btnCompact}>
-                Crear mi tienda
-              </Link>
-            </>
-          )}
+              </>
+            )}
           </div>
         </div>
       </div>

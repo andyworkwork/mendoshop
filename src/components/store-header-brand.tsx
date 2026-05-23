@@ -9,7 +9,7 @@ export function StoreHeaderBrand() {
       className="inline-flex min-w-0 flex-1 items-center justify-center gap-2"
       aria-label="Mendoshop — inicio"
     >
-      <MendoshopLogo size={36} priority />
+      <MendoshopLogo size={36} priority className="h-9 w-9" />
       <span className="truncate text-lg font-bold tracking-tight">
         <span className="text-brand">Mendo</span>
         <span className="store-vitrina-title-text">shop</span>
