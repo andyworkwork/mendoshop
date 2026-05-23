@@ -98,6 +98,69 @@ body {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
 }
 
+/* Header público: máx. 2 filas en móvil; logo a la izquierda dentro del bloque. */
+.site-header-bar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.625rem;
+  row-gap: 0.25rem;
+}
+
+.site-header-bar__logo {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.site-header-bar__nav {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.site-header-bar__nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .site-header-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .site-header-bar__logo {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .site-header-bar__nav {
+    grid-column: auto;
+    grid-row: auto;
+    flex: 1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .site-header-bar__nav-row {
+    display: contents;
+  }
+}
+
 .shop-directory-card__category {
   font-size: 0.8125rem;
   font-weight: 500;

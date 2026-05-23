@@ -21,7 +21,7 @@ export function MendoshopLogo({
       width={size}
       height={size}
       priority={priority}
-      className={`rounded-lg object-cover ${className}`}
+      className={`h-full w-full rounded-lg object-cover ${className}`}
     />
   )
 }
@@ -34,7 +34,7 @@ export function MendoshopLogoLink({
   return (
     <Link
       href="/"
-      className={`inline-flex shrink-0 items-center rounded-lg ring-offset-2 ring-offset-zinc-950 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)] ${className}`}
+      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-orange)] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 sm:h-12 sm:w-12 ${className}`}
       aria-label="Mendoshop — inicio"
     >
       <MendoshopLogo size={size} priority={priority} />
