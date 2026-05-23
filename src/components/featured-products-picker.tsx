@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatMoneyArs } from '@/lib/format'
 import {
   flattenCatalogProducts,
   MAX_FEATURED_PRODUCTS,
+  sanitizeFeaturedProductIds,
 } from '@/lib/featured-products'
 import { getProductImageUrl } from '@/lib/product-images'
 import type { CategoryRow } from '@/types/catalog'
@@ -27,17 +28,30 @@ export function FeaturedProductsPicker({
       .sort((a, b) => a.name.localeCompare(b.name, 'es'))
   }, [categories])
 
+  const validSelectedIds = useMemo(
+    () => sanitizeFeaturedProductIds(selectedIds, products),
+    [selectedIds, products],
+  )
+
+  const staleCount = selectedIds.length - validSelectedIds.length
+
+  useEffect(() => {
+    if (staleCount > 0) {
+      onChange(validSelectedIds)
+    }
+  }, [staleCount, validSelectedIds, onChange])
+
   function toggle(id: string) {
     setHint(null)
-    if (selectedIds.includes(id)) {
-      onChange(selectedIds.filter((x) => x !== id))
+    if (validSelectedIds.includes(id)) {
+      onChange(validSelectedIds.filter((x) => x !== id))
       return
     }
-    if (selectedIds.length >= MAX_FEATURED_PRODUCTS) {
+    if (validSelectedIds.length >= MAX_FEATURED_PRODUCTS) {
       setHint(`Solo podés elegir ${MAX_FEATURED_PRODUCTS} productos destacados. Desmarcá uno para cambiar.`)
       return
     }
-    onChange([...selectedIds, id])
+    onChange([...validSelectedIds, id])
   }
 
   if (products.length === 0) {
@@ -53,13 +67,18 @@ export function FeaturedProductsPicker({
     <div className="space-y-3">
       <p className="text-sm text-zinc-400">
         Elegí hasta {MAX_FEATURED_PRODUCTS} productos para la sección &quot;Productos destacados&quot; en tu
-        tienda. ({selectedIds.length}/{MAX_FEATURED_PRODUCTS} seleccionados)
+        tienda. ({validSelectedIds.length}/{MAX_FEATURED_PRODUCTS} seleccionados)
       </p>
+      {staleCount > 0 && (
+        <p className="text-sm text-amber-400">
+          Se quitaron {staleCount} destacado{staleCount === 1 ? '' : 's'} porque el producto ya no existe.
+        </p>
+      )}
       {hint && <p className="text-sm text-amber-400">{hint}</p>}
       <ul className="max-h-[min(50vh,360px)] space-y-2 overflow-y-auto pr-1">
         {products.map((p) => {
-          const checked = selectedIds.includes(p.id)
-          const slot = checked ? selectedIds.indexOf(p.id) + 1 : null
+          const checked = validSelectedIds.includes(p.id)
+          const slot = checked ? validSelectedIds.indexOf(p.id) + 1 : null
           const img = getProductImageUrl(p.image_path, 'thumb')
           return (
             <li key={p.id}>

@@ -66,11 +66,11 @@ export async function updateShopSettings(
         .eq('active', true)
         .in('id', ids)
       if (ownErr) return { error: ownErr.message }
-      if ((owned ?? []).length !== ids.length) {
-        return { error: 'Uno o más productos no son válidos o no están activos.' }
-      }
+      const ownedSet = new Set((owned ?? []).map((r) => r.id as string))
+      patch.featured_product_ids = ids.filter((id) => ownedSet.has(id))
+    } else {
+      patch.featured_product_ids = []
     }
-    patch.featured_product_ids = ids
   }
   if (data.category_view_icon !== undefined) {
     patch.category_view_icon = normalizeCategoryIcon(data.category_view_icon)

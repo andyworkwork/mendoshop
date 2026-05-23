@@ -33,3 +33,23 @@ export function resolveFeaturedProducts<T extends { id: string; active?: boolean
   }
   return out
 }
+
+/** Quita IDs de productos que ya no existen o no están activos en el catálogo. */
+export function sanitizeFeaturedProductIds(
+  ids: string[],
+  products: { id: string; active?: boolean }[],
+  opts?: { activeOnly?: boolean },
+): string[] {
+  const activeOnly = opts?.activeOnly !== false
+  const valid = new Set(
+    products.filter((p) => !activeOnly || p.active !== false).map((p) => p.id),
+  )
+  const out: string[] = []
+  for (const id of ids) {
+    if (!valid.has(id)) continue
+    if (out.includes(id)) continue
+    out.push(id)
+    if (out.length >= MAX_FEATURED_PRODUCTS) break
+  }
+  return out
+}
