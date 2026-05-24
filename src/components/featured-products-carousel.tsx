@@ -5,7 +5,7 @@ import { imageFocusStyle } from '@/lib/image-focus'
 import { formatMoneyArs } from '@/lib/format'
 import { getProductImageUrl } from '@/lib/product-images'
 
-const INTERVAL_MS = 5200
+const INTERVAL_MS = 4000
 
 export type FeaturedCarouselProduct = {
   id: string

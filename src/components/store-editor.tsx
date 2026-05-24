@@ -77,6 +77,9 @@ export function StoreEditor({
   )
   const [categoryViewIcon, setCategoryViewIcon] = useState(shop.category_view_icon)
   const [bannerMediaKey, setBannerMediaKey] = useState(0)
+  const [bannerShowShopName, setBannerShowShopName] = useState(
+    () => shop.banner_show_shop_name !== false,
+  )
 
   const closePanel = useCallback(() => setPanel(null), [])
 
@@ -166,6 +169,22 @@ export function StoreEditor({
     closePanel()
   }
 
+  async function saveBannerShowShopName(show: boolean) {
+    setBusy(true)
+    setMsg(null)
+    const res = await updateShopSettings(shop.id, { banner_show_shop_name: show })
+    setBusy(false)
+    if ('error' in res && res.error) {
+      setMsg(res.error)
+      setBannerShowShopName(shop.banner_show_shop_name !== false)
+      return
+    }
+    setBannerShowShopName(show)
+    setShop((s) => ({ ...s, banner_show_shop_name: show }))
+    setMsg(show ? 'Nombre visible en el banner.' : 'Nombre oculto en el banner.')
+    await revalidateStorefront(shop.slug)
+  }
+
   const bannerPreviewShop = useMemo(
     () => ({
       ...shop,
@@ -173,8 +192,9 @@ export function StoreEditor({
       category_view_icon: categoryViewIcon,
       banner_focus_x: bannerFocus.x,
       banner_focus_y: bannerFocus.y,
+      banner_show_shop_name: bannerShowShopName,
     }),
-    [shop, theme, categoryViewIcon, bannerFocus],
+    [shop, theme, categoryViewIcon, bannerFocus, bannerShowShopName],
   )
 
   const bannerFrameUrl = useMemo(() => resolveShopBannerUrl(bannerPreviewShop), [bannerPreviewShop])
@@ -306,6 +326,21 @@ export function StoreEditor({
 
       {panel === 'banner' && (
         <EditorSheet title="Banner de portada" onClose={closePanel}>
+          <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-700 bg-zinc-900/60 p-3">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-orange)]"
+              checked={bannerShowShopName}
+              disabled={busy}
+              onChange={(e) => void saveBannerShowShopName(e.target.checked)}
+            />
+            <span className="text-sm text-zinc-200">
+              <span className="font-medium">Mostrar nombre de la tienda en el banner</span>
+              <span className="mt-1 block text-xs text-zinc-500">
+                Desactivá esta opción si tu imagen de portada ya incluye el nombre del negocio.
+              </span>
+            </span>
+          </label>
           <ShopBannerUpload
             shop={shop}
             onShopChange={(next) => {

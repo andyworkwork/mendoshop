@@ -33,6 +33,8 @@ export type ShopRow = {
   banner_path: string | null
   banner_focus_x: number
   banner_focus_y: number
+  /** Si false, no muestra el nombre superpuesto en el banner (la imagen ya lo trae). */
+  banner_show_shop_name: boolean
   plan: ShopPlan
   plan_until: string | null
   active: boolean

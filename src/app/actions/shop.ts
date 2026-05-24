@@ -28,6 +28,7 @@ export async function updateShopSettings(
     banner_path?: string | null
     banner_focus_x?: number
     banner_focus_y?: number
+    banner_show_shop_name?: boolean
     featured_product_ids?: string[]
     category_view_icon?: string
   },
@@ -56,6 +57,9 @@ export async function updateShopSettings(
   if (data.banner_path !== undefined) patch.banner_path = data.banner_path
   if (data.banner_focus_x !== undefined) patch.banner_focus_x = clampFocusPercent(data.banner_focus_x)
   if (data.banner_focus_y !== undefined) patch.banner_focus_y = clampFocusPercent(data.banner_focus_y)
+  if (data.banner_show_shop_name !== undefined) {
+    patch.banner_show_shop_name = data.banner_show_shop_name
+  }
   if (data.featured_product_ids !== undefined) {
     const ids = [...new Set(data.featured_product_ids)].slice(0, MAX_FEATURED_PRODUCTS_STORED)
     if (ids.length > 0) {

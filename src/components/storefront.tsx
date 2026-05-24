@@ -240,11 +240,15 @@ export function Storefront({
                   Editar banner
                 </button>
               )}
-              <div className="store-banner-badge-wrap" aria-hidden>
-                <div className="store-banner-title-badge">
-                  <h1 className="store-banner-shop-name">{shop.name}</h1>
+              {shop.banner_show_shop_name ? (
+                <div className="store-banner-badge-wrap">
+                  <div className="store-banner-title-badge">
+                    <h1 className="store-banner-shop-name">{shop.name}</h1>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <h1 className="sr-only">{shop.name}</h1>
+              )}
             </div>
           </div>
         ) : null}

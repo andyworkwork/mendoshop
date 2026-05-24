@@ -33,6 +33,7 @@ export function mapShopRow(raw: Record<string, unknown>): ShopRow {
       )
       return { banner_focus_x: f.x, banner_focus_y: f.y }
     })(),
+    banner_show_shop_name: raw.banner_show_shop_name !== false,
     plan: (raw.plan as ShopRow['plan']) ?? 'free_trial',
     plan_until: (raw.plan_until as string | null) ?? null,
     active: Boolean(raw.active),
