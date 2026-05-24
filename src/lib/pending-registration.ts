@@ -20,6 +20,14 @@ export function pendingShopFromMetadata(
   }
 }
 
+export function isPendingShopComplete(
+  partial: Partial<PendingShopRegistration>,
+): partial is PendingShopRegistration {
+  const slug = partial.slug?.trim() ?? ''
+  const wa = partial.whatsapp?.replace(/\D/g, '') ?? ''
+  return Boolean(partial.shopName?.trim() && slug.length >= 3 && wa.length >= 10)
+}
+
 export function pendingShopToUserMetadata(input: PendingShopRegistration) {
   return {
     pending_shop_name: input.shopName.trim(),

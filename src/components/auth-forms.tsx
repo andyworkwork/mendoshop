@@ -10,6 +10,7 @@ import { pendingShopToUserMetadata } from '@/lib/pending-registration'
 import Link from 'next/link'
 import { RubroField } from '@/components/rubro-field'
 import { RegisterPendingEmail } from '@/components/register-pending-email'
+import { RegistrationSuccessCard } from '@/components/registration-success-card'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
 export function LoginForm({
@@ -93,6 +94,7 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+  const [createdShop, setCreatedShop] = useState<{ shopName: string; shopSlug: string } | null>(null)
 
   function onShopNameChange(v: string) {
     setShopName(v)
@@ -158,8 +160,13 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
       return
     }
 
-    router.push('/dashboard')
-    router.refresh()
+    setCreatedShop({ shopName: res.shopName, shopSlug: res.shopSlug })
+  }
+
+  if (createdShop) {
+    return (
+      <RegistrationSuccessCard shopName={createdShop.shopName} shopSlug={createdShop.shopSlug} />
+    )
   }
 
   if (pendingEmail) {

@@ -31,13 +31,13 @@ Si ya corriste algo y falla por “already exists”, borrá el proyecto y creá
 - **Authentication → Providers**: Email activado.
 - Para probar sin mail de confirmación: desactivá **Confirm email** (en producción conviene dejarlo activado).
 - **URL Configuration**: `http://localhost:3000/**` en Redirect URLs.
-- Correos en español (confirmación y recuperar contraseña), con PAT en `.env.local`:
+- **Todos** los correos de Auth en español (confirmación, recuperar contraseña, magic link, invitación, cambio de email, avisos de seguridad, etc.), con PAT en `.env.local`:
 
 ```bash
 npm run configure:auth-emails-es
 ```
 
-El enlace de confirmación debe llevar a `/auth/confirmar` y luego a `/registro/completar` para crear la tienda (no solo a la home).
+El enlace de confirmación debe llevar a `/auth/confirmar` y luego a `/registro/completar`, donde la tienda se crea sola con los datos del primer formulario.
 
 ## 3b. Usuario maestro (panel admin)
 

@@ -11,8 +11,8 @@ export function RegisterPendingEmail({ email }: { email: string }) {
         cuenta.
       </p>
       <p className="text-sm text-zinc-400">
-        Después de confirmar vas a poder terminar de crear tu tienda. Si el correo no llega, revisá spam o
-        esperá unos minutos.
+        Cuando confirmes el enlace creamos tu tienda automáticamente con los datos que ya cargaste. Si el
+        correo no llega, revisá spam o esperá unos minutos.
       </p>
       <p className="text-sm text-zinc-500">
         ¿Ya confirmaste?{' '}

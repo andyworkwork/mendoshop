@@ -4,7 +4,7 @@ import { CompleteRegistrationForm } from '@/components/complete-registration-for
 import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
 import { SiteHeader } from '@/components/site-header'
 import { isPlatformAdmin } from '@/lib/admin'
-import { pendingShopFromMetadata } from '@/lib/pending-registration'
+import { isPendingShopComplete, pendingShopFromMetadata } from '@/lib/pending-registration'
 import { createClient } from '@/lib/supabase/server'
 import { fetchUserShops } from '@/lib/shops'
 
@@ -30,7 +30,11 @@ export default async function RegistroPage({ searchParams }: Props) {
           <SiteHeader />
         </div>
         <main className="relative z-10 px-4 py-12">
-          <CompleteRegistrationForm referralSlug={ref} initial={initial} />
+          <CompleteRegistrationForm
+            referralSlug={ref}
+            initial={initial}
+            autoCreateFromSignup={isPendingShopComplete(initial)}
+          />
         </main>
       </div>
     )

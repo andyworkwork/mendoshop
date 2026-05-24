@@ -30,7 +30,7 @@ export default async function RegistroCompletarPage() {
         <SiteHeader />
       </div>
       <main className="relative z-10 px-4 py-12">
-        <CompleteRegistrationForm initial={initial} emailConfirmed />
+        <CompleteRegistrationForm initial={initial} autoCreateFromSignup />
       </main>
     </div>
   )

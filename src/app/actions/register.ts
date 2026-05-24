@@ -6,7 +6,9 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchUserShops } from '@/lib/shops'
 import { revalidatePath } from 'next/cache'
 
-export type RegisterActionResult = { ok: true } | { error: string }
+export type RegisterActionResult =
+  | { ok: true; shopName: string; shopSlug: string }
+  | { error: string }
 
 export async function completeShopRegistration(
   input: PendingShopRegistration,
@@ -87,5 +89,5 @@ export async function completeShopRegistration(
   revalidatePath('/dashboard')
   revalidatePath('/registro')
   revalidatePath('/registro/completar')
-  return { ok: true }
+  return { ok: true, shopName: input.shopName.trim(), shopSlug: cleanSlug }
 }
