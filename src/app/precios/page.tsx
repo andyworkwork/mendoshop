@@ -68,18 +68,31 @@ export default function PreciosPage() {
 
         <section className="mt-10 space-y-4">
           <h2 className="text-xl font-bold">¿Para quién es?</h2>
+          <p className="text-zinc-200 leading-relaxed">
+            Para <span className="font-semibold text-white">cualquier tipo de tienda o emprendimiento</span>{' '}
+            que quiera mostrar productos o servicios online y cerrar pedidos por WhatsApp: indumentaria,
+            gastronomía, belleza, ferretería, regalería, tecnología y lo que vendas. Armás tu catálogo con
+            categorías, fotos y plantillas a tu medida; no hace falta encajar en un rubro fijo.
+          </p>
+          <p className="text-sm text-zinc-400">Algunos ejemplos de cómo lo usan distintos negocios:</p>
           <ul className="grid gap-3 sm:grid-cols-3 text-sm text-zinc-300">
             <li className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
               <strong className="text-white">Ropa y accesorios</strong>
-              <p className="mt-1 text-zinc-400">Detalle por producto (talle, material) y fotos en la vitrina.</p>
+              <p className="mt-1 text-zinc-400">
+                Detalle por producto (talle, material) y fotos en la vitrina, entre otros rubros similares.
+              </p>
             </li>
             <li className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
               <strong className="text-white">Comida y repostería</strong>
-              <p className="mt-1 text-zinc-400">Pedidos por WhatsApp con carrito claro para el cliente.</p>
+              <p className="mt-1 text-zinc-400">
+                Pedidos por WhatsApp con carrito claro; también sirve para bebidas, boxes y delivery local.
+              </p>
             </li>
             <li className="rounded-xl border border-zinc-700/80 bg-zinc-900/40 p-4">
               <strong className="text-white">Servicios y manicura</strong>
-              <p className="mt-1 text-zinc-400">Link en bio, QR en el local y redes en el pie de la tienda.</p>
+              <p className="mt-1 text-zinc-400">
+                Link en bio, QR en el local y redes en el pie; igual de útil para talleres, clases o turnos.
+              </p>
             </li>
           </ul>
         </section>
