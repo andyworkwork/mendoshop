@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { normalizeInstagramUrl, normalizeTikTokUrl, normalizeWebsiteUrl } from '@/lib/social-links'
 import { normalizeCategoryIcon } from '@/lib/category-icons'
-import { MAX_FEATURED_PRODUCTS } from '@/lib/featured-products'
+import { MAX_FEATURED_PRODUCTS_STORED } from '@/lib/featured-products'
 import type { ShopTheme } from '@/types/shop'
 
 export async function updateShopSettings(
@@ -57,7 +57,7 @@ export async function updateShopSettings(
   if (data.banner_focus_x !== undefined) patch.banner_focus_x = clampFocusPercent(data.banner_focus_x)
   if (data.banner_focus_y !== undefined) patch.banner_focus_y = clampFocusPercent(data.banner_focus_y)
   if (data.featured_product_ids !== undefined) {
-    const ids = [...new Set(data.featured_product_ids)].slice(0, MAX_FEATURED_PRODUCTS)
+    const ids = [...new Set(data.featured_product_ids)].slice(0, MAX_FEATURED_PRODUCTS_STORED)
     if (ids.length > 0) {
       const { data: owned, error: ownErr } = await supabase
         .from('products')

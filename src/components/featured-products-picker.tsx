@@ -4,23 +4,29 @@ import { useEffect, useMemo, useState } from 'react'
 import { formatMoneyArs } from '@/lib/format'
 import {
   flattenCatalogProducts,
-  MAX_FEATURED_PRODUCTS,
+  maxFeaturedProductsForPlan,
+  planHasFeaturedCarousel,
   sanitizeFeaturedProductIds,
 } from '@/lib/featured-products'
 import { getProductImageUrl } from '@/lib/product-images'
 import type { CategoryRow } from '@/types/catalog'
+import type { ShopPlan } from '@/types/shop'
 
 export function FeaturedProductsPicker({
   categories,
   selectedIds,
   onChange,
   disabled,
+  plan,
 }: {
   categories: CategoryRow[]
   selectedIds: string[]
   onChange: (ids: string[]) => void
   disabled?: boolean
+  plan: ShopPlan
 }) {
+  const maxFeatured = maxFeaturedProductsForPlan(plan)
+  const hasCarousel = planHasFeaturedCarousel(plan)
   const [hint, setHint] = useState<string | null>(null)
   const products = useMemo(() => {
     return flattenCatalogProducts(categories)
@@ -29,8 +35,8 @@ export function FeaturedProductsPicker({
   }, [categories])
 
   const validSelectedIds = useMemo(
-    () => sanitizeFeaturedProductIds(selectedIds, products),
-    [selectedIds, products],
+    () => sanitizeFeaturedProductIds(selectedIds, products, { max: maxFeatured }),
+    [selectedIds, products, maxFeatured],
   )
 
   const staleCount = selectedIds.length - validSelectedIds.length
@@ -47,8 +53,8 @@ export function FeaturedProductsPicker({
       onChange(validSelectedIds.filter((x) => x !== id))
       return
     }
-    if (validSelectedIds.length >= MAX_FEATURED_PRODUCTS) {
-      setHint(`Solo podés elegir ${MAX_FEATURED_PRODUCTS} productos destacados. Desmarcá uno para cambiar.`)
+    if (validSelectedIds.length >= maxFeatured) {
+      setHint(`Solo podés elegir ${maxFeatured} productos destacados. Desmarcá uno para cambiar.`)
       return
     }
     onChange([...validSelectedIds, id])
@@ -66,8 +72,9 @@ export function FeaturedProductsPicker({
   return (
     <div className="space-y-3">
       <p className="text-sm text-zinc-400">
-        Elegí hasta {MAX_FEATURED_PRODUCTS} productos para la sección &quot;Productos destacados&quot; en tu
-        tienda. ({validSelectedIds.length}/{MAX_FEATURED_PRODUCTS} seleccionados)
+        Elegí hasta {maxFeatured} productos para la sección &quot;Productos destacados&quot; en tu tienda
+        {hasCarousel ? ' (carrusel rotativo en plan Pro)' : ''}. ({validSelectedIds.length}/{maxFeatured}{' '}
+        seleccionados)
       </p>
       {staleCount > 0 && (
         <p className="text-sm text-amber-400">

@@ -22,7 +22,12 @@ import {
 import { StoreWhatsAppBar } from '@/components/store-whatsapp-bar'
 import { StorePoweredBy } from '@/components/store-powered-by'
 import { ProductDetailModal } from '@/components/product-detail-modal'
-import { resolveFeaturedProducts } from '@/lib/featured-products'
+import {
+  maxFeaturedProductsForPlan,
+  planHasFeaturedCarousel,
+  resolveFeaturedProducts,
+} from '@/lib/featured-products'
+import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
 
 type Props = {
   shop: ShopRow
@@ -99,10 +104,16 @@ export function Storefront({
   const themeStyle = themeCssVars(shop.theme)
   const productFrame = resolveProductFrameColor(shop.theme)
   const products = useMemo(() => flattenProducts(categories), [categories])
+  const featuredMax = maxFeaturedProductsForPlan(shop.plan)
   const featuredProducts = useMemo(
-    () => resolveFeaturedProducts(products, shop.featured_product_ids, { publicOnly: !isEdit }),
-    [products, shop.featured_product_ids, isEdit],
+    () =>
+      resolveFeaturedProducts(products, shop.featured_product_ids, {
+        publicOnly: !isEdit,
+        max: featuredMax,
+      }),
+    [products, shop.featured_product_ids, isEdit, featuredMax],
   )
+  const showFeaturedCarousel = planHasFeaturedCarousel(shop.plan) && featuredProducts.length > 0
   const bannerUrl = resolveBannerUrl(shop)
   const isBrandLogoBanner = !shop.banner_path && shop.theme.templateId === 'minimal'
   const bannerFocusStyle = imageFocusStyle({
@@ -272,7 +283,7 @@ export function Storefront({
                   className="store-edit-chip mt-2"
                   onClick={onOpenFeaturedEditor}
                 >
-                  Elegir destacados ({featuredProducts.length}/2)
+                  Elegir destacados ({featuredProducts.length}/{featuredMax})
                 </button>
               )}
             </div>
@@ -284,22 +295,38 @@ export function Storefront({
             </p>
           )}
 
-          {featuredProducts.length > 0 && (
-            <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {featuredProducts.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  shopId={shop.id}
-                  isLight={isLight}
-                  accentFrame={productFrame}
-                  isEdit={isEdit}
-                  onAdd={() => addProduct(p)}
-                  onOpenDetail={() => setDetailProduct(p)}
-                />
-              ))}
-            </ul>
-          )}
+          {featuredProducts.length > 0 &&
+            (showFeaturedCarousel ? (
+              <FeaturedProductsCarousel
+                products={featuredProducts}
+                isLight={isLight}
+                accentFrame={productFrame}
+                isEdit={isEdit}
+                onAdd={(p) => {
+                  const full = products.find((x) => x.id === p.id)
+                  if (full) addProduct(full)
+                }}
+                onOpenDetail={(p) => {
+                  const full = products.find((x) => x.id === p.id)
+                  if (full) setDetailProduct(full)
+                }}
+              />
+            ) : (
+              <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {featuredProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    shopId={shop.id}
+                    isLight={isLight}
+                    accentFrame={productFrame}
+                    isEdit={isEdit}
+                    onAdd={() => addProduct(p)}
+                    onOpenDetail={() => setDetailProduct(p)}
+                  />
+                ))}
+              </ul>
+            ))}
         </section>
 
         {products.length > 0 && (

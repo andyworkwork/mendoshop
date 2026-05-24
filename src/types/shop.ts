@@ -48,7 +48,7 @@ export type ShopRow = {
   website_url: string | null
   /** Si true, muestra ícono de WhatsApp en el pie (usa whatsapp_e164). */
   social_whatsapp_visible: boolean
-  /** Hasta 2 productos mostrados en "Productos destacados" (orden de elección). */
+  /** IDs para "Productos destacados" (hasta 4 guardados; plan Pro muestra carrusel). */
   featured_product_ids: string[]
   /** Icono del botón "Categorías" en el selector de orden de la vitrina. */
   category_view_icon: string

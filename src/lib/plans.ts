@@ -171,6 +171,7 @@ export const PLAN_CATALOG: {
     features: [
       '+50 productos (hasta 80 en total)',
       '30 días de tienda',
+      'Carrusel con hasta 4 productos destacados',
       'Todas tus redes sociales y más',
       'Prioridad de publicidad en la página',
       'Contador de visitas',

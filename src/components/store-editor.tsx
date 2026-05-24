@@ -266,6 +266,7 @@ export function StoreEditor({
             selectedIds={featuredIds}
             onChange={setFeaturedIds}
             disabled={busy}
+            plan={shop.plan}
           />
           <button
             type="button"

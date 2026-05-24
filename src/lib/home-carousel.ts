@@ -1,4 +1,8 @@
-import { flattenCatalogProducts, resolveFeaturedProducts } from '@/lib/featured-products'
+import {
+  flattenCatalogProducts,
+  maxFeaturedProductsForPlan,
+  resolveFeaturedProducts,
+} from '@/lib/featured-products'
 import { fetchCategoriesWithNested } from '@/lib/fetch-catalog'
 import { getProductImageUrl } from '@/lib/product-images'
 import {
@@ -41,6 +45,7 @@ function pickShowcaseProducts(
 ): { name: string; price: number; imageUrl: string | null }[] {
   const featured = resolveFeaturedProducts(products, shop.featured_product_ids, {
     publicOnly: true,
+    max: maxFeaturedProductsForPlan(shop.plan),
   })
   const pool = featured.length > 0 ? featured : products.filter((p) => p.image_path).slice(0, 2)
   const picked = (pool.length > 0 ? pool : products).slice(0, 2)
