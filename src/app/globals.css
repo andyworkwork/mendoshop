@@ -78,6 +78,232 @@ body {
   transform: translateZ(0);
 }
 
+/* Carrusel de vitrinas (plantillas) en la home */
+.template-showcase-carousel-wrap {
+  position: relative;
+}
+
+.template-showcase-track {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 0.5rem 2.5rem 1rem;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.template-showcase-track img {
+  max-width: none;
+}
+
+.template-showcase-track::-webkit-scrollbar {
+  display: none;
+}
+
+.template-showcase-slide {
+  flex: 0 0 auto;
+  max-width: min(272px, 78vw);
+  overflow: hidden;
+  scroll-snap-align: center;
+  opacity: 0.45;
+  transform: scale(0.88);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+
+.template-showcase-slide.is-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.template-showcase-phone {
+  width: min(272px, 78vw);
+  margin-inline: auto;
+}
+
+.template-showcase-screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  max-height: 22rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 0.45);
+  text-align: left;
+}
+
+.template-showcase-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  border-bottom-width: 1px;
+  padding: 0.4rem 0.5rem;
+}
+
+.template-showcase-menu,
+.template-showcase-cart {
+  display: block;
+  height: 1.35rem;
+  width: 1.35rem;
+  flex-shrink: 0;
+  border-radius: 0.35rem;
+}
+
+.template-showcase-menu {
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: rgb(255 255 255 / 0.06);
+}
+
+.template-showcase-cart {
+  padding: 0;
+}
+
+.template-showcase-brand {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.template-showcase-banner {
+  position: relative;
+  z-index: 0;
+  margin: 0.4rem 0.45rem 0;
+  height: 4.25rem;
+  max-height: 4.25rem;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.template-showcase-banner-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 55%);
+}
+
+.template-showcase-tagline {
+  margin: 0.35rem 0.5rem 0;
+  text-align: center;
+  font-size: 0.55rem;
+  line-height: 1.3;
+  opacity: 0.9;
+}
+
+.template-showcase-section {
+  margin: 0.45rem 0.5rem 0.2rem;
+  text-align: center;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.template-showcase-products {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0 0.45rem;
+}
+
+.template-showcase-product {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-radius: 0.45rem;
+  border-width: 1px;
+  padding: 0.25rem;
+}
+
+.template-showcase-product-img {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 0.35rem;
+}
+
+.template-showcase-add {
+  margin-top: 0.1rem;
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.template-showcase-wa {
+  margin: 0.45rem 0.45rem 0.5rem;
+  border-radius: 0.45rem;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  padding: 0.3rem;
+  text-align: center;
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.template-showcase-label {
+  margin-top: 0.65rem;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgb(250 250 250 / 0.85);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.5);
+}
+
+.template-showcase-arrow {
+  position: absolute;
+  top: 42%;
+  z-index: 2;
+  display: none;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(0 0 0 / 0.55);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fff;
+  backdrop-filter: blur(8px);
+  transition: background-color 0.15s;
+}
+
+.template-showcase-arrow:hover {
+  background: rgb(0 0 0 / 0.75);
+}
+
+@media (min-width: 640px) {
+  .template-showcase-arrow {
+    display: flex;
+  }
+
+  .template-showcase-arrow--prev {
+    left: 0;
+  }
+
+  .template-showcase-arrow--next {
+    right: 0;
+  }
+
+  .template-showcase-track {
+    padding-inline: 3.5rem;
+  }
+}
+
 .btn-secondary-outline {
   @apply inline-flex items-center justify-center rounded-xl border-2 px-6 py-3 text-base font-semibold text-white transition;
   border-color: color-mix(in srgb, var(--brand-orange) 85%, transparent);

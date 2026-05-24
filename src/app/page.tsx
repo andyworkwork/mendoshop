@@ -2,15 +2,20 @@ import { HeroFeatures } from '@/components/hero-features'
 import { HeroTypewriterTitle } from '@/components/hero-typewriter-title'
 import { HomeHeroCta } from '@/components/home-hero-cta'
 import { MendoshopPageBackground } from '@/components/mendoshop-page-background'
+import { TemplateShowcaseCarousel } from '@/components/template-showcase-carousel'
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { SiteFooter } from '@/components/site-footer'
+import { buildResolvedShowcases, fetchTemplateShowcaseMap } from '@/lib/template-showcase-data'
+import { STORE_TEMPLATES } from '@/lib/store-templates'
 import { fetchPublicDirectoryShops } from '@/lib/shops'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const shops = await fetchPublicDirectoryShops(24)
+  const showcaseRows = await fetchTemplateShowcaseMap()
+  const showcaseSlides = buildResolvedShowcases(STORE_TEMPLATES, showcaseRows)
 
   return (
     <div className="relative min-h-screen mendoshop-page-bg">
@@ -19,7 +24,7 @@ export default async function HomePage() {
         <SiteHeader />
       </div>
       <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20">
-        <section className="flex flex-col items-center py-16 text-center">
+        <section className="flex flex-col items-center pb-8 pt-10 text-center sm:pt-14">
           <p className="hero-text-shadow mb-2 text-sm font-medium uppercase tracking-widest text-brand">
             Mendoza vende online
           </p>
@@ -31,8 +36,12 @@ export default async function HomePage() {
             quieras!
           </p>
           <HomeHeroCta />
-          <HeroFeatures />
+          <TemplateShowcaseCarousel slides={showcaseSlides} />
         </section>
+
+        <div className="mx-auto max-w-6xl px-4">
+          <HeroFeatures />
+        </div>
 
         <section id="tiendas" className="mt-20">
           <h2 className="hero-text-shadow mb-6 text-2xl font-bold">Tiendas en Mendoshop</h2>
