@@ -9,18 +9,25 @@ import {
   shopBackgroundClass,
   themeCssVars,
 } from '@/lib/themes'
+import type { ShopTheme } from '@/types/shop'
 
 const LOGO_SRC = '/mendoshop-logo.png'
 
 export function TemplateShowcasePreview({
   template,
   showcase,
+  theme: themeOverride,
+  caption,
 }: {
   template: StoreTemplate
   showcase?: ResolvedTemplateShowcase
+  /** Tema de una tienda real; si no, usa el de la plantilla. */
+  theme?: ShopTheme
+  /** Texto bajo el teléfono (nombre de tienda o rubro). */
+  caption?: string
 }) {
   const data = showcase ?? resolveTemplateShowcase(template, null)
-  const theme = template.defaults
+  const theme = themeOverride ?? template.defaults
   const isLight = theme.background === 'light'
   const accent = resolveAccentColor(theme)
   const frame = resolveProductFrameColor(theme)
@@ -86,7 +93,7 @@ export function TemplateShowcasePreview({
 
         <div className="template-showcase-wa">WhatsApp</div>
       </div>
-      <p className="template-showcase-label">{template.name}</p>
+      <p className="template-showcase-label">{caption ?? template.name}</p>
     </div>
   )
 }

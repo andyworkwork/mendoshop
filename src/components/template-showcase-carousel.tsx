@@ -2,17 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { TemplateShowcasePreview } from '@/components/template-showcase-preview'
-import type { ResolvedTemplateShowcase } from '@/lib/template-showcase-data'
-import type { StoreTemplate } from '@/lib/store-templates'
+import type { HomeCarouselSlide } from '@/lib/home-carousel'
 
-const INTERVAL_MS = 5500
+const INTERVAL_MS = 4400
 
-export type TemplateShowcaseSlide = {
-  template: StoreTemplate
-  showcase: ResolvedTemplateShowcase
-}
-
-export function TemplateShowcaseCarousel({ slides }: { slides: TemplateShowcaseSlide[] }) {
+export function TemplateShowcaseCarousel({ slides }: { slides: HomeCarouselSlide[] }) {
   const n = slides.length
   const [index, setIndex] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -46,7 +40,7 @@ export function TemplateShowcaseCarousel({ slides }: { slides: TemplateShowcaseS
   return (
     <div className="template-showcase-carousel-wrap mt-8 w-full">
       <p className="hero-text-shadow mb-4 text-center text-sm font-medium uppercase tracking-widest text-zinc-300">
-        Plantillas para tu rubro
+        Tiendas y plantillas en Mendoshop
       </p>
 
       <div className="relative mx-auto max-w-5xl">
@@ -79,14 +73,19 @@ export function TemplateShowcaseCarousel({ slides }: { slides: TemplateShowcaseS
         >
           {slides.map((slide, i) => (
             <div
-              key={slide.template.id}
+              key={slide.key}
               ref={(el) => {
                 slideRefs.current[i] = el
               }}
               className={`template-showcase-slide ${i === index ? 'is-active' : ''}`}
               aria-hidden={i !== index}
             >
-              <TemplateShowcasePreview template={slide.template} showcase={slide.showcase} />
+              <TemplateShowcasePreview
+                template={slide.template}
+                showcase={slide.showcase}
+                theme={slide.theme}
+                caption={slide.caption}
+              />
             </div>
           ))}
         </div>
@@ -95,9 +94,9 @@ export function TemplateShowcaseCarousel({ slides }: { slides: TemplateShowcaseS
           <div className="mt-4 flex justify-center gap-2">
             {slides.map((slide, i) => (
               <button
-                key={slide.template.id}
+                key={slide.key}
                 type="button"
-                aria-label={`Plantilla ${slide.template.name}`}
+                aria-label={slide.caption}
                 aria-current={i === index ? 'true' : undefined}
                 onClick={() => goTo(i)}
                 className={`h-2 rounded-full transition-all ${

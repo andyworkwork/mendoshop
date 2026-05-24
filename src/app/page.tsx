@@ -6,16 +6,14 @@ import { TemplateShowcaseCarousel } from '@/components/template-showcase-carouse
 import { SiteHeader } from '@/components/site-header'
 import { ShopDirectory } from '@/components/shop-directory'
 import { SiteFooter } from '@/components/site-footer'
-import { buildResolvedShowcases, fetchTemplateShowcaseMap } from '@/lib/template-showcase-data'
-import { STORE_TEMPLATES } from '@/lib/store-templates'
+import { buildHomeCarouselSlides } from '@/lib/home-carousel'
 import { fetchPublicDirectoryShops } from '@/lib/public-directory-shops'
 
 export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const shops = await fetchPublicDirectoryShops(24)
-  const showcaseRows = await fetchTemplateShowcaseMap()
-  const showcaseSlides = buildResolvedShowcases(STORE_TEMPLATES, showcaseRows)
+  const showcaseSlides = await buildHomeCarouselSlides()
 
   return (
     <div className="relative min-h-screen mendoshop-page-bg">

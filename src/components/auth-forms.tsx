@@ -2,10 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { completeShopRegistration } from '@/app/actions/register'
 import { createClient } from '@/lib/supabase/browser'
 import { slugify } from '@/lib/format'
+import { authConfirmUrl } from '@/lib/publicUrl'
+import { pendingShopToUserMetadata } from '@/lib/pending-registration'
 import Link from 'next/link'
 import { RubroField } from '@/components/rubro-field'
+import { RegisterPendingEmail } from '@/components/register-pending-email'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
 
 export function LoginForm({
@@ -88,6 +92,7 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
   const [rubro, setRubro] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
 
   function onShopNameChange(v: string) {
     setShopName(v)
@@ -113,59 +118,52 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
       return
     }
 
-    const { data: authData, error: signErr } = await sb.auth.signUp({ email, password })
-    if (signErr) {
-      setError(signErr.message)
-      setLoading(false)
-      return
-    }
-
-    const userId = authData.user?.id
-    if (!userId) {
-      setError('Revisá tu email para confirmar la cuenta y volvé a entrar.')
-      setLoading(false)
-      return
-    }
-
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     const ref = referralSlug?.trim() ? slugify(referralSlug.trim()) : null
-
-    const { data: shop, error: shopErr } = await sb
-      .from('shops')
-      .insert({
-        slug: cleanSlug,
-        name: shopName.trim(),
-        description: null,
-        whatsapp_e164: wa,
-        category_label: rubro.trim() || null,
-        plan: 'free_trial',
-        plan_until: trialEnd,
-        active: true,
-        referred_by_slug: ref && ref.length >= 3 ? ref : null,
-      })
-      .select('id')
-      .single()
-
-    if (shopErr) {
-      setError(shopErr.message.includes('unique') ? 'Ese link ya está en uso. Elegí otro.' : shopErr.message)
-      setLoading(false)
-      return
+    const pending = {
+      shopName: shopName.trim(),
+      slug: cleanSlug,
+      whatsapp: wa,
+      rubro: rubro.trim(),
+      referralSlug: ref && ref.length >= 3 ? ref : null,
     }
 
-    const { error: memberErr } = await sb.from('shop_members').insert({
-      shop_id: shop.id,
-      user_id: userId,
-      role: 'owner',
+    const { data: authData, error: signErr } = await sb.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: authConfirmUrl('/registro/completar'),
+        data: pendingShopToUserMetadata(pending),
+      },
     })
 
-    if (memberErr) {
-      setError(memberErr.message)
+    if (signErr) {
+      const msg = signErr.message.toLowerCase().includes('already')
+        ? 'Ese email ya tiene cuenta. Entrá o recuperá tu contraseña.'
+        : signErr.message
+      setError(msg)
       setLoading(false)
+      return
+    }
+
+    if (!authData.session) {
+      setPendingEmail(email.trim().toLowerCase())
+      setLoading(false)
+      return
+    }
+
+    const res = await completeShopRegistration(pending)
+    setLoading(false)
+    if ('error' in res) {
+      setError(res.error)
       return
     }
 
     router.push('/dashboard')
     router.refresh()
+  }
+
+  if (pendingEmail) {
+    return <RegisterPendingEmail email={pendingEmail} />
   }
 
   return (

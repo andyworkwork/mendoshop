@@ -16,6 +16,7 @@
     "templates:sync": "node scripts/sync-templates-from-carrusel.mjs",
     "carousel:slide": "node scripts/regenerate-carousel-slide.mjs",
     "configure:auth": "node --env-file=.env.local scripts/configure-supabase-auth-domain.mjs",
+    "configure:auth-emails-es": "node --env-file=.env.local scripts/configure-supabase-email-templates-es.mjs",
     "configure:auth-security": "node --env-file=.env.local scripts/configure-supabase-auth-security.mjs"
   },
   "dependencies": {

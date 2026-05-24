@@ -29,8 +29,15 @@ Si ya corriste algo y falla por “already exists”, borrá el proyecto y creá
 ## 3. Auth
 
 - **Authentication → Providers**: Email activado.
-- Para probar sin mail de confirmación: desactivá **Confirm email**.
+- Para probar sin mail de confirmación: desactivá **Confirm email** (en producción conviene dejarlo activado).
 - **URL Configuration**: `http://localhost:3000/**` en Redirect URLs.
+- Correos en español (confirmación y recuperar contraseña), con PAT en `.env.local`:
+
+```bash
+npm run configure:auth-emails-es
+```
+
+El enlace de confirmación debe llevar a `/auth/confirmar` y luego a `/registro/completar` para crear la tienda (no solo a la home).
 
 ## 3b. Usuario maestro (panel admin)
 
