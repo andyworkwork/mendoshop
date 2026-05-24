@@ -133,8 +133,8 @@ export const PLAN_SUBSCRIPTION_DAYS = 30
 
 /** Precio mensual en pesos argentinos (planes de pago). */
 export const PLAN_PRICES_ARS = {
-  basic: 16_000,
-  pro: 27_000,
+  basic: 9_999,
+  pro: 20_999,
 } as const satisfies Record<Exclude<ShopPlan, 'free_trial'>, number>
 
 export const PLAN_CATALOG: {

@@ -74,50 +74,23 @@ function sortDirectoryShops(shops: ShopRow[], limit: number): ShopRow[] {
   return [...pro, ...rest].slice(0, limit)
 }
 
-/** Tiendas visibles en el directorio público (misma regla que RLS / vitrina). */
-export async function fetchPublicDirectoryShops(limit = 24): Promise<ShopRow[]> {
-  const supabase = createServiceClient()
-  const now = new Date().toISOString()
-  const { data, error } = await supabase
-    .from('shops')
-    .select('*')
-    .eq('active', true)
-    .or(`plan_until.is.null,plan_until.gt.${now}`)
-    .order('featured', { ascending: false })
-    .order('view_count', { ascending: false })
-    .limit(Math.max(limit * 3, limit))
-
-  if (error) {
-    console.error('fetchPublicDirectoryShops', error.message)
-    return []
-  }
-
-  return sortDirectoryShops(
-    (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>)),
-    limit,
-  )
-}
-
 export async function fetchFeaturedShops(supabase: SupabaseClient, limit = 12): Promise<ShopRow[]> {
   const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('shops')
     .select('*')
     .eq('active', true)
-    .or(`plan_until.is.null,plan_until.gt.${now}`)
+    .or(`plan_until.is.null,plan_until.gt."${now}"`)
     .order('featured', { ascending: false })
     .order('view_count', { ascending: false })
     .limit(Math.max(limit * 3, limit))
 
   if (error) {
     console.error('fetchFeaturedShops', error.message)
-    return fetchPublicDirectoryShops(limit)
+    return []
   }
 
   const shops = (data ?? []).map((r) => mapShopRow(r as Record<string, unknown>))
-  if (shops.length === 0) {
-    return fetchPublicDirectoryShops(limit)
-  }
   return sortDirectoryShops(shops, limit)
 }
 

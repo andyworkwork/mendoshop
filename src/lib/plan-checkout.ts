@@ -17,7 +17,7 @@ export const CHECKOUT_PRODUCTS: Record<PlanCheckoutProduct, CheckoutProductMeta>
   basic: {
     name: 'Básico',
     summary: 'Tu tienda online con lo esencial para vender por WhatsApp.',
-    priceArs: 16_000,
+    priceArs: 9_999,
     daysAdded: 30,
     shopPlanOnPay: 'basic',
     features: ['30 productos', '30 días de tienda', 'Soporte técnico', 'Link para tus redes sociales'],
@@ -25,7 +25,7 @@ export const CHECKOUT_PRODUCTS: Record<PlanCheckoutProduct, CheckoutProductMeta>
   pro: {
     name: 'Pro',
     summary: 'Más catálogo, visibilidad y herramientas para crecer.',
-    priceArs: 27_000,
+    priceArs: 20_999,
     daysAdded: 30,
     shopPlanOnPay: 'pro',
     features: [

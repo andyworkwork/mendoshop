@@ -8,7 +8,7 @@ import { ShopDirectory } from '@/components/shop-directory'
 import { SiteFooter } from '@/components/site-footer'
 import { buildResolvedShowcases, fetchTemplateShowcaseMap } from '@/lib/template-showcase-data'
 import { STORE_TEMPLATES } from '@/lib/store-templates'
-import { fetchPublicDirectoryShops } from '@/lib/shops'
+import { fetchPublicDirectoryShops } from '@/lib/public-directory-shops'
 
 export const dynamic = 'force-dynamic'
 
