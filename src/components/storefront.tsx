@@ -44,6 +44,13 @@ type Props = {
 
 const PRICE_PAGE_SIZE = 8
 
+function firstCategoryIdWithProducts(categories: CategoryRow[]): string | null {
+  for (const cat of categories) {
+    if (productsForCategory(categories, cat.id).length > 0) return cat.id
+  }
+  return null
+}
+
 function resolveBannerUrl(shop: ShopRow): string | null {
   const custom = getShopBannerDisplayUrl(shop.banner_path)
   if (custom) return custom
@@ -62,14 +69,22 @@ export function Storefront({
   const { addLine, lines } = useCart()
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set())
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    const first = firstCategoryIdWithProducts(categories)
+    return first ? new Set([first]) : new Set()
+  })
   const [productViewMode, setProductViewMode] = useState<ProductViewMode>('category')
   const [priceVisibleCount, setPriceVisibleCount] = useState(PRICE_PAGE_SIZE)
   const [detailProduct, setDetailProduct] = useState<FlatProduct | null>(null)
 
   useEffect(() => {
-    if (!isEdit) return
-    setExpandedCategories(new Set(categories.map((c) => c.id)))
+    if (isEdit) {
+      setExpandedCategories(new Set(categories.map((c) => c.id)))
+      return
+    }
+    const first = firstCategoryIdWithProducts(categories)
+    if (!first) return
+    setExpandedCategories((prev) => (prev.size > 0 ? prev : new Set([first])))
   }, [isEdit, categories])
 
   useEffect(() => {
