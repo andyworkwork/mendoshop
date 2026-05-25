@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { imageFocusStyle } from '@/lib/image-focus'
 import { useCart } from '@/context/cart-context'
-import { formatMoneyArs } from '@/lib/format'
-import { getProductImageUrl } from '@/lib/product-images'
 import { getShopBannerDisplayUrl } from '@/lib/shop-banner'
 import { templateBannerSrc } from '@/lib/store-templates'
 import { CategoryIcon } from '@/lib/category-icons'
 import { resolveProductFrameColor, shopBackgroundClass, themeCssVars } from '@/lib/themes'
-import type { CategoryRow, ProductRow } from '@/types/catalog'
+import type { CategoryRow } from '@/types/catalog'
+import {
+  flattenProducts,
+  productsForCategory,
+  type FlatProduct,
+} from '@/lib/flat-product'
 import type { ShopRow } from '@/types/shop'
 import { StoreSocialFooter } from '@/components/store-social-footer'
 import { StoreHeaderBrand } from '@/components/store-header-brand'
@@ -28,6 +31,7 @@ import {
   resolveFeaturedProducts,
 } from '@/lib/featured-products'
 import { FeaturedProductsCarousel } from '@/components/featured-products-carousel'
+import { StoreProductCard } from '@/components/store-product-card'
 
 type Props = {
   shop: ShopRow
@@ -36,33 +40,6 @@ type Props = {
   onOpenBannerEditor?: () => void
   onOpenAppearanceEditor?: () => void
   onOpenFeaturedEditor?: () => void
-}
-
-type FlatProduct = ProductRow & {
-  categoryId: string
-  categoryName: string
-  categorySort: number
-}
-
-function flattenProducts(categories: CategoryRow[]): FlatProduct[] {
-  const out: FlatProduct[] = []
-  for (const cat of categories) {
-    for (const sub of cat.subcategories) {
-      for (const p of sub.products) {
-        out.push({
-          ...p,
-          categoryId: cat.id,
-          categoryName: cat.name,
-          categorySort: cat.sort_order,
-        })
-      }
-    }
-  }
-  return out
-}
-
-function productsForCategory(categories: CategoryRow[], categoryId: string): FlatProduct[] {
-  return flattenProducts(categories).filter((p) => p.categoryId === categoryId)
 }
 
 const PRICE_PAGE_SIZE = 8
@@ -160,16 +137,14 @@ export function Storefront({
   )
 
   const productsByPrice = useMemo(() => {
-    const featuredIds = new Set(featuredProducts.map((p) => p.id))
-    const list = products.filter((p) => !featuredIds.has(p.id))
     if (productViewMode === 'price_asc') {
-      return list.sort((a, b) => Number(a.price) - Number(b.price))
+      return [...products].sort((a, b) => Number(a.price) - Number(b.price))
     }
     if (productViewMode === 'price_desc') {
-      return list.sort((a, b) => Number(b.price) - Number(a.price))
+      return [...products].sort((a, b) => Number(b.price) - Number(a.price))
     }
-    return list
-  }, [products, productViewMode, featuredProducts])
+    return products
+  }, [products, productViewMode])
 
   const visiblePriceProducts = useMemo(
     () => productsByPrice.slice(0, priceVisibleCount),
@@ -306,22 +281,15 @@ export function Storefront({
                 isLight={isLight}
                 accentFrame={productFrame}
                 isEdit={isEdit}
-                onAdd={(p) => {
-                  const full = products.find((x) => x.id === p.id)
-                  if (full) addProduct(full)
-                }}
-                onOpenDetail={(p) => {
-                  const full = products.find((x) => x.id === p.id)
-                  if (full) setDetailProduct(full)
-                }}
+                onAdd={addProduct}
+                onOpenDetail={setDetailProduct}
               />
             ) : (
               <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {featuredProducts.map((p) => (
-                  <ProductCard
+                  <StoreProductCard
                     key={p.id}
                     product={p}
-                    shopId={shop.id}
                     isLight={isLight}
                     accentFrame={productFrame}
                     isEdit={isEdit}
@@ -371,10 +339,9 @@ export function Storefront({
                     {expanded && (
                       <ul className="grid grid-cols-2 gap-3 border-t border-zinc-200/80 p-3 dark:border-zinc-700/80 md:grid-cols-3">
                         {catProducts.map((p) => (
-                          <ProductCard
+                          <StoreProductCard
                             key={p.id}
                             product={p}
-                            shopId={shop.id}
                             isLight={isLight}
                             accentFrame={productFrame}
                             isEdit={isEdit}
@@ -392,18 +359,15 @@ export function Storefront({
 
             {productViewMode !== 'category' && (
               <div className="space-y-3">
-                {productsByPrice.length === 0 && featuredProducts.length > 0 ? (
-                  <p className="text-center text-sm text-zinc-500">
-                    Todos los productos están en destacados.
-                  </p>
+                {productsByPrice.length === 0 ? (
+                  <p className="text-center text-sm text-zinc-500">No hay productos para mostrar.</p>
                 ) : (
                   <>
                     <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
                       {visiblePriceProducts.map((p) => (
-                        <ProductCard
+                        <StoreProductCard
                           key={p.id}
                           product={p}
-                          shopId={shop.id}
                           isLight={isLight}
                           accentFrame={productFrame}
                           isEdit={isEdit}
@@ -416,7 +380,7 @@ export function Storefront({
                       <div className="flex justify-center pt-1">
                         <button
                           type="button"
-                          className="rounded-xl border border-zinc-600 px-5 py-2.5 text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:bg-zinc-800/80"
+                          className="store-vitrina-title-text store-load-more-btn rounded-xl border px-5 py-2.5 text-sm font-semibold transition"
                           onClick={() =>
                             setPriceVisibleCount((n) =>
                               Math.min(n + PRICE_PAGE_SIZE, productsByPrice.length),
@@ -467,98 +431,6 @@ export function Storefront({
       />
       <StoreCartDrawer shop={shop} open={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
-  )
-}
-
-function ProductCard({
-  product: p,
-  shopId: _shopId,
-  isLight,
-  accentFrame,
-  isEdit,
-  onAdd,
-  onOpenDetail,
-}: {
-  product: FlatProduct
-  shopId: string
-  isLight: boolean
-  accentFrame: string
-  isEdit?: boolean
-  onAdd: () => void
-  onOpenDetail: () => void
-}) {
-  const [justAdded, setJustAdded] = useState(false)
-  const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const img = getProductImageUrl(p.image_path, 'thumb')
-  const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark'
-
-  const handleAdd = () => {
-    onAdd()
-    setJustAdded(true)
-    if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current)
-    addedTimeoutRef.current = setTimeout(() => setJustAdded(false), 800)
-  }
-
-  const label = justAdded ? 'Agregado ✓' : 'Agregar al carrito'
-  const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')
-  const mediaFocus = imageFocusStyle({ x: p.image_focus_x, y: p.image_focus_y })
-
-  return (
-    <li className={cardClass} style={{ ['--shop-product-frame' as string]: frameVar }}>
-      <div className="relative">
-        <button
-          type="button"
-          className="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
-          onClick={onOpenDetail}
-          aria-label={`Ver detalle de ${p.name}`}
-        >
-          {img ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={img}
-              alt={p.name}
-              loading="lazy"
-              decoding="async"
-              className="store-product-card__media"
-              style={mediaFocus}
-            />
-          ) : (
-            <div className="store-product-card__media rounded-t-2xl bg-zinc-200" />
-          )}
-        </button>
-        {(p.product_details?.trim() || p.description?.trim()) && (
-          <span className="absolute bottom-2 right-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white">
-            Ver más
-          </span>
-        )}
-      </div>
-      <div className="store-product-card__body">
-        <div>
-          <p className="store-product-card__caption-name">{p.name}</p>
-          <p className="store-product-card__caption-price">{formatMoneyArs(Number(p.price))}</p>
-        </div>
-        <button
-          type="button"
-          className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
-          onClick={handleAdd}
-        >
-          <CartAddIcon />
-          {label}
-        </button>
-      </div>
-    </li>
-  )
-}
-
-function CartAddIcon() {
-  return (
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.25} aria-hidden>
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9m12-9l2 9m-6-9V6a2 2 0 012-2h0a2 2 0 012 2v7"
-      />
-    </svg>
   )
 }
 
