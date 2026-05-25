@@ -465,7 +465,12 @@ export function Storefront({
         themeStyle={themeStyle}
         onSelectCategory={handleSelectCategory}
       />
-      <StoreCartDrawer shop={shop} open={cartOpen} onClose={() => setCartOpen(false)} />
+      <StoreCartDrawer
+        shop={shop}
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        themeStyle={themeStyle}
+      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import { useState } from 'react'
 import { useCart } from '@/context/cart-context'
 import { formatMoneyArs } from '@/lib/format'
@@ -14,9 +15,10 @@ type Props = {
   shop: ShopRow
   open: boolean
   onClose: () => void
+  themeStyle: CSSProperties
 }
 
-export function StoreCartDrawer({ shop, open, onClose }: Props) {
+export function StoreCartDrawer({ shop, open, onClose, themeStyle }: Props) {
   const { lines, removeLine, setQty, subtotal, clear } = useCart()
   const [sending, setSending] = useState(false)
 
@@ -67,56 +69,58 @@ export function StoreCartDrawer({ shop, open, onClose }: Props) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex bg-black/60">
+    <div className="fixed inset-0 z-50 flex bg-black/60" style={themeStyle}>
       <button
         type="button"
         className="min-h-0 min-w-0 flex-1 cursor-default border-0 bg-transparent"
         aria-label="Cerrar"
         onClick={onClose}
       />
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-zinc-700 bg-zinc-950 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-          <h2 className="font-semibold">Tu carrito</h2>
-          <button type="button" onClick={onClose} className="rounded p-2 text-zinc-400 hover:bg-zinc-800">
+      <aside className="store-cart-drawer flex h-full w-full max-w-md flex-col shadow-2xl">
+        <div className="store-cart-drawer__header flex items-center justify-between px-4 py-3">
+          <h2 className="store-vitrina-title-text font-semibold">Tu carrito</h2>
+          <button type="button" onClick={onClose} className="store-cart-drawer__close rounded p-2">
             ✕
           </button>
         </div>
         <ul className="flex-1 overflow-y-auto p-4 space-y-3">
           {lines.length === 0 && (
-            <li className="text-center text-zinc-500 py-8">El carrito está vacío</li>
+            <li className="store-cart-drawer__empty py-8 text-center">El carrito está vacío</li>
           )}
           {lines.map((l) => {
             const img = getProductImageUrl(l.imagePath, 'thumb')
             return (
-              <li key={l.productId} className="flex gap-3 rounded-xl border border-zinc-800 p-2">
+              <li key={l.productId} className="store-cart-drawer__item flex gap-3 rounded-xl p-2">
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={img} alt="" className="h-16 w-16 rounded-lg object-cover" />
                 ) : (
-                  <div className="h-16 w-16 rounded-lg bg-zinc-800" />
+                  <div className="h-16 w-16 rounded-lg bg-zinc-800/80" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{l.name}</p>
-                  <p className="text-sm text-brand">{formatMoneyArs(l.unitPrice)}</p>
+                  <p className="store-vitrina-title-text truncate text-sm font-medium">{l.name}</p>
+                  <p className="store-product-card__caption-price text-sm">{formatMoneyArs(l.unitPrice)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       type="button"
-                      className="h-8 w-8 rounded border border-zinc-600"
+                      className="store-cart-drawer__qty-btn h-8 w-8 rounded"
                       onClick={() => setQty(l.productId, l.quantity - 1)}
+                      aria-label="Quitar una unidad"
                     >
                       −
                     </button>
-                    <span className="w-6 text-center text-sm">{l.quantity}</span>
+                    <span className="store-cart-drawer__qty w-6 text-center text-sm">{l.quantity}</span>
                     <button
                       type="button"
-                      className="h-8 w-8 rounded border border-zinc-600"
+                      className="store-cart-drawer__qty-btn h-8 w-8 rounded"
                       onClick={() => setQty(l.productId, l.quantity + 1)}
+                      aria-label="Agregar una unidad"
                     >
                       +
                     </button>
                     <button
                       type="button"
-                      className="ml-auto text-xs text-red-400"
+                      className="store-cart-drawer__remove ml-auto text-xs"
                       onClick={() => removeLine(l.productId)}
                     >
                       Quitar
@@ -127,8 +131,8 @@ export function StoreCartDrawer({ shop, open, onClose }: Props) {
             )
           })}
         </ul>
-        <div className="border-t border-zinc-800 p-4 space-y-3">
-          <p className="flex justify-between font-semibold">
+        <div className="store-cart-drawer__footer space-y-3 p-4">
+          <p className="store-vitrina-title-text flex justify-between font-semibold">
             <span>Total</span>
             <span>{formatMoneyArs(subtotal)}</span>
           </p>

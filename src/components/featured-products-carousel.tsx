@@ -49,7 +49,6 @@ function FeaturedSlide({
   product,
   isLight,
   accentFrame,
-  isActive,
   isEdit,
   justAdded,
   onAdd,
@@ -58,7 +57,6 @@ function FeaturedSlide({
   product: FeaturedCarouselProduct
   isLight: boolean
   accentFrame: string
-  isActive: boolean
   isEdit?: boolean
   justAdded: boolean
   onAdd: () => void
@@ -66,7 +64,7 @@ function FeaturedSlide({
 }) {
   const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')
   const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark'
-  const img = getProductImageUrl(product.image_path, 'full')
+  const img = getProductImageUrl(product.image_path, 'thumb')
   const mediaFocus = imageFocusStyle({ x: product.image_focus_x, y: product.image_focus_y })
   const hasDetail = Boolean(product.product_details?.trim() || product.description?.trim())
 
@@ -74,14 +72,12 @@ function FeaturedSlide({
     <article
       className={`${cardClass} featured-products-carousel__card`}
       style={{ ['--shop-product-frame' as string]: frameVar }}
-      inert={!isActive ? true : undefined}
     >
       <div className="featured-products-carousel__media-wrap relative">
         <button
           type="button"
           className="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
           onClick={onOpenDetail}
-          tabIndex={isActive ? 0 : -1}
           aria-label={`Ver detalle de ${product.name}`}
         >
           {img ? (
@@ -91,14 +87,14 @@ function FeaturedSlide({
               alt={product.name}
               className="store-product-card__media featured-products-carousel__media"
               style={mediaFocus}
+              decoding="async"
             />
           ) : (
             <div className="store-product-card__media featured-products-carousel__media rounded-t-2xl bg-zinc-200" />
           )}
-          <span className="featured-products-carousel__media-shine" aria-hidden />
         </button>
         {hasDetail && (
-          <span className="absolute bottom-3 right-3 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm">
+          <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-medium text-white">
             Ver más
           </span>
         )}
@@ -111,12 +107,11 @@ function FeaturedSlide({
         {!isEdit && (
           <button
             type="button"
-            className={`btn-store-add${justAdded && isActive ? ' btn-store-add--added' : ''}`}
+            className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
             onClick={onAdd}
-            tabIndex={isActive ? 0 : -1}
           >
             <CartAddIcon />
-            {justAdded && isActive ? 'Agregado ✓' : 'Agregar al carrito'}
+            {justAdded ? 'Agregado ✓' : 'Agregar al carrito'}
           </button>
         )}
       </div>
@@ -143,10 +138,11 @@ export function FeaturedProductsCarousel({
   const [index, setIndex] = useState(0)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [paused, setPaused] = useState(false)
+  const [inView, setInView] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
-  const trackRef = useRef<HTMLDivElement>(null)
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([])
+  const rootRef = useRef<HTMLDivElement>(null)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resumeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const goTo = useCallback(
     (i: number) => {
@@ -164,23 +160,21 @@ export function FeaturedProductsCarousel({
   }, [])
 
   useEffect(() => {
-    if (n <= 1 || paused || reduceMotion) return
-    const id = window.setInterval(() => setIndex((i) => (i + 1) % n), INTERVAL_MS)
-    return () => window.clearInterval(id)
-  }, [n, paused, reduceMotion])
+    const el = rootRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const obs = new IntersectionObserver(
+      ([entry]) => setInView(entry?.isIntersecting ?? true),
+      { rootMargin: '80px', threshold: 0.15 },
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   useEffect(() => {
-    const track = trackRef.current
-    const slide = slideRefs.current[index]
-    if (!track || !slide) return
-
-    const maxLeft = track.scrollWidth - track.clientWidth
-    const targetLeft = slide.offsetLeft - (track.clientWidth - slide.offsetWidth) / 2
-    track.scrollTo({
-      left: Math.max(0, Math.min(targetLeft, maxLeft)),
-      behavior: reduceMotion ? 'auto' : 'smooth',
-    })
-  }, [index, reduceMotion])
+    if (n <= 1 || paused || !inView || reduceMotion) return
+    const id = window.setInterval(() => setIndex((i) => (i + 1) % n), INTERVAL_MS)
+    return () => window.clearInterval(id)
+  }, [n, paused, inView, reduceMotion])
 
   useEffect(() => {
     if (index >= n) setIndex(0)
@@ -188,27 +182,37 @@ export function FeaturedProductsCarousel({
 
   if (n === 0) return null
 
-  const handleAdd = (product: FeaturedCarouselProduct) => {
-    onAdd(product)
-    setJustAddedId(product.id)
+  const product = products[index]!
+
+  const handleAdd = (p: FeaturedCarouselProduct) => {
+    onAdd(p)
+    setJustAddedId(p.id)
     if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current)
     addedTimeoutRef.current = setTimeout(() => setJustAddedId(null), 800)
   }
 
-  const pause = () => setPaused(true)
-  const resume = () => setPaused(false)
+  const pause = () => {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
+    setPaused(true)
+  }
+
+  const resumeLater = (ms: number) => {
+    if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
+    resumeTimeoutRef.current = setTimeout(() => setPaused(false), ms)
+  }
 
   return (
     <div
+      ref={rootRef}
       className={`featured-products-carousel ${isLight ? 'featured-products-carousel--light' : 'featured-products-carousel--dark'}`}
       onMouseEnter={pause}
-      onMouseLeave={resume}
+      onMouseLeave={() => setPaused(false)}
       onFocusCapture={pause}
       onBlurCapture={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) resume()
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false)
       }}
       onTouchStart={pause}
-      onTouchEnd={() => window.setTimeout(resume, 2800)}
+      onTouchEnd={() => resumeLater(2400)}
     >
       <div className="featured-products-carousel__viewport">
         {n > 1 && (
@@ -233,70 +237,44 @@ export function FeaturedProductsCarousel({
         )}
 
         <div
-          ref={trackRef}
-          className="featured-products-carousel__track"
+          className="featured-products-carousel__stage"
           aria-roledescription="carrusel"
           aria-label="Productos destacados"
+          aria-live="polite"
         >
-          {products.map((product, i) => (
-            <div
-              key={product.id}
-              ref={(el) => {
-                slideRefs.current[i] = el
-              }}
-              className={`featured-products-carousel__slide ${i === index ? 'is-active' : ''}`}
-              aria-hidden={i !== index}
-            >
-              <FeaturedSlide
-                product={product}
-                isLight={isLight}
-                accentFrame={accentFrame}
-                isActive={i === index}
-                isEdit={isEdit}
-                justAdded={justAddedId === product.id}
-                onAdd={() => handleAdd(product)}
-                onOpenDetail={() => onOpenDetail(product)}
-              />
-            </div>
-          ))}
+          <div key={product.id} className="featured-products-carousel__slide-enter">
+            <FeaturedSlide
+              product={product}
+              isLight={isLight}
+              accentFrame={accentFrame}
+              isEdit={isEdit}
+              justAdded={justAddedId === product.id}
+              onAdd={() => handleAdd(product)}
+              onOpenDetail={() => onOpenDetail(product)}
+            />
+          </div>
         </div>
       </div>
 
       {n > 1 && (
-        <div className="featured-products-carousel__footer">
-          <div
-            className="featured-products-carousel__progress"
-            role="presentation"
-            aria-hidden
-          >
-            <span
-              key={`${index}-${paused}-${reduceMotion}`}
-              className="featured-products-carousel__progress-bar"
-              style={
-                reduceMotion || paused
-                  ? { animationPlayState: 'paused' }
-                  : { animationDuration: `${INTERVAL_MS}ms` }
-              }
+        <div className="featured-products-carousel__dots" role="tablist" aria-label="Elegir producto destacado">
+          {products.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              role="tab"
+              aria-label={`Ver ${p.name}`}
+              aria-selected={i === index}
+              onClick={() => goTo(i)}
+              className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
             />
-          </div>
-          <div className="featured-products-carousel__dots">
-            {products.map((p, i) => (
-              <button
-                key={p.id}
-                type="button"
-                aria-label={`Ver ${p.name}`}
-                aria-current={i === index ? 'true' : undefined}
-                onClick={() => goTo(i)}
-                className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
-              />
-            ))}
-          </div>
+          ))}
         </div>
       )}
 
       {isEdit && n > 1 && (
         <p className="featured-products-carousel__hint">
-          Vista previa ({index + 1}/{n}) — en la tienda avanza solo; pasá el mouse para pausar.
+          Vista previa ({index + 1}/{n}) — en la tienda avanza solo cada 4 s.
         </p>
       )}
     </div>
