@@ -1,3 +1,4 @@
+import { PLAN_PRICES_ARS, planMarketingFeatures } from '@/lib/plans'
 import type { ShopPlan } from '@/types/shop'
 
 /** Productos que se pueden pagar con Mercado Pago (no todos cambian el plan de la tienda). */
@@ -17,26 +18,18 @@ export const CHECKOUT_PRODUCTS: Record<PlanCheckoutProduct, CheckoutProductMeta>
   basic: {
     name: 'Básico',
     summary: 'Tu tienda online con lo esencial para vender por WhatsApp.',
-    priceArs: 9_999,
+    priceArs: PLAN_PRICES_ARS.basic,
     daysAdded: 30,
     shopPlanOnPay: 'basic',
-    features: ['30 productos', '30 días de tienda', 'Soporte técnico', 'Link para tus redes sociales'],
+    features: planMarketingFeatures('basic'),
   },
   pro: {
     name: 'Pro',
     summary: 'Más catálogo, visibilidad y herramientas para crecer.',
-    priceArs: 20_999,
+    priceArs: PLAN_PRICES_ARS.pro,
     daysAdded: 30,
     shopPlanOnPay: 'pro',
-    features: [
-      '+50 productos (hasta 80 en total)',
-      '30 días de tienda',
-      'Todas tus redes sociales y más',
-      'Prioridad en el directorio Mendoshop',
-      'Visitas (7 y 30 días) y productos más consultados',
-      'Detalle por producto en la vitrina',
-      'Sin marca Mendoshop en el pie',
-    ],
+    features: planMarketingFeatures('pro'),
   },
   test_andy: {
     name: 'Plan test Andy',

@@ -61,8 +61,9 @@ export default function PreciosPage() {
         <section className="card mt-10 space-y-3">
           <h2 className="text-lg font-semibold">Prueba gratis</h2>
           <p className="text-sm text-zinc-400">
-            {planLabel('free_trial')}: {PLAN_LIMITS.free_trial.maxProducts} productos, 7 días, sin tarjeta.
-            Ideal para cargar tu catálogo y probar antes de pagar.
+            {planLabel('free_trial')}: {PLAN_LIMITS.free_trial.maxProducts} productos, 7 días, 2 productos
+            destacados en grilla (sin carrusel), sin tarjeta. Ideal para cargar tu catálogo y probar antes de
+            pagar.
           </p>
         </section>
 

@@ -12,6 +12,7 @@ import { ThemePicker } from '@/components/theme-picker'
 import { categoryIconLabel } from '@/lib/category-icons'
 import {
   flattenCatalogProducts,
+  maxFeaturedProductsForPlan,
   sanitizeFeaturedProductIds,
 } from '@/lib/featured-products'
 import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
@@ -73,7 +74,9 @@ export function StoreEditor({
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [featuredIds, setFeaturedIds] = useState<string[]>(() =>
-    sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(initialCategories)),
+    sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(initialCategories), {
+      max: maxFeaturedProductsForPlan(shop.plan),
+    }),
   )
   const [categoryViewIcon, setCategoryViewIcon] = useState(shop.category_view_icon)
   const [bannerMediaKey, setBannerMediaKey] = useState(0)
@@ -86,7 +89,9 @@ export function StoreEditor({
   async function saveFeatured() {
     setBusy(true)
     setMsg(null)
-    const ids = sanitizeFeaturedProductIds(featuredIds, flattenCatalogProducts(categories))
+    const ids = sanitizeFeaturedProductIds(featuredIds, flattenCatalogProducts(categories), {
+      max: maxFeaturedProductsForPlan(shop.plan),
+    })
     const res = await updateShopSettings(shop.id, { featured_product_ids: ids })
     setBusy(false)
     if ('error' in res && res.error) {
@@ -218,7 +223,9 @@ export function StoreEditor({
             className="store-edit-chip"
             onClick={() => {
               setFeaturedIds(
-                sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(categories)),
+                sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(categories), {
+                  max: maxFeaturedProductsForPlan(shop.plan),
+                }),
               )
               setPanel('featured')
             }}
@@ -261,7 +268,9 @@ export function StoreEditor({
           onOpenAppearanceEditor={() => setPanel('appearance')}
           onOpenFeaturedEditor={() => {
             setFeaturedIds(
-              sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(categories)),
+              sanitizeFeaturedProductIds(shop.featured_product_ids, flattenCatalogProducts(categories), {
+                max: maxFeaturedProductsForPlan(shop.plan),
+              }),
             )
             setPanel('featured')
           }}

@@ -8,8 +8,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { normalizeInstagramUrl, normalizeTikTokUrl, normalizeWebsiteUrl } from '@/lib/social-links'
 import { normalizeCategoryIcon } from '@/lib/category-icons'
-import { MAX_FEATURED_PRODUCTS_STORED } from '@/lib/featured-products'
-import type { ShopTheme } from '@/types/shop'
+import { maxFeaturedProductsForPlan } from '@/lib/featured-products'
+import type { ShopPlan, ShopTheme } from '@/types/shop'
 
 export async function updateShopSettings(
   shopId: string,
@@ -61,7 +61,14 @@ export async function updateShopSettings(
     patch.banner_show_shop_name = data.banner_show_shop_name
   }
   if (data.featured_product_ids !== undefined) {
-    const ids = [...new Set(data.featured_product_ids)].slice(0, MAX_FEATURED_PRODUCTS_STORED)
+    const { data: planRow, error: planErr } = await supabase
+      .from('shops')
+      .select('plan')
+      .eq('id', shopId)
+      .single()
+    if (planErr) return { error: planErr.message }
+    const planMax = maxFeaturedProductsForPlan((planRow?.plan as ShopPlan) ?? 'free_trial')
+    const ids = [...new Set(data.featured_product_ids)].slice(0, planMax)
     if (ids.length > 0) {
       const { data: owned, error: ownErr } = await supabase
         .from('products')

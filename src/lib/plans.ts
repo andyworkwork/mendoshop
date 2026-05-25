@@ -137,6 +137,32 @@ export const PLAN_PRICES_ARS = {
   pro: 20_999,
 } as const satisfies Record<Exclude<ShopPlan, 'free_trial'>, number>
 
+/** Bullets de marketing compartidos (panel, precios, checkout). */
+export function planMarketingFeatures(plan: ShopPlan): string[] {
+  switch (plan) {
+    case 'free_trial':
+      return ['30 productos', '7 días de prueba', '2 productos destacados (grilla)']
+    case 'basic':
+      return [
+        '30 productos',
+        '30 días de tienda',
+        '2 productos destacados (grilla)',
+        'Soporte técnico',
+        '2 links a redes en el pie',
+      ]
+    case 'pro':
+      return [
+        'Hasta 80 productos',
+        '30 días de tienda',
+        'Carrusel con hasta 4 productos destacados',
+        '4 links a redes en el pie',
+        'Prioridad en el directorio Mendoshop',
+        'Contador de visitas y productos más consultados',
+        'Sin marca Mendoshop en el pie',
+      ]
+  }
+}
+
 export const PLAN_CATALOG: {
   id: ShopPlan
   name: string
@@ -149,33 +175,20 @@ export const PLAN_CATALOG: {
     name: 'Prueba gratis',
     summary: 'Para probar Mendoshop con tu catálogo real.',
     priceArs: null,
-    features: ['30 productos', '7 días de prueba'],
+    features: planMarketingFeatures('free_trial'),
   },
   {
     id: 'basic',
     name: 'Básico',
     summary: 'Tu tienda online con lo esencial para vender por WhatsApp.',
     priceArs: PLAN_PRICES_ARS.basic,
-    features: [
-      '30 productos',
-      '30 días de tienda',
-      'Soporte técnico',
-      'Link para tus redes sociales',
-    ],
+    features: planMarketingFeatures('basic'),
   },
   {
     id: 'pro',
     name: 'Pro',
     summary: 'Más catálogo, visibilidad y herramientas para crecer.',
     priceArs: PLAN_PRICES_ARS.pro,
-    features: [
-      '+50 productos (hasta 80 en total)',
-      '30 días de tienda',
-      'Carrusel con hasta 4 productos destacados',
-      'Todas tus redes sociales y más',
-      'Prioridad de publicidad en la página',
-      'Contador de visitas',
-      'Personalización exclusiva',
-    ],
+    features: planMarketingFeatures('pro'),
   },
 ]

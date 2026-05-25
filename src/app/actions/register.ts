@@ -3,6 +3,7 @@
 import { slugify } from '@/lib/format'
 import { pendingShopToUserMetadata, type PendingShopRegistration } from '@/lib/pending-registration'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { fetchUserShops } from '@/lib/shops'
 import { revalidatePath } from 'next/cache'
 
@@ -73,6 +74,12 @@ export async function completeShopRegistration(
   })
 
   if (memberErr) {
+    try {
+      const service = createServiceClient()
+      await service.from('shops').delete().eq('id', shop.id)
+    } catch {
+      /* sin service role no se puede limpiar; el usuario puede reintentar con otro link */
+    }
     return { error: memberErr.message }
   }
 
