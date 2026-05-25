@@ -439,41 +439,8 @@ body {
   color: #fafafa;
 }
 
-.featured-products-carousel__footer {
-  margin-top: 0.5rem;
-  padding-inline: 0.25rem;
-}
-
-.featured-products-carousel__progress {
-  height: 3px;
-  overflow: hidden;
-  border-radius: 9999px;
-  background: rgb(0 0 0 / 0.08);
-}
-
-.featured-products-carousel--dark .featured-products-carousel__progress {
-  background: rgb(255 255 255 / 0.12);
-}
-
-.featured-products-carousel__progress-bar {
-  display: block;
-  height: 100%;
-  width: 100%;
-  border-radius: inherit;
-  background: var(--brand-orange);
-  transform: scaleX(0);
-  transform-origin: left center;
-  animation: featured-carousel-progress-fill linear forwards;
-}
-
-@keyframes featured-carousel-progress-fill {
-  to {
-    transform: scaleX(1);
-  }
-}
-
 .featured-products-carousel__dots {
-  margin-top: 0.65rem;
+  margin-top: 0.75rem;
   display: flex;
   justify-content: center;
   gap: 0.45rem;
@@ -518,11 +485,6 @@ body {
   .featured-products-carousel__slide-enter .featured-products-carousel__media,
   .featured-products-carousel__slide-enter .featured-products-carousel__card {
     animation: none;
-  }
-
-  .featured-products-carousel__progress-bar {
-    animation: none;
-    transform: scaleX(1);
   }
 
   .featured-products-carousel__arrow,

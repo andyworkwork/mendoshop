@@ -5,7 +5,7 @@ import { imageFocusStyle } from '@/lib/image-focus'
 import { formatMoneyArs } from '@/lib/format'
 import { getProductImageUrl } from '@/lib/product-images'
 
-const INTERVAL_MS = 4000
+const INTERVAL_MS = 3000
 
 export type FeaturedCarouselProduct = {
   id: string
@@ -163,8 +163,11 @@ export function FeaturedProductsCarousel({
     const el = rootRef.current
     if (!el || typeof IntersectionObserver === 'undefined') return
     const obs = new IntersectionObserver(
-      ([entry]) => setInView(entry?.isIntersecting ?? true),
-      { rootMargin: '80px', threshold: 0.15 },
+      ([entry]) => {
+        if (!entry) return
+        setInView(entry.isIntersecting && entry.intersectionRatio >= 0.35)
+      },
+      { root: null, rootMargin: '0px', threshold: [0, 0.15, 0.35, 0.5, 0.75, 1] },
     )
     obs.observe(el)
     return () => obs.disconnect()
@@ -257,37 +260,24 @@ export function FeaturedProductsCarousel({
       </div>
 
       {n > 1 && (
-        <div className="featured-products-carousel__footer">
-          <div className="featured-products-carousel__progress" aria-hidden>
-            <span
-              key={`${index}-${paused}-${inView}-${reduceMotion}`}
-              className="featured-products-carousel__progress-bar"
-              style={
-                reduceMotion || paused || !inView
-                  ? { animationPlayState: 'paused' as const }
-                  : { animationDuration: `${INTERVAL_MS}ms` }
-              }
+        <div className="featured-products-carousel__dots" role="tablist" aria-label="Elegir producto destacado">
+          {products.map((p, i) => (
+            <button
+              key={p.id}
+              type="button"
+              role="tab"
+              aria-label={`Ver ${p.name}`}
+              aria-selected={i === index}
+              onClick={() => goTo(i)}
+              className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
             />
-          </div>
-          <div className="featured-products-carousel__dots" role="tablist" aria-label="Elegir producto destacado">
-            {products.map((p, i) => (
-              <button
-                key={p.id}
-                type="button"
-                role="tab"
-                aria-label={`Ver ${p.name}`}
-                aria-selected={i === index}
-                onClick={() => goTo(i)}
-                className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
-              />
-            ))}
-          </div>
+          ))}
         </div>
       )}
 
       {isEdit && n > 1 && (
         <p className="featured-products-carousel__hint">
-          Vista previa ({index + 1}/{n}) — en la tienda avanza solo cada 4 s.
+          Vista previa ({index + 1}/{n}) — en la tienda avanza solo cada 3 s (se pausa al bajar).
         </p>
       )}
     </div>
