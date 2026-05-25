@@ -257,18 +257,31 @@ export function FeaturedProductsCarousel({
       </div>
 
       {n > 1 && (
-        <div className="featured-products-carousel__dots" role="tablist" aria-label="Elegir producto destacado">
-          {products.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              role="tab"
-              aria-label={`Ver ${p.name}`}
-              aria-selected={i === index}
-              onClick={() => goTo(i)}
-              className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
+        <div className="featured-products-carousel__footer">
+          <div className="featured-products-carousel__progress" aria-hidden>
+            <span
+              key={`${index}-${paused}-${inView}-${reduceMotion}`}
+              className="featured-products-carousel__progress-bar"
+              style={
+                reduceMotion || paused || !inView
+                  ? { animationPlayState: 'paused' as const }
+                  : { animationDuration: `${INTERVAL_MS}ms` }
+              }
             />
-          ))}
+          </div>
+          <div className="featured-products-carousel__dots" role="tablist" aria-label="Elegir producto destacado">
+            {products.map((p, i) => (
+              <button
+                key={p.id}
+                type="button"
+                role="tab"
+                aria-label={`Ver ${p.name}`}
+                aria-selected={i === index}
+                onClick={() => goTo(i)}
+                className={`featured-products-carousel__dot ${i === index ? 'is-active' : ''}`}
+              />
+            ))}
+          </div>
         </div>
       )}
 
