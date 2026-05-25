@@ -840,66 +840,6 @@ body {
   color: var(--shop-accent);
 }
 
-/* Carrito lateral: textos y controles con color de títulos de la plantilla. */
-.store-cart-drawer {
-  border-left: 1px solid color-mix(in srgb, var(--shop-title-color, #52525b) 35%, #3f3f46);
-  background-color: color-mix(in srgb, var(--brand-ink) 88%, #18181b);
-}
-
-.store-cart-drawer__header,
-.store-cart-drawer__footer {
-  border-color: color-mix(in srgb, var(--shop-title-color, #52525b) 28%, #3f3f46);
-}
-
-.store-cart-drawer__header {
-  border-bottom-width: 1px;
-  border-bottom-style: solid;
-}
-
-.store-cart-drawer__footer {
-  border-top-width: 1px;
-  border-top-style: solid;
-}
-
-.store-cart-drawer__item {
-  border: 1px solid color-mix(in srgb, var(--shop-title-color, #52525b) 22%, #3f3f46);
-}
-
-.store-cart-drawer__close {
-  color: color-mix(in srgb, var(--shop-title-color, #a1a1aa) 75%, #71717a);
-}
-
-.store-cart-drawer__close:hover {
-  color: var(--shop-title-color, #f4f4f5);
-  background: color-mix(in srgb, var(--shop-title-color, #f4f4f5) 10%, transparent);
-}
-
-.store-cart-drawer__empty {
-  color: color-mix(in srgb, var(--shop-title-color, #a1a1aa) 65%, #71717a);
-}
-
-.store-cart-drawer__qty-btn {
-  border: 1px solid color-mix(in srgb, var(--shop-title-color, #a1a1aa) 55%, #52525b);
-  color: var(--shop-title-color, #f4f4f5);
-}
-
-.store-cart-drawer__qty-btn:hover {
-  border-color: color-mix(in srgb, var(--shop-title-color, #f4f4f5) 75%, transparent);
-  background: color-mix(in srgb, var(--shop-title-color, #f4f4f5) 8%, transparent);
-}
-
-.store-cart-drawer__qty {
-  color: var(--shop-title-color, #f4f4f5);
-}
-
-.store-cart-drawer__remove {
-  color: color-mix(in srgb, var(--shop-title-color, #a1a1aa) 70%, #f87171);
-}
-
-.store-cart-drawer__remove:hover {
-  color: #f87171;
-}
-
 .store-category-toggle {
   background-color: color-mix(in srgb, var(--shop-primary) 12%, transparent);
   border-color: color-mix(in srgb, var(--shop-primary) 35%, transparent);
