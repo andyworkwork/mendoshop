@@ -227,6 +227,39 @@ export async function deleteMarketingTemplateAdmin(id: string): Promise<AdminAct
   return { ok: true }
 }
 
+export async function duplicateMarketingTemplateAdmin(id: string) {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+  const { data: source, error: fetchErr } = await service
+    .from('marketing_post_templates')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (fetchErr) return { error: fetchErr.message }
+  if (!source) return { error: 'Plantilla no encontrada.' }
+
+  const { data, error } = await service
+    .from('marketing_post_templates')
+    .insert({
+      name: `${String(source.name).trim()} (copia)`,
+      description: source.description,
+      body: source.body,
+      suggested_platforms: source.suggested_platforms ?? [],
+      hashtags: source.hashtags,
+      asset_ids: source.asset_ids ?? [],
+      is_default: false,
+    })
+    .select('*')
+    .single()
+
+  if (error) return { error: error.message }
+  revalidateMarketing()
+  return { ok: true as const, template: data }
+}
+
 export async function listMarketingPostsAdmin() {
   const denied = await assertAdmin()
   if (denied) return denied

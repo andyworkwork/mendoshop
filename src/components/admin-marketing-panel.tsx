@@ -7,6 +7,7 @@ import {
   deleteMarketingAssetAdmin,
   deleteMarketingPostAdmin,
   deleteMarketingTemplateAdmin,
+  duplicateMarketingTemplateAdmin,
   previewMarketingCaptionAdmin,
   publishMarketingPostToMetaAdmin,
   saveMarketingCampaignAdmin,
@@ -652,6 +653,20 @@ function TemplatesTab({
     })
   }
 
+  function handleDuplicate(t: MarketingPostTemplate) {
+    startTransition(async () => {
+      const res = await duplicateMarketingTemplateAdmin(t.id)
+      if ('error' in res) {
+        onFlash(null, res.error)
+        return
+      }
+      const copy = res.template as MarketingPostTemplate
+      onTemplatesChange([copy, ...templates])
+      loadTemplate(copy)
+      onFlash('Plantilla duplicada. Cambiá nombre, imágenes o texto y guardá.')
+    })
+  }
+
   const preview = applyMarketingTemplate(body, defaultMarketingVariables())
 
   return (
@@ -762,9 +777,17 @@ function TemplatesTab({
                 </p>
                 <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs text-zinc-400">{t.body}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button type="button" className="text-xs text-brand" onClick={() => loadTemplate(t)}>
                   Editar
+                </button>
+                <button
+                  type="button"
+                  className="text-xs text-zinc-300 hover:text-white"
+                  disabled={pending}
+                  onClick={() => handleDuplicate(t)}
+                >
+                  Duplicar
                 </button>
                 {!t.is_default && (
                   <button type="button" className="text-xs text-red-400" onClick={() => handleDelete(t.id)}>
