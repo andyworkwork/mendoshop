@@ -142,8 +142,8 @@ export function AdminMarketingPanel({
   }
 
   return (
-    <div className="space-y-6">
-      <nav className="flex flex-wrap gap-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 p-1.5">
+    <div className="space-y-6 min-w-0 max-w-full overflow-x-hidden">
+      <nav className="-mx-1 flex gap-1.5 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/60 p-1.5 sm:mx-0 sm:flex-wrap">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -1614,8 +1614,9 @@ function ManualTab({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-      <section className="card space-y-4">
+    <div className="min-w-0 max-w-full overflow-x-hidden">
+      <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+      <section className="card min-w-0 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Publicación manual</h2>
           <p className="mt-1 text-sm text-zinc-400">
@@ -1678,26 +1679,34 @@ function ManualTab({
         )}
       </section>
 
-      <div className="space-y-6">
-        <section className="card space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="min-w-0 space-y-4 sm:space-y-6">
+        <section className="card min-w-0 space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="font-semibold text-white">Texto del post</h3>
-            <button type="button" className="btn-primary text-sm" onClick={() => void copyCaption()}>
+            <button
+              type="button"
+              className="btn-primary w-full text-sm sm:w-auto sm:shrink-0"
+              onClick={() => void copyCaption()}
+            >
               Copiar texto
             </button>
           </div>
-          <pre className="whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm text-zinc-200">
+          <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-words rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-xs text-zinc-200 sm:text-sm">
             {fullCaption || 'Sin texto en la plantilla.'}
           </pre>
-          <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800 pt-3">
+          <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3 sm:flex-row sm:items-start sm:gap-3">
             <p className="min-w-0 flex-1 break-all text-xs text-zinc-500">{trackingLink}</p>
-            <button type="button" className="btn-secondary-outline shrink-0 text-xs" onClick={() => void copyLink()}>
+            <button
+              type="button"
+              className="btn-secondary-outline w-full shrink-0 text-xs sm:w-auto"
+              onClick={() => void copyLink()}
+            >
               Copiar link
             </button>
           </div>
         </section>
 
-        <section className="card space-y-3">
+        <section className="card min-w-0 space-y-3">
           <h3 className="font-semibold text-white">
             Archivos de la plantilla ({templateAssets.length})
           </h3>
@@ -1707,21 +1716,25 @@ function ManualTab({
               Biblioteca.
             </p>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               {templateAssets.map((asset) => {
                 const preview = assetPreviewUrl(asset)
                 const busy = downloadingId === asset.id
                 return (
-                  <article key={asset.id} className="space-y-2 rounded-xl border border-zinc-800 p-3">
+                  <article key={asset.id} className="min-w-0 space-y-2 rounded-xl border border-zinc-800 p-3">
                     {preview && asset.asset_type === 'image' ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={preview} alt={asset.title} className="aspect-video w-full rounded-lg object-cover" />
+                      <img
+                        src={preview}
+                        alt={asset.title}
+                        className="aspect-video w-full max-w-full rounded-lg object-cover"
+                      />
                     ) : (
-                      <div className="flex aspect-video items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/50 text-xs text-zinc-500">
+                      <div className="flex aspect-video w-full max-w-full items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/50 text-xs text-zinc-500">
                         {asset.asset_type === 'video' ? 'Video (enlace externo)' : 'Sin preview'}
                       </div>
                     )}
-                    <p className="text-sm font-medium text-white">{asset.title}</p>
+                    <p className="break-words text-sm font-medium text-white">{asset.title}</p>
                     <button
                       type="button"
                       className="btn-secondary-outline w-full text-sm"
@@ -1740,6 +1753,7 @@ function ManualTab({
             </div>
           )}
         </section>
+      </div>
       </div>
     </div>
   )
