@@ -260,6 +260,7 @@ function AssetsTab({
   const [tags, setTags] = useState('')
   const [uploading, setUploading] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [previewAsset, setPreviewAsset] = useState<MarketingAsset | null>(null)
 
   function clearImageForm() {
     setTitle('')
@@ -374,6 +375,9 @@ function AssetsTab({
 
   return (
     <div className="space-y-8">
+      {previewAsset && (
+        <MarketingAssetPreviewModal asset={previewAsset} onClose={() => setPreviewAsset(null)} />
+      )}
       <section className="card">
         <SettingsCollapsible
           title="Paso 1 · Vitrinas del carrusel de inicio"
@@ -513,8 +517,24 @@ function AssetsTab({
               return (
                 <article key={asset.id} className="card space-y-3">
                   {preview && asset.asset_type === 'image' ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={preview} alt={asset.title} className="aspect-video w-full rounded-lg object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewAsset(asset)}
+                      className="group relative block w-full overflow-hidden rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      aria-label={`Ver imagen: ${asset.title}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={preview}
+                        alt={asset.title}
+                        className="aspect-video w-full object-cover transition group-hover:brightness-110"
+                      />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/35">
+                        <span className="rounded-lg bg-zinc-950/80 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
+                          Ver imagen
+                        </span>
+                      </span>
+                    </button>
                   ) : (
                     <div className="flex aspect-video items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/50 text-xs text-zinc-500">
                       {asset.asset_type === 'video' ? 'Video externo' : 'Sin preview'}
@@ -531,6 +551,15 @@ function AssetsTab({
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {preview && asset.asset_type === 'image' && (
+                      <button
+                        type="button"
+                        className="btn-secondary-outline flex-1 py-1.5 text-xs"
+                        onClick={() => setPreviewAsset(asset)}
+                      >
+                        Ver imagen
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn-primary flex-1 py-1.5 text-xs"
@@ -548,6 +577,71 @@ function AssetsTab({
           </div>
         )}
       </section>
+      </div>
+    </div>
+  )
+}
+
+function MarketingAssetPreviewModal({
+  asset,
+  onClose,
+}: {
+  asset: MarketingAsset
+  onClose: () => void
+}) {
+  const url = assetPreviewUrl(asset)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (!url || asset.asset_type !== 'image') return null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/80"
+        aria-label="Cerrar"
+        onClick={onClose}
+      />
+      <div
+        className="relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-950 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="marketing-asset-preview-title"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-3">
+          <h2 id="marketing-asset-preview-title" className="truncate font-semibold text-white">
+            {asset.title}
+          </h2>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary-outline py-1.5 text-xs"
+            >
+              Abrir en pestaña
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="overflow-auto p-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={asset.title} className="mx-auto max-h-[75vh] w-auto max-w-full rounded-lg object-contain" />
+        </div>
       </div>
     </div>
   )
