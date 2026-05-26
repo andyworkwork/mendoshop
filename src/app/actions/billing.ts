@@ -156,6 +156,14 @@ export async function createPlanQr(product: PlanCheckoutProduct): Promise<PlanQr
     return { error: qrRes.error }
   }
 
+  await service
+    .from('shop_plan_payments')
+    .update({
+      mp_preference_id: qrRes.mpOrderId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', paymentRow.id)
+
   return { ok: true, qrData: qrRes.qrData }
 }
 

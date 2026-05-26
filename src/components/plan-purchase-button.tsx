@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createPlanCheckout } from '@/app/actions/billing'
-import { createPlanQr } from '@/app/actions/billing'
+import { createPlanCheckout, createPlanQr } from '@/app/actions/billing'
 import type { PlanCheckoutProduct } from '@/lib/plan-checkout'
 import QRCode from 'qrcode'
 
@@ -32,16 +31,16 @@ export function PlanPurchaseButton({
     setQrPending(true)
     try {
       const result = await createPlanQr(plan)
-      if ('ok' in result && result.ok) {
-        const url = await QRCode.toDataURL(result.qrData, {
-          width: 240,
-          margin: 2,
-          errorCorrectionLevel: 'M',
-        })
-        setQrDataUrl(url)
+      if ('error' in result) {
+        setQrError(result.error)
         return
       }
-      setQrError('No se pudo generar el QR. Intentá de nuevo.')
+      const url = await QRCode.toDataURL(result.qrData, {
+        width: 240,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+      })
+      setQrDataUrl(url)
     } catch {
       setQrError('No se pudo generar el QR. Intentá de nuevo.')
     } finally {

@@ -34,11 +34,11 @@ export const CHECKOUT_PRODUCTS: Record<PlanCheckoutProduct, CheckoutProductMeta>
   test_andy: {
     name: 'Plan test Andy',
     summary: 'Prueba de pago real en Mercado Pago (solo administradores).',
-    priceArs: 1,
+    priceArs: 15,
     daysAdded: 1,
     shopPlanOnPay: null,
     features: [
-      'Cobro de $1 para probar Mercado Pago en producción',
+      'Cobro de $15 para probar Mercado Pago en producción',
       'Suma 1 día a tu vigencia actual',
       'No cambia tu plan Básico / Pro / Prueba',
     ],
