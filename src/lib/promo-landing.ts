@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { appBaseUrl } from '@/lib/app-url'
+import { MENDOSHOP_OG_IMAGE } from '@/lib/seo'
 import { PLAN_LIMITS } from '@/lib/plans'
 
 export const PROMO_HERO_SHOWCASE = [
@@ -101,20 +102,13 @@ export function promoLandingMetadata(): Metadata {
       siteName: 'Mendoshop',
       locale: 'es_AR',
       type: 'website',
-      images: [
-        {
-          url: '/mendoshop-hero-bg.png',
-          width: 1200,
-          height: 630,
-          alt: 'Mendoshop — tienda online con pedidos por WhatsApp',
-        },
-      ],
+      images: [MENDOSHOP_OG_IMAGE],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/mendoshop-hero-bg.png'],
+      images: [MENDOSHOP_OG_IMAGE.url],
     },
     alternates: { canonical: url },
   }
