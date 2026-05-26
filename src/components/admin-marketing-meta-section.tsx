@@ -97,9 +97,8 @@ export function AdminMarketingMetaSection({
           automáticamente.
         </p>
         <p>
-          <strong className="text-zinc-400">Programadas:</strong> un cron diario (~10:00 Argentina) publica posts en
-          estado &quot;Programado&quot; cuya fecha ya pasó. En plan Hobby de Vercel no se puede cada 5 min; publicá
-          manualmente desde Publicaciones si necesitás antes.
+          <strong className="text-zinc-400">Programadas:</strong> guardá fecha/hora como referencia; publicá manualmente
+          desde Publicaciones cuando corresponda (no hay cron automático en el servidor).
         </p>
       </div>
     </section>
