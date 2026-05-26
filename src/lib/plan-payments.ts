@@ -17,8 +17,11 @@ export function checkoutProductDays(product: PlanCheckoutProduct): number {
   return CHECKOUT_PRODUCTS[product].daysAdded
 }
 
-/** Intentos de pago sin completar en MP pasan a cancelled tras este tiempo. */
+/** Intentos de pago sin completar pasan a cancelled tras este tiempo (Checkout Pro). */
 export const PENDING_PLAN_PAYMENT_TTL_MINUTES = 5
+
+/** Las órdenes QR en MP duran ~15 min; no las cancelamos antes. */
+export const PENDING_PLAN_QR_PAYMENT_TTL_MINUTES = 20
 
 /** Marca como cancelados los pending viejos (checkout abandonado). */
 export async function expireStalePendingPlanPayments(
@@ -27,6 +30,10 @@ export async function expireStalePendingPlanPayments(
 ): Promise<void> {
   const service = createServiceClient()
   const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000).toISOString()
+  const qrCutoff = new Date(
+    Date.now() - PENDING_PLAN_QR_PAYMENT_TTL_MINUTES * 60 * 1000,
+  ).toISOString()
+
   await service
     .from('shop_plan_payments')
     .update({
@@ -36,6 +43,18 @@ export async function expireStalePendingPlanPayments(
     .eq('shop_id', shopId)
     .eq('status', 'pending')
     .lt('created_at', cutoff)
+    .or('mp_preference_id.is.null,mp_preference_id.not.like.ORD%')
+
+  await service
+    .from('shop_plan_payments')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('shop_id', shopId)
+    .eq('status', 'pending')
+    .like('mp_preference_id', 'ORD%')
+    .lt('created_at', qrCutoff)
 }
 
 export async function expireAllStalePendingPlanPayments(

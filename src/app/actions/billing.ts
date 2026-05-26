@@ -15,7 +15,7 @@ import {
   checkoutProductPriceArs,
   expireStalePendingPlanPayments,
 } from '@/lib/plan-payments'
-import { syncApprovedPlanPaymentFromMercadoPago } from '@/lib/mercadopago-plan-sync'
+import { syncApprovedPlanPaymentFromMercadoPago, syncApprovedPlanPaymentFromMercadoPagoOrder } from '@/lib/mercadopago-plan-sync'
 import { createPlanQrCode } from '@/lib/mercadopago-qr'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -28,7 +28,7 @@ export type PlanCheckoutResult =
   | { error: string }
 
 export type PlanQrResult =
-  | { ok: true; qrData: string }
+  | { ok: true; qrData: string; mpOrderId: string }
   | { error: string }
 
 export async function createPlanCheckout(
@@ -164,7 +164,7 @@ export async function createPlanQr(product: PlanCheckoutProduct): Promise<PlanQr
     })
     .eq('id', paymentRow.id)
 
-  return { ok: true, qrData: qrRes.qrData }
+  return { ok: true, qrData: qrRes.qrData, mpOrderId: qrRes.mpOrderId }
 }
 
 export async function mercadoPagoPaymentsEnabled(): Promise<boolean> {
@@ -200,4 +200,80 @@ export async function confirmPlanPaymentFromReturn(input: {
     const message = e instanceof Error ? e.message : 'No se pudo verificar el pago.'
     return { error: message }
   }
+}
+
+/** Consulta Mercado Pago por una orden QR y activa el plan si ya se acreditó. */
+export async function syncPlanPaymentFromQrOrder(
+  mpOrderId: string,
+): Promise<{ ok: true; activated: boolean } | { error: string }> {
+  if (!isMercadoPagoConfigured()) {
+    return { error: 'Mercado Pago no está configurado.' }
+  }
+
+  const orderId = mpOrderId.trim()
+  if (!orderId.startsWith('ORD')) {
+    return { error: 'Identificador de orden QR inválido.' }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: 'Tenés que iniciar sesión.' }
+
+  const shops = await fetchUserShops(supabase)
+  const shop = shops[0]
+  if (!shop) return { error: 'No encontramos tu tienda.' }
+
+  try {
+    return await syncApprovedPlanPaymentFromMercadoPagoOrder(orderId, { shopId: shop.id })
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'No se pudo verificar el pago.'
+    return { error: message }
+  }
+}
+
+/** Al abrir la cuenta, intenta activar pagos QR pendientes ya acreditados en MP. */
+export async function syncPendingPlanQrPaymentsForShop(): Promise<{ activated: boolean }> {
+  if (!isMercadoPagoConfigured()) return { activated: false }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { activated: false }
+
+  const shops = await fetchUserShops(supabase)
+  const shop = shops[0]
+  if (!shop) return { activated: false }
+
+  const service = createServiceClient()
+  const { data: rows, error } = await service
+    .from('shop_plan_payments')
+    .select('mp_preference_id')
+    .eq('shop_id', shop.id)
+    .eq('status', 'pending')
+    .like('mp_preference_id', 'ORD%')
+
+  if (error || !rows?.length) return { activated: false }
+
+  let activated = false
+  for (const row of rows) {
+    const orderId = row.mp_preference_id?.trim()
+    if (!orderId) continue
+    try {
+      const result = await syncApprovedPlanPaymentFromMercadoPagoOrder(orderId, { shopId: shop.id })
+      if ('error' in result) continue
+      if (result.activated) activated = true
+    } catch {
+      // seguir con otras órdenes pendientes
+    }
+  }
+
+  if (activated) {
+    revalidatePath('/dashboard/account')
+    revalidatePath('/dashboard/account/plan')
+  }
+
+  return { activated }
 }

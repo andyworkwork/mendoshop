@@ -123,3 +123,35 @@ export async function fetchMercadoPagoPayment(paymentId: string): Promise<Mercad
   }
   return body
 }
+
+export type MercadoPagoOrderPayment = {
+  id?: string
+  amount?: string
+  paid_amount?: string
+  status?: string
+  status_detail?: string
+  reference_id?: string
+}
+
+export type MercadoPagoOrder = {
+  id: string
+  external_reference?: string | null
+  total_amount?: string
+  status?: string
+  status_detail?: string
+  transactions?: {
+    payments?: MercadoPagoOrderPayment[]
+  }
+}
+
+export async function fetchMercadoPagoOrder(orderId: string): Promise<MercadoPagoOrder> {
+  const res = await fetch(`${MP_API}/v1/orders/${orderId}`, {
+    headers: mpHeaders(),
+    cache: 'no-store',
+  })
+  const body = (await res.json()) as MercadoPagoOrder & { message?: string }
+  if (!res.ok) {
+    throw new Error(body.message ?? `No se pudo consultar la orden ${orderId}`)
+  }
+  return body
+}

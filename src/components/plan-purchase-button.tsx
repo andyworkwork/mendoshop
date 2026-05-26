@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { createPlanCheckout, createPlanQr } from '@/app/actions/billing'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createPlanCheckout, createPlanQr, syncPlanPaymentFromQrOrder } from '@/app/actions/billing'
 import type { PlanCheckoutProduct } from '@/lib/plan-checkout'
 import QRCode from 'qrcode'
 
@@ -25,9 +26,65 @@ export function PlanPurchaseButton({
   const [qrPending, setQrPending] = useState(false)
   const [qrError, setQrError] = useState<string | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrOrderId, setQrOrderId] = useState<string | null>(null)
+  const [qrSyncing, setQrSyncing] = useState(false)
+  const [qrActivated, setQrActivated] = useState(false)
+  const router = useRouter()
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function clearQrPoll() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+
+  async function verifyQrPayment(orderId: string, options?: { silent?: boolean }) {
+    if (!options?.silent) {
+      setQrSyncing(true)
+      setQrError(null)
+    }
+    try {
+      const result = await syncPlanPaymentFromQrOrder(orderId)
+      if ('error' in result) {
+        if (!options?.silent) setQrError(result.error)
+        return false
+      }
+      if (result.activated) {
+        setQrActivated(true)
+        clearQrPoll()
+        router.refresh()
+        return true
+      }
+      return false
+    } catch {
+      if (!options?.silent) {
+        setQrError('No se pudo verificar el pago. Intentá de nuevo.')
+      }
+      return false
+    } finally {
+      if (!options?.silent) setQrSyncing(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!qrOrderId || qrActivated) return
+
+    void verifyQrPayment(qrOrderId, { silent: true })
+    pollRef.current = setInterval(() => {
+      void verifyQrPayment(qrOrderId, { silent: true })
+    }, 5000)
+
+    return () => {
+      clearQrPoll()
+    }
+  }, [qrOrderId, qrActivated, router])
 
   async function handleGenerateQr() {
     setQrError(null)
+    setQrActivated(false)
+    setQrOrderId(null)
+    clearQrPoll()
     setQrPending(true)
     try {
       const result = await createPlanQr(plan)
@@ -41,6 +98,7 @@ export function PlanPurchaseButton({
         errorCorrectionLevel: 'M',
       })
       setQrDataUrl(url)
+      setQrOrderId(result.mpOrderId)
     } catch {
       setQrError('No se pudo generar el QR. Intentá de nuevo.')
     } finally {
@@ -110,13 +168,39 @@ export function PlanPurchaseButton({
 
       {qrDataUrl && (
         <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900/30 p-4">
-          <p className="text-sm text-zinc-200">Escaneá el QR para pagar el plan.</p>
+          {qrActivated ? (
+            <p className="text-sm text-emerald-300">¡Listo! Tu plan ya está activo.</p>
+          ) : (
+            <>
+              <p className="text-sm text-zinc-200">Escaneá el QR para pagar el plan.</p>
+              <p className="text-xs text-zinc-400">
+                {qrSyncing
+                  ? 'Verificando pago con Mercado Pago…'
+                  : 'Cuando pagues, activamos el plan automáticamente.'}
+              </p>
+            </>
+          )}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrDataUrl} alt="QR de pago para el plan" className="rounded-xl border border-zinc-700" />
+          {!qrActivated && qrOrderId && (
+            <button
+              type="button"
+              disabled={qrSyncing}
+              className="rounded-xl border border-emerald-700/60 px-4 py-2 text-sm text-emerald-200 hover:bg-emerald-950/40 disabled:opacity-60"
+              onClick={() => void verifyQrPayment(qrOrderId)}
+            >
+              {qrSyncing ? 'Verificando…' : 'Ya pagué — verificar'}
+            </button>
+          )}
           <button
             type="button"
             className="rounded-xl border border-zinc-600 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
-            onClick={() => setQrDataUrl(null)}
+            onClick={() => {
+              clearQrPoll()
+              setQrDataUrl(null)
+              setQrOrderId(null)
+              setQrActivated(false)
+            }}
           >
             Cerrar
           </button>

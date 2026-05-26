@@ -8,7 +8,9 @@ import {
 } from '@/lib/mercadopago-webhook-signature'
 import {
   patchPlanPaymentFromMercadoPago,
+  patchPlanPaymentFromMercadoPagoOrder,
   syncApprovedPlanPaymentFromMercadoPago,
+  syncApprovedPlanPaymentFromMercadoPagoOrder,
 } from '@/lib/mercadopago-plan-sync'
 
 const SIGNATURE_MAX_AGE_SECONDS = 60 * 60 * 24
@@ -16,13 +18,42 @@ const SIGNATURE_MAX_AGE_SECONDS = 60 * 60 * 24
 function paymentIdFromRequest(req: Request, body: Record<string, unknown>): string | null {
   const url = new URL(req.url)
   const fromQuery = url.searchParams.get('data.id') ?? url.searchParams.get('id')
-  if (fromQuery) return fromQuery
+  if (fromQuery && !fromQuery.startsWith('ORD')) return fromQuery
 
   const data = body.data
   if (data && typeof data === 'object' && 'id' in data) {
     const id = (data as { id?: unknown }).id
-    if (typeof id === 'string' || typeof id === 'number') return String(id)
+    if (typeof id === 'string' || typeof id === 'number') {
+      const asString = String(id)
+      if (!asString.startsWith('ORD')) return asString
+    }
   }
+  return null
+}
+
+function orderIdFromRequest(req: Request, body: Record<string, unknown>): string | null {
+  const url = new URL(req.url)
+  const fromQuery = url.searchParams.get('data.id') ?? url.searchParams.get('id')
+  if (fromQuery?.startsWith('ORD')) return fromQuery
+
+  const bodyType = typeof body.type === 'string' ? body.type.toLowerCase() : ''
+  const action = typeof body.action === 'string' ? body.action.toLowerCase() : ''
+  const data = body.data
+  if (data && typeof data === 'object' && 'id' in data) {
+    const id = (data as { id?: unknown }).id
+    if (typeof id === 'string' || typeof id === 'number') {
+      const asString = String(id)
+      if (asString.startsWith('ORD')) return asString
+    }
+  }
+
+  if (bodyType === 'order' || action.startsWith('order.')) {
+    if (data && typeof data === 'object' && 'id' in data) {
+      const id = (data as { id?: unknown }).id
+      if (typeof id === 'string' || typeof id === 'number') return String(id)
+    }
+  }
+
   return null
 }
 
@@ -56,6 +87,14 @@ async function syncPayment(mpPaymentId: string) {
   await patchPlanPaymentFromMercadoPago(mpPaymentId)
 }
 
+async function syncOrder(mpOrderId: string) {
+  const approved = await syncApprovedPlanPaymentFromMercadoPagoOrder(mpOrderId)
+  if ('error' in approved) throw new Error(approved.error)
+  if (approved.activated) return
+
+  await patchPlanPaymentFromMercadoPagoOrder(mpOrderId)
+}
+
 export async function POST(req: Request) {
   if (!isMercadoPagoConfigured()) {
     return NextResponse.json({ ok: false }, { status: 503 })
@@ -69,6 +108,17 @@ export async function POST(req: Request) {
     body = (await req.json()) as Record<string, unknown>
   } catch {
     body = {}
+  }
+
+  const orderId = orderIdFromRequest(req, body)
+  if (orderId) {
+    try {
+      await syncOrder(orderId)
+      return NextResponse.json({ ok: true })
+    } catch (e) {
+      console.error('mercadopago webhook order', e)
+      return NextResponse.json({ ok: false }, { status: 500 })
+    }
   }
 
   const paymentId = paymentIdFromRequest(req, body)
@@ -102,6 +152,16 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const topic = url.searchParams.get('topic')
   const id = url.searchParams.get('id')
+
+  if (id?.startsWith('ORD')) {
+    try {
+      await syncOrder(id)
+      return NextResponse.json({ ok: true })
+    } catch (e) {
+      console.error('mercadopago webhook GET order', e)
+      return NextResponse.json({ ok: false }, { status: 500 })
+    }
+  }
 
   if (topic !== 'payment' || !id) {
     return NextResponse.json({ ok: true })
