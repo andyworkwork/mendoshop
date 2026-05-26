@@ -15,6 +15,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isMetaConfigured, type MetaConnectionPublic, type MetaPageCandidate } from '@/lib/meta-graph'
 import { publishMarketingPostToMeta } from '@/lib/meta-publish'
+import {
+  assetBelongsToCarouselSlide,
+  listMarketingCarouselSlides,
+  marketingAssetTagsForCarouselSlide,
+} from '@/lib/marketing-carousel-slides'
+import { marketingAssetImagePath } from '@/lib/marketing-storage'
 import { revalidatePath } from 'next/cache'
 
 async function assertAdmin(): Promise<{ error: string } | null> {
@@ -47,6 +53,7 @@ export type MarketingTemplateInput = {
   body: string
   suggested_platforms?: string[]
   hashtags?: string | null
+  asset_ids?: string[]
 }
 
 export type MarketingPostInput = {
@@ -193,6 +200,7 @@ export async function saveMarketingTemplateAdmin(
     body,
     suggested_platforms: input.suggested_platforms ?? [],
     hashtags: input.hashtags?.trim() || null,
+    asset_ids: input.asset_ids ?? [],
   }
 
   if (input.id) {
@@ -400,7 +408,7 @@ export async function getMarketingDashboardAdmin() {
   if (denied) return denied
 
   const service = createServiceClient()
-  const [assets, templates, posts, campaigns, shops, metaConnection] = await Promise.all([
+  const [assets, templates, posts, campaigns, shops, metaConnection, carouselSlides] = await Promise.all([
     service.from('marketing_assets').select('*').order('created_at', { ascending: false }),
     service.from('marketing_post_templates').select('*').order('is_default', { ascending: false }).order('name'),
     service.from('marketing_posts').select('*').order('created_at', { ascending: false }),
@@ -412,6 +420,7 @@ export async function getMarketingDashboardAdmin() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle(),
+    listMarketingCarouselSlides(),
   ])
 
   if (assets.error) return { error: assets.error.message }
@@ -428,7 +437,119 @@ export async function getMarketingDashboardAdmin() {
     shops: shops.data ?? [],
     metaConfigured: isMetaConfigured(),
     metaConnection: (metaConnection.data as MetaConnectionPublic | null) ?? null,
+    carouselSlides,
   }
+}
+
+export async function saveMarketingImageAdmin(formData: FormData) {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const title = String(formData.get('title') ?? '').trim()
+  const description = String(formData.get('description') ?? '').trim()
+  const rubro = String(formData.get('rubro') ?? '').trim()
+  const city = String(formData.get('city') ?? '').trim()
+  const shopId = String(formData.get('shopId') ?? '').trim()
+  const tagsRaw = String(formData.get('tags') ?? '').trim()
+  const file = formData.get('file')
+
+  if (!title) return { error: 'El título es obligatorio.' }
+  if (!(file instanceof File) || file.size === 0) return { error: 'Elegí una imagen para subir.' }
+
+  const tags = tagsRaw
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+
+  const assetId = crypto.randomUUID()
+  const storagePath = marketingAssetImagePath(assetId)
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const contentType = file.type?.startsWith('image/') ? file.type : 'image/webp'
+
+  const service = createServiceClient()
+  const { error: uploadErr } = await service.storage.from('shop-images').upload(storagePath, buffer, {
+    contentType,
+    upsert: true,
+  })
+  if (uploadErr) return { error: uploadErr.message }
+
+  const { data, error } = await service
+    .from('marketing_assets')
+    .insert({
+      id: assetId,
+      title,
+      description: description || null,
+      asset_type: 'image',
+      storage_path: storagePath,
+      external_url: null,
+      rubro: rubro || null,
+      city: city || null,
+      shop_id: shopId || null,
+      tags,
+    })
+    .select('*')
+    .single()
+
+  if (error) return { error: error.message }
+  revalidateMarketing()
+  return { ok: true as const, asset: data }
+}
+
+export async function saveCarouselSlideToLibraryAdmin(formData: FormData) {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const slideKey = String(formData.get('slideKey') ?? '').trim()
+  const title = String(formData.get('title') ?? '').trim()
+  const rubro = String(formData.get('rubro') ?? '').trim()
+  const kind = String(formData.get('kind') ?? 'template')
+  const file = formData.get('file')
+
+  if (!slideKey || !title) return { error: 'Datos de la vitrina incompletos.' }
+  if (!(file instanceof File) || file.size === 0) return { error: 'No se recibió la captura de la vitrina.' }
+
+  const service = createServiceClient()
+  const tags = marketingAssetTagsForCarouselSlide(slideKey)
+
+  const { data: existingRows } = await service.from('marketing_assets').select('*').contains('tags', [slideKey])
+  const existing = (existingRows ?? []).find((row) =>
+    assetBelongsToCarouselSlide(row as { tags?: string[] }, slideKey),
+  )
+  if (existing) {
+    return { ok: true as const, alreadyHad: true, asset: existing }
+  }
+
+  const assetId = crypto.randomUUID()
+  const storagePath = marketingAssetImagePath(assetId)
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { error: uploadErr } = await service.storage.from('shop-images').upload(storagePath, buffer, {
+    contentType: 'image/webp',
+    upsert: true,
+  })
+  if (uploadErr) return { error: uploadErr.message }
+
+  const description =
+    kind === 'shop'
+      ? 'Vitrina de tienda real, capturada como en el carrusel de la home.'
+      : 'Plantilla de tienda, capturada como en el carrusel de la home.'
+
+  const { data, error } = await service
+    .from('marketing_assets')
+    .insert({
+      id: assetId,
+      title,
+      description,
+      asset_type: 'image',
+      storage_path: storagePath,
+      rubro: rubro || null,
+      tags,
+    })
+    .select('*')
+    .single()
+
+  if (error) return { error: error.message }
+  revalidateMarketing()
+  return { ok: true as const, alreadyHad: false, asset: data }
 }
 
 export async function getMetaOAuthPendingAdmin(pendingId: string) {

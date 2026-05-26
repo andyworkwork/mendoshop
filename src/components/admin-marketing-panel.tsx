@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import {
   createMarketingAssetAdmin,
+  saveMarketingImageAdmin,
   deleteMarketingAssetAdmin,
   deleteMarketingPostAdmin,
   deleteMarketingTemplateAdmin,
@@ -15,6 +16,8 @@ import {
   type MarketingPostInput,
 } from '@/app/actions/admin-marketing'
 import { AdminMarketingMetaSection } from '@/components/admin-marketing-meta-section'
+import { MarketingCarouselSlidePicker } from '@/components/marketing-carousel-slide-picker'
+import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { compressImageForUpload } from '@/lib/image-compress'
 import {
   applyMarketingTemplate,
@@ -34,11 +37,9 @@ import {
   type MarketingPost,
   type MarketingPostTemplate,
 } from '@/lib/marketing'
-import { marketingAssetImagePath } from '@/lib/marketing-storage'
+import type { MarketingCarouselSlidePayload } from '@/lib/marketing-carousel-slides'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
-import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import type { MetaConnectionPublic } from '@/lib/meta-graph'
-import { createClient } from '@/lib/supabase/browser'
 
 type ShopOption = {
   id: string
@@ -47,7 +48,7 @@ type ShopOption = {
   category_label: string | null
 }
 
-type Tab = 'assets' | 'templates' | 'posts' | 'campaigns' | 'calendar' | 'social'
+type Tab = 'assets' | 'templates' | 'posts' | 'campaigns' | 'calendar' | 'manual' | 'social'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'assets', label: 'Biblioteca' },
@@ -56,11 +57,43 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'social', label: 'Redes sociales' },
   { id: 'campaigns', label: 'Enlaces UTM' },
   { id: 'calendar', label: 'Calendario' },
+  { id: 'manual', label: 'Manual' },
 ]
 
 function assetPreviewUrl(asset: MarketingAsset): string | null {
   if (asset.storage_path) return getPublicUrlFromPath(asset.storage_path)
   return asset.external_url
+}
+
+function assetDownloadFilename(asset: MarketingAsset): string {
+  const base = asset.title.replace(/[^\w.-]+/g, '-').replace(/-+/g, '-') || 'asset'
+  if (asset.storage_path) {
+    const ext = asset.storage_path.split('.').pop() ?? 'webp'
+    return `${base}.${ext}`
+  }
+  return base
+}
+
+async function downloadMarketingAsset(asset: MarketingAsset): Promise<void> {
+  const url = assetPreviewUrl(asset)
+  if (!url) throw new Error('Este asset no tiene archivo descargable.')
+
+  if (asset.asset_type === 'video' && asset.external_url && !asset.storage_path) {
+    window.open(url, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('No se pudo descargar el archivo.')
+  const blob = await res.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = assetDownloadFilename(asset)
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(objectUrl)
 }
 
 function formatDateTime(value: string | null | undefined): string {
@@ -77,6 +110,7 @@ export function AdminMarketingPanel({
   initialPosts,
   initialCampaigns,
   initialShops,
+  initialCarouselSlides,
   metaConfigured,
   metaConnection,
   initialNotice,
@@ -86,11 +120,13 @@ export function AdminMarketingPanel({
   initialPosts: MarketingPost[]
   initialCampaigns: MarketingCampaign[]
   initialShops: ShopOption[]
+  initialCarouselSlides: MarketingCarouselSlidePayload[]
   metaConfigured: boolean
   metaConnection: MetaConnectionPublic | null
   initialNotice?: string | null
 }) {
   const [tab, setTab] = useState<Tab>('assets')
+  const [pendingPostAssetIds, setPendingPostAssetIds] = useState<string[]>([])
   const [assets, setAssets] = useState(initialAssets)
   const [templates, setTemplates] = useState(initialTemplates)
   const [posts, setPosts] = useState(initialPosts)
@@ -130,15 +166,19 @@ export function AdminMarketingPanel({
         <AssetsTab
           assets={assets}
           shops={initialShops}
-          pending={pending}
+          carouselSlides={initialCarouselSlides}
           onAssetsChange={setAssets}
           onFlash={flash}
-          startTransition={startTransition}
+          onUseInPost={(assetId) => {
+            setPendingPostAssetIds([assetId])
+            setTab('posts')
+          }}
         />
       )}
       {tab === 'templates' && (
         <TemplatesTab
           templates={templates}
+          assets={assets}
           pending={pending}
           onTemplatesChange={setTemplates}
           onFlash={flash}
@@ -155,6 +195,8 @@ export function AdminMarketingPanel({
           metaConfigured={metaConfigured}
           metaConnection={metaConnection}
           pending={pending}
+          initialAssetIds={pendingPostAssetIds}
+          onInitialAssetIdsConsumed={() => setPendingPostAssetIds([])}
           onPostsChange={setPosts}
           onFlash={flash}
           startTransition={startTransition}
@@ -177,6 +219,15 @@ export function AdminMarketingPanel({
         />
       )}
       {tab === 'calendar' && <CalendarTab posts={posts} />}
+      {tab === 'manual' && (
+        <ManualTab
+          templates={templates}
+          assets={assets}
+          campaigns={campaigns}
+          shops={initialShops}
+          onFlash={flash}
+        />
+      )}
     </div>
   )
 }
@@ -184,93 +235,74 @@ export function AdminMarketingPanel({
 function AssetsTab({
   assets,
   shops,
-  pending,
+  carouselSlides,
   onAssetsChange,
   onFlash,
-  startTransition,
+  onUseInPost,
 }: {
   assets: MarketingAsset[]
   shops: ShopOption[]
-  pending: boolean
+  carouselSlides: MarketingCarouselSlidePayload[]
   onAssetsChange: (assets: MarketingAsset[]) => void
   onFlash: (ok: string | null, err?: string | null) => void
-  startTransition: (fn: () => void) => void
+  onUseInPost: (assetId: string) => void
 }) {
+  const savedSectionRef = useRef<HTMLElement>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [rubro, setRubro] = useState('')
   const [city, setCity] = useState('')
   const [shopId, setShopId] = useState('')
-  const [externalUrl, setExternalUrl] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [videoTitle, setVideoTitle] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [tags, setTags] = useState('')
   const [uploading, setUploading] = useState(false)
+  const [pending, startTransition] = useTransition()
 
-  async function handleUpload(file: File | null) {
-    if (!file) return
+  function clearImageForm() {
+    setTitle('')
+    setDescription('')
+    setRubro('')
+    setCity('')
+    setShopId('')
+    setTags('')
+    setImageFile(null)
+  }
+
+  async function handleSaveImage() {
     if (!title.trim()) {
-      onFlash(null, 'Escribí un título antes de subir.')
+      onFlash(null, 'Escribí un título para la imagen.')
+      return
+    }
+    if (!imageFile) {
+      onFlash(null, 'Elegí una imagen (JPG, PNG, etc.). No hace falta ninguna URL de video.')
       return
     }
 
     setUploading(true)
     onFlash(null, null)
     try {
-      const assetId = crypto.randomUUID()
-      const path = marketingAssetImagePath(assetId)
-      const webp = await compressImageForUpload(file)
-      const sb = createClient()
-      const { error: upErr } = await sb.storage.from('shop-images').upload(path, webp, {
-        cacheControl: SHOP_IMAGES_CACHE_CONTROL,
-        upsert: true,
-        contentType: 'image/webp',
-      })
-      if (upErr) throw new Error(upErr.message)
-
-      const input: MarketingAssetInput = {
-        title,
-        description,
-        asset_type: 'image',
-        storage_path: path,
-        external_url: externalUrl || null,
-        rubro,
-        city,
-        shop_id: shopId || null,
-        tags: tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-      }
+      const webp = await compressImageForUpload(imageFile)
+      const fd = new FormData()
+      fd.append('title', title)
+      fd.append('description', description)
+      fd.append('rubro', rubro)
+      fd.append('city', city)
+      fd.append('shopId', shopId)
+      fd.append('tags', tags)
+      fd.append('file', webp, 'image.webp')
 
       startTransition(async () => {
-        const res = await createMarketingAssetAdmin(input)
+        const res = await saveMarketingImageAdmin(fd)
         if ('error' in res) {
           onFlash(null, res.error)
           return
         }
-        onAssetsChange([
-          {
-            id: res.id,
-            title: input.title,
-            description: input.description ?? null,
-            asset_type: 'image',
-            storage_path: path,
-            external_url: input.external_url ?? null,
-            rubro: input.rubro ?? null,
-            city: input.city ?? null,
-            shop_id: input.shop_id ?? null,
-            tags: input.tags ?? [],
-            created_at: new Date().toISOString(),
-          },
-          ...assets,
-        ])
-        setTitle('')
-        setDescription('')
-        setRubro('')
-        setCity('')
-        setShopId('')
-        setExternalUrl('')
-        setTags('')
-        onFlash('Asset subido.')
+        if (res.asset) onAssetsChange([res.asset as MarketingAsset, ...assets])
+        clearImageForm()
+        onFlash('Imagen guardada en biblioteca.')
+        scrollToSaved()
       })
     } catch (e) {
       onFlash(null, e instanceof Error ? e.message : 'No se pudo subir la imagen.')
@@ -280,23 +312,20 @@ function AssetsTab({
   }
 
   async function handleExternalVideo() {
-    if (!title.trim() || !externalUrl.trim()) {
-      onFlash(null, 'Título y URL son obligatorios para video externo.')
+    if (!videoTitle.trim() || !videoUrl.trim()) {
+      onFlash(null, 'Para un video externo: título y URL del video (TikTok, Drive, etc.).')
       return
     }
     startTransition(async () => {
       const res = await createMarketingAssetAdmin({
-        title,
-        description,
+        title: videoTitle,
+        description: null,
         asset_type: 'video',
-        external_url: externalUrl,
-        rubro,
-        city,
-        shop_id: shopId || null,
-        tags: tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
+        external_url: videoUrl,
+        rubro: null,
+        city: null,
+        shop_id: null,
+        tags: [],
       })
       if ('error' in res) {
         onFlash(null, res.error)
@@ -305,26 +334,23 @@ function AssetsTab({
       onAssetsChange([
         {
           id: res.id,
-          title,
-          description: description || null,
+          title: videoTitle,
+          description: null,
           asset_type: 'video',
           storage_path: null,
-          external_url: externalUrl,
-          rubro: rubro || null,
-          city: city || null,
-          shop_id: shopId || null,
-          tags: tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
+          external_url: videoUrl,
+          rubro: null,
+          city: null,
+          shop_id: null,
+          tags: [],
           created_at: new Date().toISOString(),
         },
         ...assets,
       ])
-      setTitle('')
-      setDescription('')
-      setExternalUrl('')
-      onFlash('Video externo guardado.')
+      setVideoTitle('')
+      setVideoUrl('')
+      onFlash('Enlace de video guardado (solo referencia; no sube el archivo).')
+      scrollToSaved()
     })
   }
 
@@ -341,12 +367,40 @@ function AssetsTab({
     })
   }
 
+  function scrollToSaved() {
+    savedSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+    <div className="space-y-8">
+      <section className="card">
+        <SettingsCollapsible
+          title="Paso 1 · Vitrinas del carrusel de inicio"
+          subtitle={`${carouselSlides.length} tienditas · Un clic en «Guardar vitrina en biblioteca» (no hace falta el formulario de la derecha)`}
+          defaultOpen={false}
+        >
+          <MarketingCarouselSlidePicker
+            slides={carouselSlides}
+            assets={assets}
+            onAssetAdded={(asset) => {
+              onAssetsChange([asset, ...assets])
+              scrollToSaved()
+            }}
+            onFlash={onFlash}
+          />
+        </SettingsCollapsible>
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
       <section className="card space-y-4">
-        <h2 className="text-lg font-semibold text-white">Subir asset</h2>
+        <div>
+          <h2 className="text-lg font-semibold text-white">Paso 2 · Subir una foto</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Solo para imágenes propias (capturas, flyers, etc.). No necesitás pegar ninguna URL de TikTok.
+          </p>
+        </div>
         <label className="block space-y-1 text-sm">
-          <span className="text-zinc-400">Título</span>
+          <span className="text-zinc-400">Título (obligatorio para subir)</span>
           <input className="input w-full" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
         <label className="block space-y-1 text-sm">
@@ -379,28 +433,78 @@ function AssetsTab({
           <input className="input w-full" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="indumentaria, antes-despues" />
         </label>
         <label className="block space-y-1 text-sm">
-          <span className="text-zinc-400">Imagen</span>
+          <span className="text-zinc-400">Archivo de imagen</span>
           <input
             type="file"
             accept="image/*"
             disabled={uploading || pending}
-            onChange={(e) => void handleUpload(e.target.files?.[0] ?? null)}
+            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
             className="block w-full text-sm text-zinc-300"
           />
+          {imageFile && (
+            <p className="text-xs text-zinc-500">
+              Seleccionado: {imageFile.name} ({Math.round(imageFile.size / 1024)} KB)
+            </p>
+          )}
         </label>
-        <div className="border-t border-zinc-800 pt-4 space-y-2">
-          <p className="text-xs text-zinc-500">O pegá URL de video (TikTok, Drive, etc.)</p>
-          <input className="input w-full" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
-          <button type="button" className="btn-secondary-outline w-full text-sm" disabled={pending} onClick={() => void handleExternalVideo()}>
-            Guardar video externo
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn-primary w-full text-sm"
+          disabled={uploading || pending || !imageFile}
+          onClick={() => void handleSaveImage()}
+        >
+          {uploading ? 'Subiendo imagen…' : 'Guardar imagen en biblioteca'}
+        </button>
+
+        <SettingsCollapsible
+          title="Opcional: enlace a video externo"
+          subtitle="Solo si querés guardar la URL de un TikTok, Drive, etc. No hace falta para subir fotos."
+          defaultOpen={false}
+        >
+          <div className="space-y-3">
+            <label className="block space-y-1 text-sm">
+              <span className="text-zinc-400">Título del video</span>
+              <input
+                className="input w-full"
+                value={videoTitle}
+                onChange={(e) => setVideoTitle(e.target.value)}
+                placeholder="Ej. Reel promo verano"
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span className="text-zinc-400">URL del video</span>
+              <input
+                className="input w-full"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </label>
+            <button
+              type="button"
+              className="btn-secondary-outline w-full text-sm"
+              disabled={pending || !videoTitle.trim() || !videoUrl.trim()}
+              onClick={() => void handleExternalVideo()}
+            >
+              Guardar enlace de video
+            </button>
+          </div>
+        </SettingsCollapsible>
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-white">Biblioteca ({assets.length})</h2>
+      <section ref={savedSectionRef} className="space-y-4 scroll-mt-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Paso 3 · Lo que ya guardaste ({assets.length})</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Acá aparece todo lo que guardaste (vitrinas del carrusel o archivos subidos). Desde acá pasás a
+            armar el post en <strong className="text-zinc-300">Publicaciones</strong>.
+          </p>
+        </div>
         {assets.length === 0 ? (
-          <p className="text-sm text-zinc-500">Todavía no hay fotos ni videos cargados.</p>
+          <p className="text-sm text-zinc-500">
+            Todavía no hay nada guardado. Usá «Guardar vitrina en biblioteca» arriba o subí una imagen en el
+            paso 2.
+          </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {assets.map((asset) => {
@@ -421,28 +525,43 @@ function AssetsTab({
                     <p className="mt-2 text-xs text-zinc-500">
                       {[asset.rubro, asset.city].filter(Boolean).join(' · ') || 'Sin rubro/ciudad'}
                     </p>
+                    {asset.tags.length > 0 && (
+                      <p className="mt-1 text-xs text-zinc-600">Tags: {asset.tags.join(', ')}</p>
+                    )}
                   </div>
-                  <button type="button" className="text-xs text-red-400 hover:text-red-300" onClick={() => handleDelete(asset.id)}>
-                    Eliminar
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-primary flex-1 py-1.5 text-xs"
+                      onClick={() => onUseInPost(asset.id)}
+                    >
+                      Usar en Publicaciones →
+                    </button>
+                    <button type="button" className="text-xs text-red-400 hover:text-red-300" onClick={() => handleDelete(asset.id)}>
+                      Eliminar
+                    </button>
+                  </div>
                 </article>
               )
             })}
           </div>
         )}
       </section>
+      </div>
     </div>
   )
 }
 
 function TemplatesTab({
   templates,
+  assets,
   pending,
   onTemplatesChange,
   onFlash,
   startTransition,
 }: {
   templates: MarketingPostTemplate[]
+  assets: MarketingAsset[]
   pending: boolean
   onTemplatesChange: (templates: MarketingPostTemplate[]) => void
   onFlash: (ok: string | null, err?: string | null) => void
@@ -454,6 +573,7 @@ function TemplatesTab({
   const [body, setBody] = useState('')
   const [hashtags, setHashtags] = useState('')
   const [platforms, setPlatforms] = useState<string[]>(['instagram'])
+  const [assetIds, setAssetIds] = useState<string[]>([])
 
   function resetForm() {
     setEditingId(null)
@@ -462,6 +582,7 @@ function TemplatesTab({
     setBody('')
     setHashtags('')
     setPlatforms(['instagram'])
+    setAssetIds([])
   }
 
   function loadTemplate(t: MarketingPostTemplate) {
@@ -471,6 +592,11 @@ function TemplatesTab({
     setBody(t.body)
     setHashtags(t.hashtags ?? '')
     setPlatforms(t.suggested_platforms.length ? t.suggested_platforms : ['instagram'])
+    setAssetIds(t.asset_ids ?? [])
+  }
+
+  function toggleTemplateAsset(id: string) {
+    setAssetIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
   function togglePlatform(p: string) {
@@ -486,6 +612,7 @@ function TemplatesTab({
         body,
         hashtags,
         suggested_platforms: platforms,
+        asset_ids: assetIds,
       })
       if ('error' in res) {
         onFlash(null, res.error)
@@ -499,6 +626,7 @@ function TemplatesTab({
         suggested_platforms: platforms,
         hashtags: hashtags || null,
         is_default: false,
+        asset_ids: assetIds,
       }
       if (editingId) {
         onTemplatesChange(templates.map((t) => (t.id === editingId ? { ...t, ...row } : t)))
@@ -561,6 +689,45 @@ function TemplatesTab({
             </button>
           ))}
         </div>
+        <div>
+          <p className="mb-1 text-sm text-zinc-400">Imágenes y videos de la biblioteca</p>
+          <p className="mb-2 text-xs text-zinc-500">
+            Elegí qué assets van con esta plantilla (para descargar en la pestaña Manual).
+          </p>
+          {assets.length === 0 ? (
+            <p className="text-xs text-zinc-500">No hay assets. Guardá fotos en Biblioteca primero.</p>
+          ) : (
+            <div className="max-h-44 space-y-2 overflow-y-auto rounded-lg border border-zinc-800 p-2">
+              {assets.map((a) => {
+                const preview = assetPreviewUrl(a)
+                const checked = assetIds.includes(a.id)
+                return (
+                  <label
+                    key={a.id}
+                    className={`flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-xs ${
+                      checked ? 'border-brand/50 bg-brand/10' : 'border-transparent hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleTemplateAsset(a.id)}
+                    />
+                    {preview && a.asset_type === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={preview} alt="" className="h-10 w-10 shrink-0 rounded object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-800 text-[10px] text-zinc-500">
+                        {a.asset_type === 'video' ? 'Video' : '?'}
+                      </span>
+                    )}
+                    <span className="min-w-0 truncate text-zinc-300">{a.title}</span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           <button type="button" className="btn-primary flex-1 text-sm" disabled={pending} onClick={handleSave}>
             Guardar
@@ -590,6 +757,9 @@ function TemplatesTab({
                   {t.is_default && <span className="ml-2 text-xs text-brand">default</span>}
                 </p>
                 {t.description && <p className="text-xs text-zinc-500">{t.description}</p>}
+                <p className="mt-1 text-xs text-zinc-600">
+                  {(t.asset_ids ?? []).length} archivo{(t.asset_ids ?? []).length === 1 ? '' : 's'} en biblioteca
+                </p>
                 <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs text-zinc-400">{t.body}</p>
               </div>
               <div className="flex gap-2">
@@ -619,6 +789,8 @@ function PostsTab({
   metaConfigured,
   metaConnection,
   pending,
+  initialAssetIds,
+  onInitialAssetIdsConsumed,
   onPostsChange,
   onFlash,
   startTransition,
@@ -631,6 +803,8 @@ function PostsTab({
   metaConfigured: boolean
   metaConnection: MetaConnectionPublic | null
   pending: boolean
+  initialAssetIds: string[]
+  onInitialAssetIdsConsumed: () => void
   onPostsChange: (posts: MarketingPost[]) => void
   onFlash: (ok: string | null, err?: string | null) => void
   startTransition: (fn: () => void) => void
@@ -650,6 +824,15 @@ function PostsTab({
   const [rubro, setRubro] = useState('')
   const [city, setCity] = useState('')
   const [shopId, setShopId] = useState('')
+
+  useEffect(() => {
+    if (initialAssetIds.length === 0) return
+    setAssetIds(initialAssetIds)
+    onInitialAssetIdsConsumed()
+    onFlash('Imagen de biblioteca seleccionada. Completá el post y tocá Guardar.')
+    // Solo reaccionar cuando llega una selección desde Biblioteca
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consumir una vez por lote de ids
+  }, [initialAssetIds.join('|')])
 
   const selectedShop = shops.find((s) => s.id === shopId)
   const selectedCampaign = campaigns.find((c) => c.utm_campaign === utmCampaign) ?? campaigns[0]
@@ -976,15 +1159,51 @@ function PostsTab({
         </label>
 
         <div>
-          <p className="mb-2 text-sm text-zinc-400">Assets ({assetIds.length} seleccionados)</p>
-          <div className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-zinc-800 p-2">
-            {assets.map((a) => (
-              <label key={a.id} className="flex items-center gap-2 text-xs text-zinc-300">
-                <input type="checkbox" checked={assetIds.includes(a.id)} onChange={() => toggleAsset(a.id)} />
-                {a.title}
-              </label>
-            ))}
-          </div>
+          <p className="mb-1 text-sm font-medium text-zinc-300">Imágenes de la biblioteca</p>
+          <p className="mb-2 text-xs text-zinc-500">
+            Marcá qué foto va en este post ({assetIds.length} seleccionada{assetIds.length === 1 ? '' : 's'}).
+            Si no hay nada, primero guardá en la pestaña Biblioteca.
+          </p>
+          {assets.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-xs text-zinc-500">
+              No hay assets guardados. Andá a <strong className="text-zinc-400">Biblioteca</strong>, guardá una
+              vitrina o subí una imagen, y volvé acá.
+            </p>
+          ) : (
+            <div className="max-h-52 space-y-2 overflow-y-auto rounded-lg border border-zinc-800 p-2">
+              {assets.map((a) => {
+                const preview = assetPreviewUrl(a)
+                const checked = assetIds.includes(a.id)
+                return (
+                  <label
+                    key={a.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-lg border p-2 text-xs ${
+                      checked ? 'border-brand/50 bg-brand/10' : 'border-transparent hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="shrink-0"
+                      checked={checked}
+                      onChange={() => toggleAsset(a.id)}
+                    />
+                    {preview && a.asset_type === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={preview} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+                    ) : (
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-zinc-800 text-[10px] text-zinc-500">
+                        {a.asset_type === 'video' ? 'Video' : '?'}
+                      </span>
+                    )}
+                    <span className="min-w-0 text-zinc-300">
+                      <span className="block font-medium text-zinc-100">{a.title}</span>
+                      {a.rubro && <span className="text-zinc-500">{a.rubro}</span>}
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">
@@ -1179,6 +1398,232 @@ function CampaignsTab({
           </article>
         ))}
       </section>
+    </div>
+  )
+}
+
+function ManualTab({
+  templates,
+  assets,
+  campaigns,
+  shops,
+  onFlash,
+}: {
+  templates: MarketingPostTemplate[]
+  assets: MarketingAsset[]
+  campaigns: MarketingCampaign[]
+  shops: ShopOption[]
+  onFlash: (ok: string | null, err?: string | null) => void
+}) {
+  const [templateId, setTemplateId] = useState(templates[0]?.id ?? '')
+  const [rubro, setRubro] = useState('')
+  const [city, setCity] = useState('')
+  const [shopId, setShopId] = useState('')
+  const [utmCampaign, setUtmCampaign] = useState(campaigns[0]?.utm_campaign ?? '7dias_gratis')
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const template = templates.find((t) => t.id === templateId)
+  const selectedCampaign = campaigns.find((c) => c.utm_campaign === utmCampaign) ?? campaigns[0]
+  const selectedShop = shops.find((s) => s.id === shopId)
+
+  const trackingLink = buildMarketingUrl({
+    path: selectedCampaign?.landing_path ?? '/promo',
+    utm_source: 'manual',
+    utm_medium: 'social',
+    utm_campaign: utmCampaign,
+  })
+
+  const captionBody = applyMarketingTemplate(
+    template?.body ?? '',
+    defaultMarketingVariables({
+      rubro: rubro || selectedShop?.category_label,
+      city: city || undefined,
+      shopName: selectedShop?.name,
+      offerText: selectedCampaign?.offer_text,
+      link: trackingLink,
+    }),
+  )
+  const fullCaption = composeMarketingCaption(captionBody, template?.hashtags)
+
+  const templateAssets = (template?.asset_ids ?? [])
+    .map((id) => assets.find((a) => a.id === id))
+    .filter((a): a is MarketingAsset => Boolean(a))
+
+  async function copyCaption() {
+    if (!fullCaption.trim()) {
+      onFlash(null, 'Elegí una plantilla con texto.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(fullCaption)
+      onFlash('Texto copiado al portapapeles.')
+    } catch {
+      onFlash(null, 'No se pudo copiar. Seleccioná el texto y copiá manualmente.')
+    }
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(trackingLink)
+      onFlash('Link copiado al portapapeles.')
+    } catch {
+      onFlash(null, 'No se pudo copiar el link.')
+    }
+  }
+
+  async function handleDownload(asset: MarketingAsset) {
+    setDownloadingId(asset.id)
+    onFlash(null, null)
+    try {
+      await downloadMarketingAsset(asset)
+      onFlash(
+        asset.asset_type === 'video' && !asset.storage_path
+          ? 'Se abrió el enlace del video en una pestaña nueva.'
+          : `Descargado: ${asset.title}`,
+      )
+    } catch (e) {
+      onFlash(null, e instanceof Error ? e.message : 'No se pudo descargar.')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  if (templates.length === 0) {
+    return (
+      <p className="text-sm text-zinc-500">
+        No hay plantillas. Creá una en la pestaña Plantillas (texto + imágenes de Biblioteca).
+      </p>
+    )
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <section className="card space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Publicación manual</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Elegí plantilla, copiá el texto y descargá las imágenes para subir vos en Instagram, Facebook o
+            TikTok.
+          </p>
+        </div>
+        <label className="block space-y-1 text-sm">
+          <span className="text-zinc-400">Plantilla</span>
+          <select className="input w-full" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {template?.description && <p className="text-xs text-zinc-500">{template.description}</p>}
+        <label className="block space-y-1 text-sm">
+          <span className="text-zinc-400">Campaña (link y beneficio)</span>
+          <select className="input w-full" value={utmCampaign} onChange={(e) => setUtmCampaign(e.target.value)}>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.utm_campaign}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="text-zinc-400">Rubro (opcional)</span>
+          <input className="input w-full" value={rubro} onChange={(e) => setRubro(e.target.value)} />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="text-zinc-400">Ciudad (opcional)</span>
+          <input className="input w-full" value={city} onChange={(e) => setCity(e.target.value)} />
+        </label>
+        <label className="block space-y-1 text-sm">
+          <span className="text-zinc-400">Tienda de referencia (opcional)</span>
+          <select
+            className="input w-full"
+            value={shopId}
+            onChange={(e) => {
+              setShopId(e.target.value)
+              const shop = shops.find((s) => s.id === e.target.value)
+              if (shop?.category_label) setRubro(shop.category_label)
+            }}
+          >
+            <option value="">Ninguna</option>
+            {shops.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        {template && template.suggested_platforms.length > 0 && (
+          <p className="text-xs text-zinc-500">
+            Sugerido: {template.suggested_platforms.map(marketingPlatformLabel).join(', ')}
+          </p>
+        )}
+      </section>
+
+      <div className="space-y-6">
+        <section className="card space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-semibold text-white">Texto del post</h3>
+            <button type="button" className="btn-primary text-sm" onClick={() => void copyCaption()}>
+              Copiar texto
+            </button>
+          </div>
+          <pre className="whitespace-pre-wrap rounded-lg border border-zinc-800 bg-zinc-950/50 p-3 text-sm text-zinc-200">
+            {fullCaption || 'Sin texto en la plantilla.'}
+          </pre>
+          <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800 pt-3">
+            <p className="min-w-0 flex-1 break-all text-xs text-zinc-500">{trackingLink}</p>
+            <button type="button" className="btn-secondary-outline shrink-0 text-xs" onClick={() => void copyLink()}>
+              Copiar link
+            </button>
+          </div>
+        </section>
+
+        <section className="card space-y-3">
+          <h3 className="font-semibold text-white">
+            Archivos de la plantilla ({templateAssets.length})
+          </h3>
+          {templateAssets.length === 0 ? (
+            <p className="text-sm text-zinc-500">
+              Esta plantilla no tiene imágenes. Editá la plantilla en la pestaña Plantillas y marcá assets de
+              Biblioteca.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {templateAssets.map((asset) => {
+                const preview = assetPreviewUrl(asset)
+                const busy = downloadingId === asset.id
+                return (
+                  <article key={asset.id} className="space-y-2 rounded-xl border border-zinc-800 p-3">
+                    {preview && asset.asset_type === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={preview} alt={asset.title} className="aspect-video w-full rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex aspect-video items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/50 text-xs text-zinc-500">
+                        {asset.asset_type === 'video' ? 'Video (enlace externo)' : 'Sin preview'}
+                      </div>
+                    )}
+                    <p className="text-sm font-medium text-white">{asset.title}</p>
+                    <button
+                      type="button"
+                      className="btn-secondary-outline w-full text-sm"
+                      disabled={busy}
+                      onClick={() => void handleDownload(asset)}
+                    >
+                      {busy
+                        ? 'Descargando…'
+                        : asset.asset_type === 'video' && !asset.storage_path
+                          ? 'Abrir enlace del video'
+                          : 'Descargar imagen'}
+                    </button>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

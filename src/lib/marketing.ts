@@ -50,6 +50,7 @@ export type MarketingPostTemplate = {
   suggested_platforms: string[]
   hashtags: string | null
   is_default: boolean
+  asset_ids: string[]
 }
 
 export type MarketingPost = {

@@ -8,6 +8,7 @@ import type {
   MarketingPostTemplate,
 } from '@/lib/marketing'
 import type { MetaConnectionPublic } from '@/lib/meta-graph'
+import type { MarketingCarouselSlidePayload } from '@/lib/marketing-carousel-slides'
 
 type Props = {
   searchParams: Promise<{ meta?: string; reason?: string }>
@@ -48,6 +49,7 @@ export default async function AdminMarketingPage({ searchParams }: Props) {
         initialPosts={data.posts as MarketingPost[]}
         initialCampaigns={data.campaigns as MarketingCampaign[]}
         initialShops={data.shops as { id: string; name: string; slug: string; category_label: string | null }[]}
+        initialCarouselSlides={data.carouselSlides as MarketingCarouselSlidePayload[]}
         metaConfigured={data.metaConfigured}
         metaConnection={data.metaConnection as MetaConnectionPublic | null}
         initialNotice={metaNotice(params.meta, params.reason)}
