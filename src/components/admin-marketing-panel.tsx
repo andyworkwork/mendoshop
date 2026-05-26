@@ -7,12 +7,14 @@ import {
   deleteMarketingPostAdmin,
   deleteMarketingTemplateAdmin,
   previewMarketingCaptionAdmin,
+  publishMarketingPostToMetaAdmin,
   saveMarketingCampaignAdmin,
   saveMarketingPostAdmin,
   saveMarketingTemplateAdmin,
   type MarketingAssetInput,
   type MarketingPostInput,
 } from '@/app/actions/admin-marketing'
+import { AdminMarketingMetaSection } from '@/components/admin-marketing-meta-section'
 import { compressImageForUpload } from '@/lib/image-compress'
 import {
   applyMarketingTemplate,
@@ -35,6 +37,7 @@ import {
 import { marketingAssetImagePath } from '@/lib/marketing-storage'
 import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
+import type { MetaConnectionPublic } from '@/lib/meta-graph'
 import { createClient } from '@/lib/supabase/browser'
 
 type ShopOption = {
@@ -44,12 +47,13 @@ type ShopOption = {
   category_label: string | null
 }
 
-type Tab = 'assets' | 'templates' | 'posts' | 'campaigns' | 'calendar'
+type Tab = 'assets' | 'templates' | 'posts' | 'campaigns' | 'calendar' | 'social'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'assets', label: 'Biblioteca' },
   { id: 'templates', label: 'Plantillas' },
   { id: 'posts', label: 'Publicaciones' },
+  { id: 'social', label: 'Redes sociales' },
   { id: 'campaigns', label: 'Enlaces UTM' },
   { id: 'calendar', label: 'Calendario' },
 ]
@@ -73,19 +77,25 @@ export function AdminMarketingPanel({
   initialPosts,
   initialCampaigns,
   initialShops,
+  metaConfigured,
+  metaConnection,
+  initialNotice,
 }: {
   initialAssets: MarketingAsset[]
   initialTemplates: MarketingPostTemplate[]
   initialPosts: MarketingPost[]
   initialCampaigns: MarketingCampaign[]
   initialShops: ShopOption[]
+  metaConfigured: boolean
+  metaConnection: MetaConnectionPublic | null
+  initialNotice?: string | null
 }) {
   const [tab, setTab] = useState<Tab>('assets')
   const [assets, setAssets] = useState(initialAssets)
   const [templates, setTemplates] = useState(initialTemplates)
   const [posts, setPosts] = useState(initialPosts)
   const [campaigns, setCampaigns] = useState(initialCampaigns)
-  const [message, setMessage] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(initialNotice ?? null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -142,10 +152,19 @@ export function AdminMarketingPanel({
           templates={templates}
           campaigns={campaigns}
           shops={initialShops}
+          metaConfigured={metaConfigured}
+          metaConnection={metaConnection}
           pending={pending}
           onPostsChange={setPosts}
           onFlash={flash}
           startTransition={startTransition}
+        />
+      )}
+      {tab === 'social' && (
+        <AdminMarketingMetaSection
+          metaConfigured={metaConfigured}
+          metaConnection={metaConnection}
+          onFlash={flash}
         />
       )}
       {tab === 'campaigns' && (
@@ -597,6 +616,8 @@ function PostsTab({
   templates,
   campaigns,
   shops,
+  metaConfigured,
+  metaConnection,
   pending,
   onPostsChange,
   onFlash,
@@ -607,6 +628,8 @@ function PostsTab({
   templates: MarketingPostTemplate[]
   campaigns: MarketingCampaign[]
   shops: ShopOption[]
+  metaConfigured: boolean
+  metaConnection: MetaConnectionPublic | null
   pending: boolean
   onPostsChange: (posts: MarketingPost[]) => void
   onFlash: (ok: string | null, err?: string | null) => void
@@ -783,6 +806,42 @@ function PostsTab({
     onFlash('Caption copiado al portapapeles.')
   }
 
+  function handlePublishNow(postId: string) {
+    if (!metaConnection) {
+      onFlash(null, 'Conectá Facebook e Instagram en la pestaña Redes sociales.')
+      return
+    }
+    startTransition(async () => {
+      const res = await publishMarketingPostToMetaAdmin(postId)
+      if ('error' in res) {
+        onFlash(null, res.error)
+        return
+      }
+      onPostsChange(
+        posts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                status: 'published',
+                published_at: new Date().toISOString(),
+                last_published_at: new Date().toISOString(),
+                meta_facebook_post_id: res.facebookPostId ?? p.meta_facebook_post_id,
+                meta_instagram_post_id: res.instagramPostId ?? p.meta_instagram_post_id,
+                last_publish_error: res.warnings.length ? res.warnings.join(' ') : null,
+              }
+            : p,
+        ),
+      )
+      onFlash(
+        res.warnings.length
+          ? `Publicado con avisos: ${res.warnings.join(' ')}`
+          : 'Publicado en Meta.',
+      )
+    })
+  }
+
+  const canAutoPublish = metaConfigured && Boolean(metaConnection)
+
   return (
     <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
       <section className="card space-y-4">
@@ -953,9 +1012,20 @@ function PostsTab({
           <button type="button" className="btn-secondary-outline text-sm" onClick={() => void copyCaption()}>
             Copiar caption
           </button>
+          {editingId && canAutoPublish && (platforms.includes('facebook') || platforms.includes('instagram')) && (
+            <button
+              type="button"
+              className="btn-primary text-sm"
+              disabled={pending}
+              onClick={() => handlePublishNow(editingId)}
+            >
+              Publicar ahora en Meta
+            </button>
+          )}
           <p className="text-xs text-zinc-500">
-            Publicación manual: copiá el caption, descargá la imagen desde Biblioteca y publicá en Meta/TikTok. Cuando
-            esté online, marcá como &quot;Publicado&quot;.
+            {canAutoPublish
+              ? 'Facebook e Instagram se publican desde acá. TikTok sigue siendo manual (copiar caption).'
+              : 'Conectá Meta en Redes sociales para publicar automáticamente, o copiá el caption y publicá a mano.'}
           </p>
         </section>
 
@@ -971,7 +1041,12 @@ function PostsTab({
                     {p.scheduled_at ? ` · ${formatDateTime(p.scheduled_at)}` : ''}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {canAutoPublish && (p.platforms.includes('facebook') || p.platforms.includes('instagram')) && p.status !== 'published' && (
+                    <button type="button" className="text-xs text-emerald-400" onClick={() => handlePublishNow(p.id)}>
+                      Publicar Meta
+                    </button>
+                  )}
                   <button type="button" className="text-xs text-brand" onClick={() => loadPost(p)}>
                     Editar
                   </button>
@@ -981,6 +1056,7 @@ function PostsTab({
                 </div>
               </div>
               <p className="line-clamp-4 whitespace-pre-wrap text-xs text-zinc-400">{p.caption}</p>
+              {p.last_publish_error && <p className="text-xs text-amber-400">{p.last_publish_error}</p>}
             </article>
           ))}
         </section>
@@ -1131,7 +1207,8 @@ function CalendarTab({ posts }: { posts: MarketingPost[] }) {
     <section className="space-y-4">
       <h2 className="text-lg font-semibold text-white">Calendario editorial</h2>
       <p className="text-sm text-zinc-400">
-        Publicaciones programadas. Cuando llegue la fecha, copiá el caption desde Publicaciones y marcá como publicado.
+        Publicaciones programadas con estado &quot;Programado&quot; se publican solas en Facebook/Instagram cada 5 minutos
+        (si Meta está conectado).
       </p>
       {grouped.length === 0 ? (
         <p className="text-sm text-zinc-500">No hay publicaciones programadas.</p>

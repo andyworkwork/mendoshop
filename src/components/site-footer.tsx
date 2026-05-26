@@ -40,6 +40,12 @@ export function SiteFooter() {
           >
             Iniciar sesión
           </Link>
+          <Link
+            href="/privacidad"
+            className="rounded-lg px-3 py-1.5 text-zinc-400 transition hover:bg-white/5 hover:text-white"
+          >
+            Privacidad
+          </Link>
           <a
             href={waUrl}
             target="_blank"

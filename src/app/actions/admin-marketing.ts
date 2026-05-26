@@ -11,7 +11,10 @@ import {
   type MarketingPostStatus,
   type MarketingPostType,
 } from '@/lib/marketing'
+import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { isMetaConfigured, type MetaConnectionPublic, type MetaPageCandidate } from '@/lib/meta-graph'
+import { publishMarketingPostToMeta } from '@/lib/meta-publish'
 import { revalidatePath } from 'next/cache'
 
 async function assertAdmin(): Promise<{ error: string } | null> {
@@ -397,12 +400,18 @@ export async function getMarketingDashboardAdmin() {
   if (denied) return denied
 
   const service = createServiceClient()
-  const [assets, templates, posts, campaigns, shops] = await Promise.all([
+  const [assets, templates, posts, campaigns, shops, metaConnection] = await Promise.all([
     service.from('marketing_assets').select('*').order('created_at', { ascending: false }),
     service.from('marketing_post_templates').select('*').order('is_default', { ascending: false }).order('name'),
     service.from('marketing_posts').select('*').order('created_at', { ascending: false }),
     service.from('marketing_campaigns').select('*').order('created_at', { ascending: false }),
     service.from('shops').select('id, name, slug, category_label').order('name').limit(200),
+    service
+      .from('marketing_meta_connections')
+      .select('id, facebook_page_id, facebook_page_name, instagram_user_id, instagram_username, connected_by, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
   if (assets.error) return { error: assets.error.message }
@@ -417,5 +426,108 @@ export async function getMarketingDashboardAdmin() {
     posts: posts.data ?? [],
     campaigns: campaigns.data ?? [],
     shops: shops.data ?? [],
+    metaConfigured: isMetaConfigured(),
+    metaConnection: (metaConnection.data as MetaConnectionPublic | null) ?? null,
   }
+}
+
+export async function getMetaOAuthPendingAdmin(pendingId: string) {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+  const { data, error } = await service
+    .from('marketing_meta_oauth_pending')
+    .select('id, pages, expires_at')
+    .eq('id', pendingId)
+    .maybeSingle()
+
+  if (error) return { error: error.message }
+  if (!data) return { error: 'La sesión de conexión expiró. Intentá de nuevo.' }
+
+  if (new Date(data.expires_at as string).getTime() < Date.now()) {
+    await service.from('marketing_meta_oauth_pending').delete().eq('id', pendingId)
+    return { error: 'La sesión de conexión expiró. Intentá de nuevo.' }
+  }
+
+  return { pages: data.pages as MetaPageCandidate[] }
+}
+
+export async function finalizeMetaConnectionAdmin(input: {
+  pendingId: string
+  pageId: string
+}): Promise<AdminActionResult> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const email = user?.email ?? 'admin'
+
+  const service = createServiceClient()
+  const { data: pending, error: pendingErr } = await service
+    .from('marketing_meta_oauth_pending')
+    .select('id, pages, expires_at')
+    .eq('id', input.pendingId)
+    .maybeSingle()
+
+  if (pendingErr) return { error: pendingErr.message }
+  if (!pending) return { error: 'Sesión de conexión no encontrada.' }
+  if (new Date(pending.expires_at as string).getTime() < Date.now()) {
+    return { error: 'La sesión de conexión expiró.' }
+  }
+
+  const pages = pending.pages as MetaPageCandidate[]
+  const page = pages.find((p) => p.pageId === input.pageId)
+  if (!page) return { error: 'Página no encontrada.' }
+
+  const { error } = await service.from('marketing_meta_connections').upsert(
+    {
+      facebook_page_id: page.pageId,
+      facebook_page_name: page.pageName,
+      instagram_user_id: page.instagramUserId,
+      instagram_username: page.instagramUsername,
+      page_access_token: page.pageAccessToken,
+      connected_by: email,
+    },
+    { onConflict: 'facebook_page_id' },
+  )
+
+  if (error) return { error: error.message }
+
+  await service.from('marketing_meta_oauth_pending').delete().eq('id', input.pendingId)
+  revalidateMarketing()
+  return { ok: true }
+}
+
+export async function disconnectMetaAdmin(): Promise<AdminActionResult> {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  const service = createServiceClient()
+  const { data: rows, error: listErr } = await service.from('marketing_meta_connections').select('id')
+  if (listErr) return { error: listErr.message }
+
+  for (const row of rows ?? []) {
+    const { error } = await service.from('marketing_meta_connections').delete().eq('id', row.id)
+    if (error) return { error: error.message }
+  }
+
+  revalidateMarketing()
+  return { ok: true }
+}
+
+export async function publishMarketingPostToMetaAdmin(postId: string) {
+  const denied = await assertAdmin()
+  if (denied) return denied
+
+  if (!isMetaConfigured()) {
+    return { error: 'Meta no está configurado. Agregá META_APP_ID y META_APP_SECRET.' }
+  }
+
+  const result = await publishMarketingPostToMeta(postId)
+  revalidateMarketing()
+  return result
 }

@@ -68,6 +68,10 @@ export type MarketingPost = {
   utm_campaign: string | null
   link_path: string
   notes: string | null
+  meta_facebook_post_id?: string | null
+  meta_instagram_post_id?: string | null
+  last_publish_error?: string | null
+  last_published_at?: string | null
   created_at: string
 }
 
