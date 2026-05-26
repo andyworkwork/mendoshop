@@ -55,10 +55,10 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'assets', label: 'Biblioteca' },
   { id: 'templates', label: 'Plantillas' },
   { id: 'posts', label: 'Publicaciones' },
+  { id: 'manual', label: 'Manual' },
   { id: 'social', label: 'Redes sociales' },
   { id: 'campaigns', label: 'Enlaces UTM' },
   { id: 'calendar', label: 'Calendario' },
-  { id: 'manual', label: 'Manual' },
 ]
 
 function assetPreviewUrl(asset: MarketingAsset): string | null {
