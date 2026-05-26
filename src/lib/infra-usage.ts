@@ -201,7 +201,7 @@ export async function buildInfraUsageReport(): Promise<InfraUsageReport | { erro
     supabaseDashboardUsageUrl: ref
       ? `https://supabase.com/dashboard/project/${ref}/settings/billing/usage`
       : 'https://supabase.com/dashboard',
-    vercelDashboardUsageUrl: 'https://vercel.com/account/usage',
+    vercelDashboardUsageUrl: 'https://vercel.com/andywork-s-projects',
     db: dbResult,
     disk,
     apiCountsLast24h,
