@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { DashboardProStats } from '@/components/dashboard-pro-stats'
 import { requireDashboardShop } from '@/lib/dashboard'
-import { shopPublicUrl } from '@/lib/publicUrl'
 import { planHasViewCount, planLabel } from '@/lib/plans'
 import { createClient } from '@/lib/supabase/server'
 import { fetchCategoriesWithNested, countProducts } from '@/lib/fetch-catalog'
@@ -41,25 +40,6 @@ export default async function DashboardHomePage() {
       </div>
 
       <DashboardProStats shop={shop} />
-
-      <div className="card space-y-3">
-        <h2 className="font-semibold">Accesos rápidos</h2>
-        <p className="text-sm text-zinc-400 break-all">{shopPublicUrl(shop.slug)}</p>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/dashboard/mis-redes" className="btn-primary text-sm">
-            Mis redes y link
-          </Link>
-          <Link href="/dashboard/editar-tienda" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
-            Editar tienda
-          </Link>
-          <Link href="/dashboard/catalog" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
-            Catálogo
-          </Link>
-          <Link href="/dashboard/account" className="rounded-xl border border-zinc-600 px-4 py-2 text-sm">
-            Cuenta
-          </Link>
-        </div>
-      </div>
     </div>
   )
 }

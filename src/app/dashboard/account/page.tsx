@@ -1,39 +1,5 @@
-import { Suspense } from 'react'
-import { mercadoPagoPaymentsEnabled } from '@/app/actions/billing'
-import { PlanPaymentNotice } from '@/components/plan-payment-notice'
-import { ShopAccountPanel } from '@/components/shop-account-panel'
-import { ShopPlanGrantNotices } from '@/components/shop-plan-grant-notices'
-import { isPlatformAdmin } from '@/lib/admin'
-import { requireDashboardShop } from '@/lib/dashboard'
-import { fetchUnseenPlanGrants, markPlanGrantsSeen } from '@/lib/plan-grants'
-import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default async function DashboardAccountPage() {
-  const shop = await requireDashboardShop()
-  const mercadoPagoEnabled = await mercadoPagoPaymentsEnabled()
-  const showTestPlan = await isPlatformAdmin()
-  const supabase = await createClient()
-  const planGrants = await fetchUnseenPlanGrants(supabase, shop.id)
-  if (planGrants.length > 0) {
-    await markPlanGrantsSeen(
-      supabase,
-      planGrants.map((g) => g.id),
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Cuenta</h1>
-      <p className="text-sm text-zinc-400">Plan, vigencia y contacto con Mendoshop.</p>
-      <Suspense fallback={null}>
-        <PlanPaymentNotice />
-      </Suspense>
-      <ShopPlanGrantNotices grants={planGrants} />
-      <ShopAccountPanel
-        shop={shop}
-        mercadoPagoEnabled={mercadoPagoEnabled}
-        showTestPlan={showTestPlan}
-      />
-    </div>
-  )
+export default function DashboardAccountIndexPage() {
+  redirect('/dashboard/account/plan')
 }

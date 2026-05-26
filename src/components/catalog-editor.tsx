@@ -15,8 +15,16 @@ import { ProductBasicsEditorDialog } from '@/components/product-basics-editor-di
 import { ProductDetailsEditorDialog } from '@/components/product-details-editor-dialog'
 import { updateProductDetails } from '@/app/actions/catalog'
 import { categoryIconLabel } from '@/lib/category-icons'
+import { SANITIZE_LIMITS, sanitizePlainText } from '@/lib/sanitize'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
+
+function promptPlainText(label: string, maxLength: number, current?: string): string | null {
+  const raw = prompt(label, current)
+  if (raw == null) return null
+  const value = sanitizePlainText(raw, maxLength)
+  return value.length > 0 ? value : null
+}
 
 async function removeProductImages(
   sb: ReturnType<typeof createClient>,
@@ -68,13 +76,13 @@ export function CatalogEditor({
   }, [refresh, shop.slug])
 
   async function addCategory() {
-    const name = prompt('Nombre de la categoría')
-    if (!name?.trim()) return
+    const name = promptPlainText('Nombre de la categoría', SANITIZE_LIMITS.categoryName)
+    if (!name) return
     setBusy(true)
     const sort = categories.length
     await sb.from('categories').insert({
       shop_id: shop.id,
-      name: name.trim(),
+      name,
       sort_order: sort,
       icon: 'tag',
     })
@@ -108,13 +116,13 @@ export function CatalogEditor({
   }
 
   async function addSubcategory(categoryId: string) {
-    const name = prompt('Nombre de la subcategoría')
-    if (!name?.trim()) return
+    const name = promptPlainText('Nombre de la subcategoría', SANITIZE_LIMITS.subcategoryName)
+    if (!name) return
     setBusy(true)
     await sb.from('subcategories').insert({
       shop_id: shop.id,
       category_id: categoryId,
-      name: name.trim(),
+      name,
       sort_order: 0,
     })
     setBusy(false)
@@ -140,8 +148,8 @@ export function CatalogEditor({
       alert(`Tu plan permite hasta ${limits.maxProducts} productos.`)
       return
     }
-    const name = prompt('Nombre del producto')
-    if (!name?.trim()) return
+    const name = promptPlainText('Nombre del producto', SANITIZE_LIMITS.productName)
+    if (!name) return
     const priceStr = prompt('Precio (número)', '0')
     const price = Number(priceStr?.replace(',', '.'))
     if (!Number.isFinite(price) || price < 0) return
@@ -150,7 +158,7 @@ export function CatalogEditor({
       shop_id: shop.id,
       subcategory_id: subcategoryId,
       subsubcategoria_id: null,
-      name: name.trim(),
+      name,
       price,
       stock_quantity: 1,
       active: true,
@@ -250,12 +258,12 @@ export function CatalogEditor({
   }
 
   async function editCategoryName(categoryId: string, current: string) {
-    const name = prompt('Nombre de la categoría', current)
-    if (!name?.trim() || name.trim() === current) return
+    const name = promptPlainText('Nombre de la categoría', SANITIZE_LIMITS.categoryName, current)
+    if (!name || name === current) return
     setBusy(true)
     const { error } = await sb
       .from('categories')
-      .update({ name: name.trim() })
+      .update({ name })
       .eq('id', categoryId)
       .eq('shop_id', shop.id)
     setBusy(false)
@@ -267,12 +275,12 @@ export function CatalogEditor({
   }
 
   async function editSubcategoryName(subcategoryId: string, current: string) {
-    const name = prompt('Nombre de la subcategoría', current)
-    if (!name?.trim() || name.trim() === current) return
+    const name = promptPlainText('Nombre de la subcategoría', SANITIZE_LIMITS.subcategoryName, current)
+    if (!name || name === current) return
     setBusy(true)
     const { error } = await sb
       .from('subcategories')
-      .update({ name: name.trim() })
+      .update({ name })
       .eq('id', subcategoryId)
       .eq('shop_id', shop.id)
     setBusy(false)
@@ -290,11 +298,16 @@ export function CatalogEditor({
 
   async function saveProductBasics(name: string, price: number) {
     if (!basicsEditor) return
+    const safeName = sanitizePlainText(name, SANITIZE_LIMITS.productName)
+    if (!safeName) {
+      setBasicsError('El nombre del producto no es válido.')
+      return
+    }
     setBusy(true)
     setBasicsError(null)
     const { error } = await sb
       .from('products')
-      .update({ name, price })
+      .update({ name: safeName, price })
       .eq('id', basicsEditor.productId)
       .eq('shop_id', shop.id)
     setBusy(false)

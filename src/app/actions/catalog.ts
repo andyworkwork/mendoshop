@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { SANITIZE_LIMITS, sanitizeMultilineTextOrNull } from '@/lib/sanitize'
 import { revalidatePath } from 'next/cache'
 
 export async function updateProductDetails(
@@ -9,7 +10,7 @@ export async function updateProductDetails(
   details: string | null,
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient()
-  const text = details?.trim() || null
+  const text = sanitizeMultilineTextOrNull(details, SANITIZE_LIMITS.productDetails)
 
   const { data: row, error: fetchErr } = await supabase
     .from('products')

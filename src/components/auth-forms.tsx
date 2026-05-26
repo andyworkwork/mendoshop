@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { completeShopRegistration } from '@/app/actions/register'
+import { assertShopSlugAvailable, useShopSlugAvailability } from '@/hooks/use-shop-slug-availability'
 import { createClient } from '@/lib/supabase/browser'
 import { slugify } from '@/lib/format'
 import { authConfirmUrl } from '@/lib/publicUrl'
@@ -84,7 +85,6 @@ export function LoginForm({
 }
 
 export function RegisterForm({ referralSlug }: { referralSlug?: string | null }) {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [shopName, setShopName] = useState('')
@@ -95,6 +95,7 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
   const [loading, setLoading] = useState(false)
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [createdShop, setCreatedShop] = useState<{ shopName: string; shopSlug: string } | null>(null)
+  const { cleanSlug, slugTaken, slugChecking, slugTakenMessage } = useShopSlugAvailability(slug)
 
   function onShopNameChange(v: string) {
     setShopName(v)
@@ -116,6 +117,13 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
     }
     if (wa.length < 10) {
       setError('Ingresá un WhatsApp válido (código de área + número, solo dígitos).')
+      setLoading(false)
+      return
+    }
+
+    const slugError = await assertShopSlugAvailable(cleanSlug)
+    if (slugError) {
+      setError(slugError)
       setLoading(false)
       return
     }
@@ -199,10 +207,23 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
             className="input flex-1"
             required
             value={slug}
-            onChange={(e) => setSlug(slugify(e.target.value))}
+            onChange={(e) => {
+              setSlug(slugify(e.target.value))
+              if (error === slugTakenMessage) setError(null)
+            }}
             pattern={'[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?'}
+            aria-invalid={slugTaken}
+            aria-describedby={slugTaken ? 'register-slug-error' : undefined}
           />
         </div>
+        {slugTaken && (
+          <p id="register-slug-error" className="mt-1 text-sm text-red-400">
+            {slugTakenMessage}
+          </p>
+        )}
+        {slugChecking && cleanSlug.length >= 3 && !slugTaken && (
+          <p className="mt-1 text-xs text-zinc-500">Verificando link…</p>
+        )}
       </label>
       <label className="block text-sm">
         WhatsApp (solo números, con código 54…)
@@ -240,7 +261,11 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
-      <button type="submit" disabled={loading} className="btn-primary w-full">
+      <button
+        type="submit"
+        disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
+        className="btn-primary w-full"
+      >
         {loading ? 'Creando…' : 'Crear mi tienda'}
       </button>
       <p className="text-center text-sm text-zinc-500">

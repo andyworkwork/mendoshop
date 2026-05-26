@@ -1,6 +1,12 @@
 import { PLAN_LIMITS } from '@/lib/plans'
+import { isSafeHttpUrl } from '@/lib/sanitize'
 import { buildWhatsAppUrl } from '@/lib/shops'
 import type { ShopRow } from '@/types/shop'
+
+function safeExternalUrl(url: string | null): string | null {
+  if (!url) return null
+  return isSafeHttpUrl(url) ? url : null
+}
 
 export type SocialLinkId = 'instagram' | 'tiktok' | 'whatsapp' | 'website'
 
@@ -11,30 +17,43 @@ export type ShopSocialLink = {
 }
 
 export function normalizeInstagramUrl(input: string): string | null {
-  const s = input.trim()
+  const s = sanitizeSocialUsernameInput(input)
   if (!s) return null
-  if (/^https?:\/\//i.test(s)) return s.replace(/\/+$/, '')
+  if (/^https?:\/\//i.test(s)) {
+    const url = s.replace(/\/+$/, '')
+    return safeExternalUrl(url)
+  }
   const user = s.replace(/^@/, '').replace(/^instagram\.com\//i, '').replace(/\/+$/, '')
-  if (!user) return null
-  return `https://www.instagram.com/${user}/`
+  if (!user || /[/?#]/.test(user)) return null
+  return safeExternalUrl(`https://www.instagram.com/${encodeURIComponent(user)}/`)
 }
 
 export function normalizeWebsiteUrl(input: string): string | null {
-  const s = input.trim()
+  const s = sanitizeSocialUsernameInput(input)
   if (!s) return null
-  if (/^https?:\/\//i.test(s)) return s.replace(/\/+$/, '')
-  return `https://${s.replace(/^\/+/, '')}`
+  const url = /^https?:\/\//i.test(s) ? s.replace(/\/+$/, '') : `https://${s.replace(/^\/+/, '')}`
+  return safeExternalUrl(url)
 }
 
 export function normalizeTikTokUrl(input: string): string | null {
-  const s = input.trim()
+  const s = sanitizeSocialUsernameInput(input)
   if (!s) return null
-  if (/^https?:\/\//i.test(s)) return s.replace(/\/+$/, '')
+  if (/^https?:\/\//i.test(s)) {
+    const url = s.replace(/\/+$/, '')
+    return safeExternalUrl(url)
+  }
   let user = s.replace(/^@/, '').replace(/^tiktok\.com\//i, '').replace(/\/+$/, '')
-  if (!user) return null
+  if (!user || /[/?#]/.test(user)) return null
   if (!user.startsWith('@')) user = `@${user}`
-  return `https://www.tiktok.com/${user}`
+  const handle = user.replace(/^@/, '')
+  return safeExternalUrl(`https://www.tiktok.com/@${encodeURIComponent(handle)}`)
 }
+
+function sanitizeSocialUsernameInput(input: string): string {
+  return input.replace(CONTROL_CHARS, '').trim()
+}
+
+const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g
 
 export function getShopSocialLinks(shop: ShopRow): ShopSocialLink[] {
   const out: ShopSocialLink[] = []

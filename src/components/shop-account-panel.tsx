@@ -225,9 +225,6 @@ export function ShopAccountPanel({
           <WhatsAppIcon />
           Escribir por WhatsApp
         </a>
-        <p className="text-xs text-zinc-500">
-          Se abre un mensaje con el nombre de tu tienda y tu plan para agilizar el trámite.
-        </p>
       </section>
     </div>
   )

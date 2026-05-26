@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { completeShopRegistration } from '@/app/actions/register'
 import { RegistrationSuccessCard } from '@/components/registration-success-card'
+import { assertShopSlugAvailable, useShopSlugAvailability } from '@/hooks/use-shop-slug-availability'
 import type { PendingShopRegistration } from '@/lib/pending-registration'
 import { isPendingShopComplete } from '@/lib/pending-registration'
+import { SHOP_SLUG_TAKEN_MESSAGE } from '@/lib/shop-slug'
 import { slugify } from '@/lib/format'
 import { RubroField } from '@/components/rubro-field'
 import { ShopLinkPrefix } from '@/components/shop-link-prefix'
@@ -37,8 +39,9 @@ export function CompleteRegistrationForm({
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const autoRan = useRef(false)
+  const { cleanSlug, slugTaken, slugChecking, slugTakenMessage } = useShopSlugAvailability(slug)
 
-  const refSlug = referralSlug?.trim() ? slugify(referralSlug.trim()) : null
+  const refSlug = resolveReferralSlug(referralSlug, initial?.referralSlug)
 
   function buildPayload(): PendingShopRegistration | null {
     if (!isPendingShopComplete({ shopName, slug, whatsapp, rubro, referralSlug: refSlug })) {
@@ -49,11 +52,18 @@ export function CompleteRegistrationForm({
       slug: slugify(slug),
       whatsapp: whatsapp.replace(/\D/g, ''),
       rubro: rubro.trim(),
-      referralSlug: refSlug && refSlug.length >= 3 ? refSlug : null,
+      referralSlug: refSlug,
     }
   }
 
   async function runCreate(payload: PendingShopRegistration) {
+    const slugError = await assertShopSlugAvailable(payload.slug)
+    if (slugError) {
+      setPhase('form')
+      setError(slugError)
+      return false
+    }
+
     setLoading(true)
     setError(null)
     const res = await completeShopRegistration(payload)
@@ -112,7 +122,7 @@ export function CompleteRegistrationForm({
   }
 
   const slugOnlyRetry =
-    Boolean(error?.includes('link') || error?.includes('uso')) &&
+    error === SHOP_SLUG_TAKEN_MESSAGE &&
     Boolean(shopName.trim() && whatsapp.replace(/\D/g, '').length >= 10)
 
   return (
@@ -163,13 +173,30 @@ export function CompleteRegistrationForm({
             className="input flex-1"
             required
             value={slug}
-            onChange={(e) => setSlug(slugify(e.target.value))}
+            onChange={(e) => {
+              setSlug(slugify(e.target.value))
+              if (error === slugTakenMessage) setError(null)
+            }}
             pattern={'[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?'}
+            aria-invalid={slugTaken}
+            aria-describedby={slugTaken ? 'complete-register-slug-error' : undefined}
           />
         </div>
+        {slugTaken && (
+          <p id="complete-register-slug-error" className="mt-1 text-sm text-red-400">
+            {slugTakenMessage}
+          </p>
+        )}
+        {slugChecking && cleanSlug.length >= 3 && !slugTaken && (
+          <p className="mt-1 text-xs text-zinc-500">Verificando link…</p>
+        )}
       </label>
 
-      <button type="submit" disabled={loading} className="btn-primary w-full">
+      <button
+        type="submit"
+        disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
+        className="btn-primary w-full"
+      >
         {loading ? 'Creando tienda…' : 'Crear mi tienda'}
       </button>
       <p className="text-center text-sm text-zinc-500">
@@ -179,4 +206,14 @@ export function CompleteRegistrationForm({
       </p>
     </form>
   )
+}
+
+function resolveReferralSlug(
+  fromUrl?: string | null,
+  fromMetadata?: string | null,
+): string | null {
+  const raw = fromUrl?.trim() || fromMetadata?.trim() || ''
+  if (!raw) return null
+  const slug = slugify(raw)
+  return slug.length >= 3 ? slug : null
 }

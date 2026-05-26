@@ -3,7 +3,8 @@ import { type EmailOtpType } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 function defaultNextAfterAuth(type: string | null): string {
-  if (type === 'recovery' || type === 'email_change') return '/actualizar-contrasena'
+  if (type === 'recovery') return '/actualizar-contrasena'
+  if (type === 'email_change') return '/dashboard/account/configuracion?updated=email'
   if (type === 'signup' || type === 'email' || type === 'invite') return '/registro/completar'
   return '/registro/completar'
 }

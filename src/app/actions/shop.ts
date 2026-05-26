@@ -6,6 +6,13 @@ import { consumeRateLimit } from '@/lib/rate-limit'
 import { slugify } from '@/lib/format'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import {
+  SANITIZE_LIMITS,
+  sanitizeMultilineTextOrNull,
+  sanitizePlainText,
+  sanitizePlainTextOrNull,
+  sanitizeWhatsAppDigits,
+} from '@/lib/sanitize'
 import { normalizeInstagramUrl, normalizeTikTokUrl, normalizeWebsiteUrl } from '@/lib/social-links'
 import { normalizeCategoryIcon } from '@/lib/category-icons'
 import { maxFeaturedProductsForPlan } from '@/lib/featured-products'
@@ -35,12 +42,27 @@ export async function updateShopSettings(
 ) {
   const supabase = await createClient()
   const patch: Record<string, unknown> = {}
-  if (data.name != null) patch.name = data.name
-  if (data.description !== undefined) patch.description = data.description
-  if (data.whatsapp_e164 != null) patch.whatsapp_e164 = data.whatsapp_e164.replace(/\D/g, '')
-  if (data.category_label !== undefined) patch.category_label = data.category_label
-  if (data.seo_title !== undefined) patch.seo_title = data.seo_title
-  if (data.seo_description !== undefined) patch.seo_description = data.seo_description
+  if (data.name != null) {
+    const name = sanitizePlainText(data.name, SANITIZE_LIMITS.shopName)
+    if (!name) return { error: 'El nombre de la tienda no es válido.' }
+    patch.name = name
+  }
+  if (data.description !== undefined) {
+    patch.description = sanitizeMultilineTextOrNull(data.description, SANITIZE_LIMITS.shopDescription)
+  }
+  if (data.whatsapp_e164 != null) patch.whatsapp_e164 = sanitizeWhatsAppDigits(data.whatsapp_e164)
+  if (data.category_label !== undefined) {
+    patch.category_label = sanitizePlainTextOrNull(data.category_label, SANITIZE_LIMITS.categoryLabel)
+  }
+  if (data.seo_title !== undefined) {
+    patch.seo_title = sanitizePlainTextOrNull(data.seo_title, SANITIZE_LIMITS.seoTitle)
+  }
+  if (data.seo_description !== undefined) {
+    patch.seo_description = sanitizeMultilineTextOrNull(
+      data.seo_description,
+      SANITIZE_LIMITS.seoDescription,
+    )
+  }
   if (data.theme != null) patch.theme = data.theme
   if (data.instagram_url !== undefined) {
     patch.instagram_url = data.instagram_url ? normalizeInstagramUrl(data.instagram_url) : null

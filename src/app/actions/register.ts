@@ -1,6 +1,13 @@
 'use server'
 
 import { slugify } from '@/lib/format'
+import {
+  SANITIZE_LIMITS,
+  sanitizePlainText,
+  sanitizePlainTextOrNull,
+  sanitizeWhatsAppDigits,
+} from '@/lib/sanitize'
+import { SHOP_SLUG_TAKEN_MESSAGE } from '@/lib/shop-slug'
 import { pendingShopToUserMetadata, type PendingShopRegistration } from '@/lib/pending-registration'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -10,6 +17,25 @@ import { revalidatePath } from 'next/cache'
 export type RegisterActionResult =
   | { ok: true; shopName: string; shopSlug: string }
   | { error: string }
+
+/** Comprueba si el slug de tienda está libre (público, para el formulario de registro). */
+export async function checkShopSlugAvailable(
+  slug: string,
+): Promise<{ available: boolean } | { error: string }> {
+  const cleanSlug = slugify(slug)
+  if (cleanSlug.length < 3) {
+    return { available: false }
+  }
+
+  try {
+    const service = createServiceClient()
+    const { data, error } = await service.from('shops').select('id').eq('slug', cleanSlug).maybeSingle()
+    if (error) return { error: error.message }
+    return { available: !data }
+  } catch {
+    return { error: 'No se pudo verificar el link. Intentá de nuevo.' }
+  }
+}
 
 export async function completeShopRegistration(
   input: PendingShopRegistration,
@@ -29,7 +55,9 @@ export async function completeShopRegistration(
   }
 
   const cleanSlug = slugify(input.slug)
-  const wa = input.whatsapp.replace(/\D/g, '')
+  const shopName = sanitizePlainText(input.shopName, SANITIZE_LIMITS.shopName)
+  const wa = sanitizeWhatsAppDigits(input.whatsapp)
+  const rubro = sanitizePlainTextOrNull(input.rubro, SANITIZE_LIMITS.categoryLabel)
 
   if (cleanSlug.length < 3) {
     return { error: 'El link de tu tienda debe tener al menos 3 caracteres.' }
@@ -37,21 +65,25 @@ export async function completeShopRegistration(
   if (wa.length < 10) {
     return { error: 'Ingresá un WhatsApp válido (código de área + número).' }
   }
-  if (!input.shopName.trim()) {
+  if (!shopName) {
     return { error: 'Ingresá el nombre de tu negocio.' }
   }
 
   const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
   const ref = input.referralSlug?.trim() ? slugify(input.referralSlug.trim()) : null
 
+  const slugCheck = await checkShopSlugAvailable(cleanSlug)
+  if ('error' in slugCheck) return { error: slugCheck.error }
+  if (!slugCheck.available) return { error: SHOP_SLUG_TAKEN_MESSAGE }
+
   const { data: shop, error: shopErr } = await supabase
     .from('shops')
     .insert({
       slug: cleanSlug,
-      name: input.shopName.trim(),
+      name: shopName,
       description: null,
       whatsapp_e164: wa,
-      category_label: input.rubro.trim() || null,
+      category_label: rubro,
       plan: 'free_trial',
       plan_until: trialEnd,
       active: true,
@@ -62,7 +94,7 @@ export async function completeShopRegistration(
 
   if (shopErr) {
     if (shopErr.message.includes('unique') || shopErr.code === '23505') {
-      return { error: 'Ese link ya está en uso. Elegí otro.' }
+      return { error: SHOP_SLUG_TAKEN_MESSAGE }
     }
     return { error: shopErr.message }
   }
@@ -96,5 +128,5 @@ export async function completeShopRegistration(
   revalidatePath('/dashboard')
   revalidatePath('/registro')
   revalidatePath('/registro/completar')
-  return { ok: true, shopName: input.shopName.trim(), shopSlug: cleanSlug }
+  return { ok: true, shopName, shopSlug: cleanSlug }
 }

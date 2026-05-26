@@ -11,9 +11,11 @@ function redirectAuthCodeToConfirmar(request: NextRequest): NextResponse | null 
   if (!url.searchParams.has('next')) {
     const type = searchParams.get('type')
     const next =
-      type === 'recovery' || type === 'email_change'
+      type === 'recovery'
         ? '/actualizar-contrasena'
-        : '/registro/completar'
+        : type === 'email_change'
+          ? '/dashboard/account/configuracion?updated=email'
+          : '/registro/completar'
     url.searchParams.set('next', next)
   }
   return NextResponse.redirect(url)

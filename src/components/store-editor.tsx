@@ -215,7 +215,6 @@ export function StoreEditor({
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-900/80 px-4 py-3">
         <div>
           <p className="font-semibold text-white">Editar tienda</p>
-          <p className="text-xs text-zinc-400">Vista previa — tocá las zonas resaltadas para editar</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button

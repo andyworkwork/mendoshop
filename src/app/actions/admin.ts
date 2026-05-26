@@ -3,6 +3,12 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { formatMoneyArs, slugify } from '@/lib/format'
+import {
+  SANITIZE_LIMITS,
+  sanitizePlainText,
+  sanitizePlainTextOrNull,
+  sanitizeWhatsAppDigits,
+} from '@/lib/sanitize'
 import { isPlatformAdmin } from '@/lib/admin'
 import { extendPlanUntil, planLabel } from '@/lib/plans'
 import { expireAllStalePendingPlanPayments, expireStalePendingPlanPayments } from '@/lib/plan-payments'
@@ -36,12 +42,17 @@ export async function createShopForUser(input: {
   const email = input.email.trim().toLowerCase()
   const password = input.password
   const cleanSlug = slugify(input.slug)
-  const wa = input.whatsapp.replace(/\D/g, '')
+  const shopName = sanitizePlainText(input.shopName, SANITIZE_LIMITS.shopName)
+  const wa = sanitizeWhatsAppDigits(input.whatsapp)
+  const rubro = sanitizePlainTextOrNull(input.rubro ?? '', SANITIZE_LIMITS.categoryLabel)
   const plan = input.plan ?? 'free_trial'
   const trialDays = input.trialDays ?? 7
 
   if (!email || password.length < 6) {
     return { error: 'Email y contraseña (mín. 6 caracteres) son obligatorios.' }
+  }
+  if (!shopName) {
+    return { error: 'El nombre de la tienda no es válido.' }
   }
   if (cleanSlug.length < 3) {
     return { error: 'El link de la tienda debe tener al menos 3 caracteres.' }
@@ -77,10 +88,10 @@ export async function createShopForUser(input: {
     .from('shops')
     .insert({
       slug: cleanSlug,
-      name: input.shopName.trim(),
+      name: shopName,
       description: null,
       whatsapp_e164: wa,
-      category_label: input.rubro?.trim() || null,
+      category_label: rubro,
       plan,
       plan_until: planUntil,
       active: true,
