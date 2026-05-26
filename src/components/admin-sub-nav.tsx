@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const LINKS = [
   { href: '/admin', label: 'Todas las tiendas' },
+  { href: '/admin/marketing', label: 'Marketing' },
   { href: '/admin/plantillas', label: 'Plantillas home' },
   { href: '/admin/crear-cuenta', label: 'Crear cuenta' },
   { href: '/admin/historial-planes', label: 'Historial de planes' },
@@ -20,7 +21,8 @@ export function AdminSubNav() {
       aria-label="Secciones de administración"
     >
       {LINKS.map(({ href, label }) => {
-        const isActive = pathname === href
+        const isActive =
+          href === '/admin' ? pathname === '/admin' : pathname === href || pathname.startsWith(`${href}/`)
         return (
           <Link
             key={href}
