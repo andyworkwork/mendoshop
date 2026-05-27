@@ -1,7 +1,6 @@
 export type ProductRow = {
   id: string
-  subcategory_id: string
-  subsubcategoria_id: string | null
+  category_id: string
   name: string
   description: string | null
   /** Texto largo para el modal de detalle (talle, material, etc.). */
@@ -17,18 +16,11 @@ export type ProductRow = {
   sort_order: number
 }
 
-export type SubcategoryRow = {
-  id: string
-  name: string
-  sort_order: number
-  products: ProductRow[]
-}
-
 export type CategoryRow = {
   id: string
   name: string
   sort_order: number
   /** Slug de icono en vitrina (coffee, shirt, ring, …). */
   icon: string | null
-  subcategories: SubcategoryRow[]
+  products: ProductRow[]
 }

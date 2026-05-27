@@ -9,15 +9,13 @@ export type FlatProduct = ProductRow & {
 export function flattenProducts(categories: CategoryRow[]): FlatProduct[] {
   const out: FlatProduct[] = []
   for (const cat of categories) {
-    for (const sub of cat.subcategories) {
-      for (const p of sub.products) {
-        out.push({
-          ...p,
-          categoryId: cat.id,
-          categoryName: cat.name,
-          categorySort: cat.sort_order,
-        })
-      }
+    for (const p of cat.products) {
+      out.push({
+        ...p,
+        categoryId: cat.id,
+        categoryName: cat.name,
+        categorySort: cat.sort_order,
+      })
     }
   }
   return out

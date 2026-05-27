@@ -27,9 +27,7 @@ export function parseFeaturedProductIds(raw: unknown): string[] {
 export function flattenCatalogProducts(categories: CategoryRow[]): ProductRow[] {
   const out: ProductRow[] = []
   for (const cat of categories) {
-    for (const sub of cat.subcategories) {
-      for (const p of sub.products) out.push(p)
-    }
+    for (const p of cat.products) out.push(p)
   }
   return out
 }

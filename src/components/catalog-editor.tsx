@@ -16,7 +16,7 @@ import { ProductDetailsEditorDialog } from '@/components/product-details-editor-
 import { updateProductDetails } from '@/app/actions/catalog'
 import { categoryIconLabel } from '@/lib/category-icons'
 import { SANITIZE_LIMITS, sanitizePlainText } from '@/lib/sanitize'
-import type { CategoryRow } from '@/types/catalog'
+import type { CategoryRow, ProductRow } from '@/types/catalog'
 import type { ShopRow } from '@/types/shop'
 
 function promptPlainText(label: string, maxLength: number, current?: string): string | null {
@@ -48,6 +48,12 @@ export function CatalogEditor({
 }) {
   const [categories, setCategories] = useState(initial)
   const [busy, setBusy] = useState(false)
+  const [catalogError, setCatalogError] = useState<string | null>(null)
+  const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [addProductCategoryId, setAddProductCategoryId] = useState<string | null>(null)
+  const [newProductName, setNewProductName] = useState('')
+  const [newProductPrice, setNewProductPrice] = useState('')
   const [detailsEditor, setDetailsEditor] = useState<{
     productId: string
     productName: string
@@ -75,89 +81,92 @@ export function CatalogEditor({
     await revalidateStorefront(shop.slug)
   }, [refresh, shop.slug])
 
-  async function addCategory() {
-    const name = promptPlainText('Nombre de la categoría', SANITIZE_LIMITS.categoryName)
+  async function addCategory(nameInput?: string) {
+    const name =
+      nameInput != null
+        ? sanitizePlainText(nameInput, SANITIZE_LIMITS.categoryName)
+        : promptPlainText('Nombre de la categoría', SANITIZE_LIMITS.categoryName)
     if (!name) return
     setBusy(true)
+    setCatalogError(null)
     const sort = categories.length
-    await sb.from('categories').insert({
+    const { error } = await sb.from('categories').insert({
       shop_id: shop.id,
       name,
       sort_order: sort,
       icon: 'tag',
     })
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
+    if (nameInput != null) {
+      setNewCategoryName('')
+      setShowAddCategoryForm(false)
+    }
     await publishCatalog()
   }
 
   async function setCategoryIcon(categoryId: string, icon: string) {
     setBusy(true)
-    await sb.from('categories').update({ icon }).eq('id', categoryId)
+    setCatalogError(null)
+    const { error } = await sb.from('categories').update({ icon }).eq('id', categoryId)
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
     await publishCatalog()
   }
 
   async function deleteCategory(categoryId: string, name: string) {
-    if (!confirm(`¿Eliminar la categoría "${name}" y todo su contenido (subcategorías y productos)?`)) {
+    if (!confirm(`¿Eliminar la categoría "${name}" y todos sus productos?`)) {
       return
     }
     setBusy(true)
+    setCatalogError(null)
     const cat = categories.find((c) => c.id === categoryId)
-    const products: { id: string; image_path: string | null }[] = []
-    for (const sub of cat?.subcategories ?? []) {
-      for (const p of sub.products) {
-        products.push({ id: p.id, image_path: p.image_path })
-      }
-    }
+    const products = (cat?.products ?? []).map((p) => ({ id: p.id, image_path: p.image_path }))
     await removeProductImages(sb, shop.id, products)
-    await sb.from('categories').delete().eq('id', categoryId).eq('shop_id', shop.id)
+    const { error } = await sb.from('categories').delete().eq('id', categoryId).eq('shop_id', shop.id)
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
+    if (addProductCategoryId === categoryId) {
+      setAddProductCategoryId(null)
+      setNewProductName('')
+      setNewProductPrice('')
+    }
     await publishCatalog()
   }
 
-  async function addSubcategory(categoryId: string) {
-    const name = promptPlainText('Nombre de la subcategoría', SANITIZE_LIMITS.subcategoryName)
+  async function addProduct(categoryId: string, nameInput?: string, priceInput?: string) {
+    if (productCount >= limits.maxProducts) {
+      setCatalogError(`Tu plan permite hasta ${limits.maxProducts} productos.`)
+      return
+    }
+    const name =
+      nameInput != null
+        ? sanitizePlainText(nameInput, SANITIZE_LIMITS.productName)
+        : promptPlainText('Nombre del producto', SANITIZE_LIMITS.productName)
     if (!name) return
+
+    const priceStr = priceInput ?? prompt('Precio (número)', '0')
+    if (priceStr == null) return
+    const price = Number(priceStr.replace(',', '.').trim())
+    if (!Number.isFinite(price) || price < 0) {
+      setCatalogError('Ingresá un precio válido (número mayor o igual a 0).')
+      return
+    }
+
     setBusy(true)
-    await sb.from('subcategories').insert({
+    setCatalogError(null)
+    const { error } = await sb.from('products').insert({
       shop_id: shop.id,
       category_id: categoryId,
-      name,
-      sort_order: 0,
-    })
-    setBusy(false)
-    await publishCatalog()
-  }
-
-  async function deleteSubcategory(subcategoryId: string, name: string) {
-    if (!confirm(`¿Eliminar la subcategoría "${name}" y todos sus productos?`)) return
-    setBusy(true)
-    const { data: prods } = await sb
-      .from('products')
-      .select('id, image_path')
-      .eq('subcategory_id', subcategoryId)
-      .eq('shop_id', shop.id)
-    await removeProductImages(sb, shop.id, prods ?? [])
-    await sb.from('subcategories').delete().eq('id', subcategoryId).eq('shop_id', shop.id)
-    setBusy(false)
-    await publishCatalog()
-  }
-
-  async function addProduct(subcategoryId: string) {
-    if (productCount >= limits.maxProducts) {
-      alert(`Tu plan permite hasta ${limits.maxProducts} productos.`)
-      return
-    }
-    const name = promptPlainText('Nombre del producto', SANITIZE_LIMITS.productName)
-    if (!name) return
-    const priceStr = prompt('Precio (número)', '0')
-    const price = Number(priceStr?.replace(',', '.'))
-    if (!Number.isFinite(price) || price < 0) return
-    setBusy(true)
-    await sb.from('products').insert({
-      shop_id: shop.id,
-      subcategory_id: subcategoryId,
-      subsubcategoria_id: null,
       name,
       price,
       stock_quantity: 1,
@@ -165,12 +174,22 @@ export function CatalogEditor({
       sort_order: 0,
     })
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
+    if (nameInput != null) {
+      setAddProductCategoryId(null)
+      setNewProductName('')
+      setNewProductPrice('')
+    }
     await publishCatalog()
   }
 
   async function uploadProductImage(productId: string, file: File | null) {
     if (!file) return
     setBusy(true)
+    setCatalogError(null)
     try {
       const { data: existing } = await sb
         .from('products')
@@ -204,7 +223,7 @@ export function CatalogEditor({
 
       await sb.from('products').update({ image_path: main }).eq('id', productId)
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error al subir imagen')
+      setCatalogError(e instanceof Error ? e.message : 'Error al subir imagen')
     }
     setBusy(false)
     await publishCatalog()
@@ -235,14 +254,20 @@ export function CatalogEditor({
 
   async function toggleActive(productId: string, active: boolean) {
     setBusy(true)
-    await sb.from('products').update({ active: !active }).eq('id', productId)
+    setCatalogError(null)
+    const { error } = await sb.from('products').update({ active: !active }).eq('id', productId)
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
     await publishCatalog()
   }
 
   async function deleteProduct(productId: string) {
     if (!confirm('¿Eliminar este producto?')) return
     setBusy(true)
+    setCatalogError(null)
     const { data: row } = await sb
       .from('products')
       .select('image_path')
@@ -252,8 +277,12 @@ export function CatalogEditor({
     if (toDelete.length > 0) {
       await sb.storage.from('shop-images').remove(toDelete)
     }
-    await sb.from('products').delete().eq('id', productId)
+    const { error } = await sb.from('products').delete().eq('id', productId)
     setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
     await publishCatalog()
   }
 
@@ -261,6 +290,7 @@ export function CatalogEditor({
     const name = promptPlainText('Nombre de la categoría', SANITIZE_LIMITS.categoryName, current)
     if (!name || name === current) return
     setBusy(true)
+    setCatalogError(null)
     const { error } = await sb
       .from('categories')
       .update({ name })
@@ -268,24 +298,7 @@ export function CatalogEditor({
       .eq('shop_id', shop.id)
     setBusy(false)
     if (error) {
-      alert(error.message)
-      return
-    }
-    await publishCatalog()
-  }
-
-  async function editSubcategoryName(subcategoryId: string, current: string) {
-    const name = promptPlainText('Nombre de la subcategoría', SANITIZE_LIMITS.subcategoryName, current)
-    if (!name || name === current) return
-    setBusy(true)
-    const { error } = await sb
-      .from('subcategories')
-      .update({ name })
-      .eq('id', subcategoryId)
-      .eq('shop_id', shop.id)
-    setBusy(false)
-    if (error) {
-      alert(error.message)
+      setCatalogError(error.message)
       return
     }
     await publishCatalog()
@@ -325,10 +338,61 @@ export function CatalogEditor({
         <p className="text-sm text-zinc-400">
           Productos: {productCount} / {limits.maxProducts}
         </p>
-        <button type="button" disabled={busy} onClick={addCategory} className="btn-primary text-sm">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => setShowAddCategoryForm((prev) => !prev)}
+          className="btn-primary text-sm"
+        >
           + Categoría
         </button>
       </div>
+
+      {catalogError && (
+        <p className="text-sm text-red-400" role="alert">
+          {catalogError}
+        </p>
+      )}
+
+      {showAddCategoryForm && (
+        <form
+          className="card space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            void addCategory(newCategoryName)
+          }}
+        >
+          <label className="block text-sm text-zinc-300" htmlFor="new-category-name">
+            Nombre de la categoría
+          </label>
+          <input
+            id="new-category-name"
+            type="text"
+            maxLength={SANITIZE_LIMITS.categoryName}
+            disabled={busy}
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="Ej. Ropa, Accesorios, Comida"
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
+          />
+          <div className="flex gap-2">
+            <button type="submit" disabled={busy} className="btn-primary text-sm">
+              {busy ? 'Guardando…' : 'Guardar categoría'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setShowAddCategoryForm(false)
+                setNewCategoryName('')
+              }}
+              className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
 
       {basicsError && (
         <p className="text-sm text-red-400" role="alert">
@@ -357,9 +421,14 @@ export function CatalogEditor({
                 type="button"
                 disabled={busy}
                 className="text-sm text-brand-accent"
-                onClick={() => addSubcategory(cat.id)}
+                onClick={() => {
+                  setCatalogError(null)
+                  setAddProductCategoryId((prev) => (prev === cat.id ? null : cat.id))
+                  setNewProductName('')
+                  setNewProductPrice('')
+                }}
               >
-                + Subcategoría
+                + Producto
               </button>
               <button
                 type="button"
@@ -379,49 +448,74 @@ export function CatalogEditor({
               onChange={(icon) => void setCategoryIcon(cat.id, icon)}
             />
           </div>
-          {cat.subcategories.length === 0 && (
-            <p className="text-xs text-zinc-500">Sin subcategorías. Agregá una para cargar productos.</p>
-          )}
-          {cat.subcategories.map((sub) => (
-            <div key={sub.id} className="ml-2 border-l border-zinc-700 pl-4 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-medium">{sub.name}</h3>
-                <button
-                  type="button"
-                  className="text-xs text-brand-accent"
-                  disabled={busy}
-                  onClick={() => void editSubcategoryName(sub.id, sub.name)}
-                >
-                  Editar
+
+          {addProductCategoryId === cat.id && (
+            <form
+              className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                void addProduct(cat.id, newProductName, newProductPrice)
+              }}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block space-y-1">
+                  <span className="text-xs text-zinc-400">Nombre del producto</span>
+                  <input
+                    type="text"
+                    maxLength={SANITIZE_LIMITS.productName}
+                    disabled={busy}
+                    value={newProductName}
+                    onChange={(e) => setNewProductName(e.target.value)}
+                    placeholder="Ej. Remera básica"
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
+                  />
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-xs text-zinc-400">Precio</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    disabled={busy}
+                    value={newProductPrice}
+                    onChange={(e) => setNewProductPrice(e.target.value)}
+                    placeholder="0"
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
+                  />
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" disabled={busy} className="btn-primary text-sm">
+                  {busy ? 'Guardando…' : 'Guardar producto'}
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-brand-accent"
                   disabled={busy}
-                  onClick={() => addProduct(sub.id)}
+                  onClick={() => {
+                    setAddProductCategoryId(null)
+                    setNewProductName('')
+                    setNewProductPrice('')
+                  }}
+                  className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
                 >
-                  + Producto
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="text-xs text-red-400"
-                  onClick={() => void deleteSubcategory(sub.id, sub.name)}
-                >
-                  Eliminar subcategoría
+                  Cancelar
                 </button>
               </div>
-              <ProductList
-                products={sub.products}
-                busy={busy}
-                onUpload={uploadProductImage}
-                onEditBasics={openBasicsEditor}
-                onEditDetails={openDetailsEditor}
-                onToggle={toggleActive}
-                onDelete={deleteProduct}
-              />
-            </div>
-          ))}
+            </form>
+          )}
+
+          {cat.products.length === 0 && addProductCategoryId !== cat.id && (
+            <p className="text-xs text-zinc-500">Sin productos. Usá + Producto para cargar el primero.</p>
+          )}
+
+          <ProductList
+            products={cat.products}
+            busy={busy}
+            onUpload={uploadProductImage}
+            onEditBasics={openBasicsEditor}
+            onEditDetails={openDetailsEditor}
+            onToggle={toggleActive}
+            onDelete={deleteProduct}
+          />
         </section>
       ))}
 
@@ -465,7 +559,7 @@ function ProductList({
   onToggle,
   onDelete,
 }: {
-  products: CategoryRow['subcategories'][0]['products']
+  products: ProductRow[]
   busy: boolean
   onUpload: (id: string, f: File | null) => void
   onEditBasics: (id: string, name: string, price: number) => void
