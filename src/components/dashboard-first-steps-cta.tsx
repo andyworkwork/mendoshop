@@ -19,16 +19,18 @@ export function DashboardFirstStepsCta({ shopId, productCount }: Props) {
   if (!visible) return null
 
   return (
-    <div className="mb-4">
-      <Link
-        href="/dashboard/editar-tienda?open=appearance&first=1"
-        className="group relative inline-flex items-center rounded-xl border border-brand/40 bg-brand/10 px-4 pb-3 pt-5 text-sm font-semibold text-brand transition hover:border-brand/60 hover:bg-brand/15"
-      >
-        <span className="pointer-events-none absolute -top-2.5 left-3 rounded-full bg-brand px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[var(--brand-ink)] shadow-md">
+    <div className="mb-2">
+      <div className="inline-flex max-w-full flex-col items-start gap-2 rounded-xl border border-brand/40 bg-brand/10 p-4">
+        <span className="rounded-full bg-brand px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-zinc-900 shadow-sm">
           Tus primeros pasos
         </span>
-        Elegí la plantilla de tu tienda →
-      </Link>
+        <Link
+          href="/dashboard/editar-tienda?open=appearance&first=1"
+          className="btn-primary text-sm"
+        >
+          Elegí la plantilla de tu tienda →
+        </Link>
+      </div>
     </div>
   )
 }
