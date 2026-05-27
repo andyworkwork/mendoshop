@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mercadopago-mcp-server": {
+      "command": "node",
+      "args": ["scripts/mercadopago-mcp.mjs"]
+    }
+  }
+}
