@@ -82,11 +82,16 @@ export function ThemePicker({
   value,
   onChange,
   templatesDefaultOpen = false,
+  onSave,
+  saveBusy = false,
 }: {
   value: ShopTheme
   onChange: (t: ShopTheme) => void
   /** Primera visita: plantillas desplegadas para elegir rubro. */
   templatesDefaultOpen?: boolean
+  /** Guardar y cerrar el panel (p. ej. al elegir plantilla). */
+  onSave?: () => void
+  saveBusy?: boolean
 }) {
   const previewStyle = themeCssVars(value)
   const bgColors = resolveBackgroundColors(value)
@@ -174,6 +179,16 @@ export function ThemePicker({
             </button>
           ))}
         </div>
+        {onSave && (
+          <button
+            type="button"
+            disabled={saveBusy}
+            onClick={onSave}
+            className="btn-primary mt-4 w-full"
+          >
+            {saveBusy ? 'Guardando…' : 'Guardar y salir'}
+          </button>
+        )}
       </SettingsCollapsible>
 
       <div>

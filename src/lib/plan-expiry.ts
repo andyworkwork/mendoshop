@@ -6,7 +6,7 @@ export type PlanExpiryNotice = {
   expired: boolean
 }
 
-/** Aviso si faltan ≤7 días o ya venció (con plan_until definido). */
+/** Aviso si faltan ≤4 días o ya venció (con plan_until definido). */
 export function planExpiryNotice(planUntil: string | null): PlanExpiryNotice | null {
   if (!planUntil) return null
   const active = isShopSubscriptionActive(planUntil)
@@ -15,7 +15,7 @@ export function planExpiryNotice(planUntil: string | null): PlanExpiryNotice | n
   if (!active) {
     return { daysLeft: 0, urgent: true, expired: true }
   }
-  if (daysLeft <= 7) {
+  if (daysLeft <= 4) {
     return { daysLeft, urgent: daysLeft <= 1, expired: false }
   }
   return null

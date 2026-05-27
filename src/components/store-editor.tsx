@@ -10,6 +10,7 @@ import { Storefront } from '@/components/storefront'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
 import { FeaturedProductsPicker } from '@/components/featured-products-picker'
 import { ThemePicker } from '@/components/theme-picker'
+import { DashboardNextStepCta } from '@/components/dashboard-next-step-cta'
 import { categoryIconLabel } from '@/lib/category-icons'
 import {
   flattenCatalogProducts,
@@ -62,9 +63,11 @@ function EditorSheet({
 export function StoreEditor({
   shop: initialShop,
   categories: initialCategories,
+  productCount = 0,
 }: {
   shop: ShopRow
   categories: CategoryRow[]
+  productCount?: number
 }) {
   const [shop, setShop] = useState(initialShop)
   const [categories, setCategories] = useState(initialCategories)
@@ -226,6 +229,7 @@ export function StoreEditor({
 
   return (
     <div className="space-y-4">
+      <DashboardNextStepCta shopId={shop.id} productCount={productCount} />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-900/80 px-4 py-3">
         <div>
           <p className="font-semibold text-white">Editar tienda</p>
@@ -327,6 +331,8 @@ export function StoreEditor({
             value={theme}
             onChange={handleThemeChange}
             templatesDefaultOpen={firstStepsVisit}
+            onSave={() => void saveAppearance()}
+            saveBusy={busy}
           />
           <div className="mt-6 space-y-2 border-t border-zinc-800 pt-4">
             <p className="text-sm font-medium text-zinc-200">Icono del botón &quot;Categorías&quot;</p>

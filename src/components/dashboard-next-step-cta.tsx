@@ -9,20 +9,20 @@ type Props = {
   productCount: number
 }
 
-export function DashboardFirstStepsCta({ shopId, productCount }: Props) {
+export function DashboardNextStepCta({ shopId, productCount }: Props) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    setVisible(productCount === 0 && !isFirstStepsDone(shopId))
+    setVisible(productCount === 0 && isFirstStepsDone(shopId))
   }, [shopId, productCount])
 
   if (!visible) return null
 
   return (
     <DashboardOnboardingStepCard
-      stepLabel="Tus primeros pasos"
-      href="/dashboard/editar-tienda?open=appearance&first=1"
-      buttonLabel="Elegí la plantilla de tu tienda →"
+      stepLabel="Tu siguiente paso"
+      href="/dashboard/catalog"
+      buttonLabel="Creá categorías y subí productos →"
     />
   )
 }
