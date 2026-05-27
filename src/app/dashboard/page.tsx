@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { DashboardFirstStepsCta } from '@/components/dashboard-first-steps-cta'
 import { DashboardProStats } from '@/components/dashboard-pro-stats'
 import { requireDashboardShop } from '@/lib/dashboard'
 import { planHasViewCount, planLabel } from '@/lib/plans'
@@ -13,6 +14,7 @@ export default async function DashboardHomePage() {
 
   return (
     <div className="space-y-6">
+      <DashboardFirstStepsCta shopId={shop.id} productCount={products} />
       <h1 className="text-2xl font-bold">Panel de {shop.name}</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">

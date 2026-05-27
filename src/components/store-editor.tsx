@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { revalidateStorefront, updateShopSettings } from '@/app/actions/shop'
 import { ImageFocusControls } from '@/components/image-focus-controls'
 import { ShopBannerUpload } from '@/components/shop-banner-upload'
@@ -17,6 +18,7 @@ import {
 } from '@/lib/featured-products'
 import { normalizeImageFocus, type ImageFocus } from '@/lib/image-focus'
 import { shopPublicUrl } from '@/lib/publicUrl'
+import { markFirstStepsDone } from '@/lib/first-steps'
 import { resolveShopBannerUrl } from '@/lib/shops'
 import type { CategoryRow } from '@/types/catalog'
 import type { ShopRow, ShopTheme } from '@/types/shop'
@@ -83,8 +85,19 @@ export function StoreEditor({
   const [bannerShowShopName, setBannerShowShopName] = useState(
     () => shop.banner_show_shop_name !== false,
   )
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const firstStepsVisit = searchParams.get('first') === '1'
+  const openFromQuery = searchParams.get('open')
 
   const closePanel = useCallback(() => setPanel(null), [])
+
+  useEffect(() => {
+    if (openFromQuery === 'appearance') {
+      setPanel('appearance')
+      router.replace('/dashboard/editar-tienda', { scroll: false })
+    }
+  }, [openFromQuery, router])
 
   async function saveFeatured() {
     setBusy(true)
@@ -151,6 +164,7 @@ export function StoreEditor({
         ? 'Apariencia guardada. Banner actualizado al de la plantilla.'
         : 'Apariencia guardada.',
     )
+    markFirstStepsDone(shop.id)
     await revalidateStorefront(shop.slug)
     closePanel()
   }
@@ -309,7 +323,11 @@ export function StoreEditor({
 
       {panel === 'appearance' && (
         <EditorSheet title="Colores y apariencia" onClose={closePanel}>
-          <ThemePicker value={theme} onChange={handleThemeChange} />
+          <ThemePicker
+            value={theme}
+            onChange={handleThemeChange}
+            templatesDefaultOpen={firstStepsVisit}
+          />
           <div className="mt-6 space-y-2 border-t border-zinc-800 pt-4">
             <p className="text-sm font-medium text-zinc-200">Icono del botón &quot;Categorías&quot;</p>
             <p className="text-xs text-zinc-500">

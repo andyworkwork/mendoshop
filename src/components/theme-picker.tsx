@@ -81,9 +81,12 @@ function BackgroundColorFields({
 export function ThemePicker({
   value,
   onChange,
+  templatesDefaultOpen = false,
 }: {
   value: ShopTheme
   onChange: (t: ShopTheme) => void
+  /** Primera visita: plantillas desplegadas para elegir rubro. */
+  templatesDefaultOpen?: boolean
 }) {
   const previewStyle = themeCssVars(value)
   const bgColors = resolveBackgroundColors(value)
@@ -98,11 +101,14 @@ export function ThemePicker({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-400">
-        Elegí una plantilla por rubro: cada una trae 4 colores sugeridos según la foto del rubro (botones,
-        detalle, tarjeta y títulos). Podés cambiar fondo y colores cuando quieras.
+        Elige tu plantilla y luego personalizalá como quieras!
       </p>
 
-      <SettingsCollapsible title="Plantillas por rubro" subtitle={selectedName} defaultOpen={false}>
+      <SettingsCollapsible
+        title="Plantillas por rubro"
+        subtitle={selectedName}
+        defaultOpen={templatesDefaultOpen}
+      >
         <div className="grid max-h-[360px] gap-3 overflow-y-auto sm:grid-cols-2">
           {THEME_TEMPLATES.map((tpl) => (
             <button
