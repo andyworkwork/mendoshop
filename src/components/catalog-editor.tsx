@@ -52,6 +52,7 @@ export function CatalogEditor({
   const [catalogError, setCatalogError] = useState<string | null>(null)
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
+  const [pendingDeleteCategoryId, setPendingDeleteCategoryId] = useState<string | null>(null)
   const [addProductCategoryId, setAddProductCategoryId] = useState<string | null>(null)
   const [newProductName, setNewProductName] = useState('')
   const [newProductPrice, setNewProductPrice] = useState('')
@@ -121,10 +122,7 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
-  async function deleteCategory(categoryId: string, name: string) {
-    if (!confirm(`¿Eliminar la categoría "${name}" y todos sus productos?`)) {
-      return
-    }
+  async function deleteCategory(categoryId: string) {
     setBusy(true)
     setCatalogError(null)
     const cat = categories.find((c) => c.id === categoryId)
@@ -448,12 +446,41 @@ export function CatalogEditor({
                 type="button"
                 disabled={busy}
                 className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-red-400 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => void deleteCategory(cat.id, cat.name)}
+                onClick={() => setPendingDeleteCategoryId((prev) => (prev === cat.id ? null : cat.id))}
               >
                 Eliminar categoría
               </button>
             </div>
           </div>
+          {pendingDeleteCategoryId === cat.id && (
+            <div className="rounded-lg border border-red-900/60 bg-red-950/20 p-3">
+              <p className="text-sm text-red-200">
+                ¿Eliminar la categoría <span className="font-semibold">{cat.name}</span> y todos sus productos?
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="rounded-md border border-red-700 bg-red-900/40 px-2 py-1 text-xs text-red-200 transition hover:bg-red-900/60 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => {
+                    setPendingDeleteCategoryId(null)
+                    void deleteCategory(cat.id)
+                  }}
+                >
+                  Sí, eliminar categoría
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={() => setPendingDeleteCategoryId(null)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
           <SettingsCollapsible
             title={`Icono ${cat.name}`}
             subtitle={categoryIconLabel(cat.icon)}

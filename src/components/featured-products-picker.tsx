@@ -104,14 +104,14 @@ export function FeaturedProductsPicker({
                   onChange={() => toggle(p.id)}
                 />
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition ${
                     checked
-                      ? 'border-brand bg-brand text-[var(--brand-ink)]'
-                      : 'border-zinc-600 text-transparent'
+                      ? 'border-brand bg-brand text-white shadow-[0_0_0_2px_rgba(255,255,255,0.08)_inset]'
+                      : 'border-zinc-600 bg-zinc-900 text-transparent'
                   }`}
                   aria-hidden
                 >
-                  {slot ?? '·'}
+                  {checked ? '✓' : slot ?? '·'}
                 </span>
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
