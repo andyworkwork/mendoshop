@@ -17,5 +17,5 @@ function getClientPrefix() {
 /** Prefijo del link de tienda; en el cliente usa el host real (Vercel, localhost, etc.). */
 export function ShopLinkPrefix() {
   const prefix = useSyncExternalStore(subscribe, getClientPrefix, shopLinkPrefix)
-  return <span className="text-zinc-500">{prefix}</span>
+  return <span className="text-inherit">{prefix}</span>
 }

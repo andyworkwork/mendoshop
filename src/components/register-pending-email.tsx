@@ -1,25 +1,30 @@
 'use client'
 
-import Link from 'next/link'
+import {
+  RegistrationCard,
+  RegistrationFooterLink,
+  RegistrationHeader,
+} from '@/components/registration-friendly-ui'
 
 export function RegisterPendingEmail({ email }: { email: string }) {
   return (
-    <div className="card mx-auto max-w-lg space-y-4 text-center">
-      <h1 className="text-xl font-bold">Revisá tu correo</h1>
-      <p className="text-sm text-zinc-300">
-        Te enviamos un enlace a <span className="font-medium text-white">{email}</span> para confirmar tu
-        cuenta.
-      </p>
-      <p className="text-sm text-zinc-400">
-        Cuando confirmes el enlace creamos tu tienda automáticamente con los datos que ya cargaste. Si el
-        correo no llega, revisá spam o esperá unos minutos.
-      </p>
-      <p className="text-sm text-zinc-500">
-        ¿Ya confirmaste?{' '}
-        <Link href="/login?next=/registro/completar" className="text-brand-accent underline">
-          Entrá con tu email y contraseña
-        </Link>
-      </p>
-    </div>
+    <RegistrationCard>
+      <RegistrationHeader title="Revisá tu correo" subtitle="Ya casi terminamos" />
+      <div className="registration-card-body space-y-4 text-center">
+        <p className="text-sm text-zinc-300">
+          Te enviamos un enlace a <span className="font-medium text-white">{email}</span> para confirmar tu
+          cuenta.
+        </p>
+        <p className="text-sm text-zinc-400">
+          Cuando hagas clic en el enlace, creamos tu tienda automáticamente con los datos que ya cargaste. Si
+          no llega el correo, revisá spam o esperá unos minutos.
+        </p>
+      </div>
+      <RegistrationFooterLink
+        text="¿Ya confirmaste?"
+        linkText="Ingresar acá"
+        href="/login?next=/registro/completar"
+      />
+    </RegistrationCard>
   )
 }

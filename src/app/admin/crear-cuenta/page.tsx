@@ -4,7 +4,7 @@ import { AdminPageHeader } from '@/components/admin-page-header'
 export default function AdminCrearCuentaPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
-      <AdminPageHeader description="Creá usuario, tienda y contraseña para un comercio nuevo." />
+      <AdminPageHeader hideTitle description="Creá usuario, tienda y contraseña para un comercio nuevo." />
 
       <section className="mx-auto max-w-lg space-y-4">
         <h2 className="text-base font-semibold text-white sm:text-lg">Crear cuenta</h2>

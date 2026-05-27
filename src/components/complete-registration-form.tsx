@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { completeShopRegistration } from '@/app/actions/register'
 import { RegistrationSuccessCard } from '@/components/registration-success-card'
 import { assertShopSlugAvailable, useShopSlugAvailability } from '@/hooks/use-shop-slug-availability'
@@ -11,7 +10,17 @@ import { isPendingShopComplete } from '@/lib/pending-registration'
 import { SHOP_SLUG_TAKEN_MESSAGE } from '@/lib/shop-slug'
 import { slugify } from '@/lib/format'
 import { RubroField } from '@/components/rubro-field'
-import { ShopLinkPrefix } from '@/components/shop-link-prefix'
+import {
+  RegistrationCard,
+  RegistrationFieldHint,
+  RegistrationFooterLink,
+  RegistrationHeader,
+  RegistrationIconInput,
+  RegistrationStepQuestion,
+  RegistrationUrlField,
+  StoreIcon,
+  WhatsAppIcon,
+} from '@/components/registration-friendly-ui'
 
 type Props = {
   referralSlug?: string | null
@@ -109,11 +118,15 @@ export function CompleteRegistrationForm({
 
   if (phase === 'creating') {
     return (
-      <div className="card mx-auto max-w-lg space-y-4 text-center">
-        <h1 className="text-xl font-bold">Confirmando tu cuenta…</h1>
-        <p className="text-sm text-zinc-400">Estamos creando tu tienda con los datos que ya cargaste.</p>
-        <p className="text-sm text-zinc-500">Un momento.</p>
-      </div>
+      <RegistrationCard>
+        <RegistrationHeader
+          title="Confirmando tu cuenta…"
+          subtitle="Estamos creando tu tienda con los datos que ya cargaste"
+        />
+        <div className="registration-card-body text-center">
+          <p className="text-sm text-zinc-500">Un momento, por favor.</p>
+        </div>
+      </RegistrationCard>
     )
   }
 
@@ -126,84 +139,79 @@ export function CompleteRegistrationForm({
     Boolean(shopName.trim() && whatsapp.replace(/\D/g, '').length >= 10)
 
   return (
-    <form onSubmit={onSubmit} className="card mx-auto max-w-lg space-y-4">
-      <h1 className="text-xl font-bold">
-        {slugOnlyRetry ? 'Elegí otro link para tu tienda' : 'Completá tu tienda'}
-      </h1>
-      <p className="text-sm text-zinc-400">
-        {slugOnlyRetry
-          ? `El resto de los datos de ${shopName} ya están guardados.`
-          : 'Faltan algunos datos para crear tu vitrina (7 días de prueba gratis).'}
-      </p>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+    <form onSubmit={onSubmit}>
+      <RegistrationCard>
+        <RegistrationHeader
+          title={slugOnlyRetry ? 'Elegí otro link para tu tienda' : undefined}
+          subtitle={
+            slugOnlyRetry
+              ? `El resto de los datos de ${shopName} ya están guardados.`
+              : 'Faltan algunos datos para terminar tu vitrina (7 días gratis).'
+          }
+        />
+        <div className="registration-card-body">
+          {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {!slugOnlyRetry && (
-        <>
-          <label className="block text-sm">
-            Nombre de tu negocio
-            <input
-              className="input mt-1"
-              required
-              value={shopName}
-              onChange={(e) => onShopNameChange(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm">
-            WhatsApp (solo números, con código 54…)
-            <input
-              className="input mt-1"
-              required
-              placeholder="5492615000000"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
-            />
-          </label>
-          <label className="block text-sm">
-            Rubro (opcional)
-            <RubroField value={rubro} onChange={setRubro} fieldId="complete-register-rubro" />
-          </label>
-        </>
-      )}
+          {!slugOnlyRetry && (
+            <>
+              <div className="space-y-2">
+                <RegistrationStepQuestion>¿Cómo se llama tu tienda?</RegistrationStepQuestion>
+                <RegistrationIconInput icon={<StoreIcon />} label="Nombre de tu tienda">
+                  <input
+                    className="input"
+                    required
+                    value={shopName}
+                    onChange={(e) => onShopNameChange(e.target.value)}
+                    placeholder="Mi tienda"
+                  />
+                </RegistrationIconInput>
+              </div>
 
-      <label className="block text-sm">
-        Link de tu tienda
-        <div className="mt-1 flex items-center gap-1 text-sm">
-          <ShopLinkPrefix />
-          <input
-            className="input flex-1"
-            required
-            value={slug}
-            onChange={(e) => {
-              setSlug(slugify(e.target.value))
+              <div className="space-y-2">
+                <RegistrationStepQuestion>¿Dónde te escriben tus clientes?</RegistrationStepQuestion>
+                <RegistrationIconInput icon={<WhatsAppIcon />} label="WhatsApp (con código de país)">
+                  <input
+                    className="input"
+                    required
+                    inputMode="numeric"
+                    placeholder="5492615000000"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                  />
+                </RegistrationIconInput>
+              </div>
+
+              <label className="block space-y-1.5">
+                <RegistrationFieldHint>Rubro (opcional)</RegistrationFieldHint>
+                <RubroField value={rubro} onChange={setRubro} fieldId="complete-register-rubro" />
+              </label>
+            </>
+          )}
+
+          <RegistrationUrlField
+            slug={slug}
+            slugTaken={slugTaken}
+            slugChecking={slugChecking}
+            cleanSlug={cleanSlug}
+            slugTakenMessage={slugTakenMessage}
+            disabled={loading}
+            errorId="complete-register-slug-error"
+            onSlugChange={(value) => {
+              setSlug(slugify(value))
               if (error === slugTakenMessage) setError(null)
             }}
-            pattern={'[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?'}
-            aria-invalid={slugTaken}
-            aria-describedby={slugTaken ? 'complete-register-slug-error' : undefined}
           />
-        </div>
-        {slugTaken && (
-          <p id="complete-register-slug-error" className="mt-1 text-sm text-red-400">
-            {slugTakenMessage}
-          </p>
-        )}
-        {slugChecking && cleanSlug.length >= 3 && !slugTaken && (
-          <p className="mt-1 text-xs text-zinc-500">Verificando link…</p>
-        )}
-      </label>
 
-      <button
-        type="submit"
-        disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
-        className="btn-primary w-full"
-      >
-        {loading ? 'Creando tienda…' : 'Crear mi tienda'}
-      </button>
-      <p className="text-center text-sm text-zinc-500">
-        <Link href="/login" className="text-brand-accent">
-          Volver a entrar
-        </Link>
-      </p>
+          <button
+            type="submit"
+            disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
+            className="btn-primary w-full py-3 text-base"
+          >
+            {loading ? 'Creando tu tienda…' : 'Continuar'}
+          </button>
+        </div>
+        <RegistrationFooterLink text="¿Problemas para entrar?" linkText="Volver a ingresar" href="/login" />
+      </RegistrationCard>
     </form>
   )
 }

@@ -10,7 +10,10 @@ export default async function AdminPlantillasPage() {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader description="Carrusel de la home: tiendas reales (hasta 7) y plantillas de relleno con tus fotos." />
+      <AdminPageHeader
+        hideTitle
+        description="Carrusel de la home: tiendas reales (hasta 7) y plantillas de relleno con tus fotos."
+      />
       {'error' in carousel && (
         <p className="text-sm text-red-400" role="alert">
           {carousel.error}

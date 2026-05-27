@@ -279,7 +279,6 @@ export function CatalogEditor({
   }
 
   async function deleteProduct(productId: string) {
-    if (!confirm('¿Eliminar este producto?')) return
     setBusy(true)
     setCatalogError(null)
     const { data: row } = await sb
@@ -588,6 +587,7 @@ function ProductList({
   onToggleStock: (id: string, stockQuantity: number) => void
   onDelete: (id: string) => void
 }) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   if (products.length === 0) return null
   return (
     <ul className="space-y-2">
@@ -668,11 +668,39 @@ function ProductList({
                 type="button"
                 disabled={busy}
                 className={`${actionBtnClass} text-red-400`}
-                onClick={() => onDelete(p.id)}
+                onClick={() => setPendingDeleteId((prev) => (prev === p.id ? null : p.id))}
               >
                 Eliminar
               </button>
             </div>
+            {pendingDeleteId === p.id && (
+              <div className="mt-2 rounded-lg border border-red-900/60 bg-red-950/20 p-2">
+                <p className="text-xs text-red-200">
+                  ¿Eliminar <span className="font-semibold">{p.name}</span>? Esta acción no se puede deshacer.
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="rounded-md border border-red-700 bg-red-900/40 px-2 py-1 text-xs text-red-200 transition hover:bg-red-900/60 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => {
+                      setPendingDeleteId(null)
+                      onDelete(p.id)
+                    }}
+                  >
+                    Sí, eliminar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => setPendingDeleteId(null)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
           </li>
         )
       })}

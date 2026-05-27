@@ -662,6 +662,74 @@ body {
   border-color: var(--brand-orange);
 }
 
+/* Registro: tono guiado y campos con icono */
+.registration-card {
+  @apply overflow-hidden rounded-2xl border shadow-xl;
+  border-color: color-mix(in srgb, var(--brand-orange) 24%, #3f3f46);
+  background-color: color-mix(in srgb, var(--brand-ink) 92%, #18181b);
+}
+
+.registration-card-header {
+  @apply border-b px-6 py-5;
+  border-color: color-mix(in srgb, var(--brand-orange) 16%, #3f3f46);
+}
+
+.registration-card-body {
+  @apply space-y-6 px-6 py-6;
+}
+
+.registration-card-footer {
+  @apply border-t px-6 py-4;
+  border-color: color-mix(in srgb, var(--brand-orange) 16%, #3f3f46);
+}
+
+.registration-input-wrap {
+  @apply flex items-stretch overflow-hidden rounded-xl border;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 90%, #27272a);
+}
+
+.registration-input-wrap:focus-within {
+  border-color: var(--brand-orange);
+}
+
+.registration-input-icon {
+  @apply flex w-11 shrink-0 items-center justify-center border-r text-zinc-500;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 96%, #27272a);
+}
+
+.registration-input-wrap .input {
+  @apply mt-0 rounded-none border-0 bg-transparent focus:border-0;
+}
+
+.registration-url-group {
+  @apply flex items-stretch overflow-hidden rounded-xl border text-sm;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 90%, #27272a);
+}
+
+.registration-url-group:focus-within {
+  border-color: var(--brand-orange);
+}
+
+.registration-url-prefix {
+  @apply flex shrink-0 items-center border-r px-2.5 font-medium;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 96%, #27272a);
+  color: var(--brand-orange);
+}
+
+.registration-url-input {
+  @apply min-w-0 flex-1 bg-transparent px-3 py-2.5 text-zinc-100 outline-none placeholder:text-zinc-500;
+}
+
+.registration-url-suffix {
+  @apply flex shrink-0 items-center border-l px-2.5 text-zinc-500;
+  border-color: #52525b;
+  background-color: color-mix(in srgb, var(--brand-ink) 96%, #27272a);
+}
+
 /* Tienda fondo claro (plantillas light) */
 .store-surface-light {
   background-color: var(--shop-bg-light);

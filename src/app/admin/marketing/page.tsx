@@ -32,7 +32,10 @@ export default async function AdminMarketingPage({ searchParams }: Props) {
   if ('error' in data) {
     return (
       <div className="space-y-6">
-        <AdminPageHeader description="Biblioteca de contenido, plantillas, publicaciones y enlaces UTM para redes sociales." />
+        <AdminPageHeader
+          hideTitle
+          description="Biblioteca de contenido, plantillas, publicaciones y enlaces UTM para redes sociales."
+        />
         <p className="text-sm text-red-400" role="alert">
           {data.error}
         </p>
@@ -42,7 +45,10 @@ export default async function AdminMarketingPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader description="Biblioteca de contenido, plantillas, publicaciones y publicación automática en Facebook e Instagram." />
+      <AdminPageHeader
+        hideTitle
+        description="Biblioteca de contenido, plantillas, publicaciones y publicación automática en Facebook e Instagram."
+      />
       <AdminMarketingPanel
         initialAssets={data.assets as MarketingAsset[]}
         initialTemplates={data.templates as MarketingPostTemplate[]}

@@ -12,7 +12,21 @@ import Link from 'next/link'
 import { RubroField } from '@/components/rubro-field'
 import { RegisterPendingEmail } from '@/components/register-pending-email'
 import { RegistrationSuccessCard } from '@/components/registration-success-card'
-import { ShopLinkPrefix } from '@/components/shop-link-prefix'
+import {
+  LockIcon,
+  MailIcon,
+  PersonIcon,
+  RegistrationCard,
+  RegistrationFieldHint,
+  RegistrationFooterLink,
+  RegistrationHeader,
+  RegistrationIconInput,
+  RegistrationSectionDivider,
+  RegistrationStepQuestion,
+  RegistrationUrlField,
+  StoreIcon,
+  WhatsAppIcon,
+} from '@/components/registration-friendly-ui'
 
 export function LoginForm({
   redirectTo = '/dashboard',
@@ -85,6 +99,7 @@ export function LoginForm({
 }
 
 export function RegisterForm({ referralSlug }: { referralSlug?: string | null }) {
+  const [ownerName, setOwnerName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [shopName, setShopName] = useState('')
@@ -96,6 +111,7 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
   const [pendingEmail, setPendingEmail] = useState<string | null>(null)
   const [createdShop, setCreatedShop] = useState<{ shopName: string; shopSlug: string } | null>(null)
   const { cleanSlug, slugTaken, slugChecking, slugTakenMessage } = useShopSlugAvailability(slug)
+  const emailInvalid = email.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
   function onShopNameChange(v: string) {
     setShopName(v)
@@ -115,8 +131,18 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
       setLoading(false)
       return
     }
+    if (!ownerName.trim()) {
+      setError('Contanos tu nombre para seguir.')
+      setLoading(false)
+      return
+    }
     if (wa.length < 10) {
       setError('Ingresá un WhatsApp válido (código de área + número, solo dígitos).')
+      setLoading(false)
+      return
+    }
+    if (emailInvalid) {
+      setError('Ingresá un correo válido para crear tu cuenta.')
       setLoading(false)
       return
     }
@@ -142,7 +168,10 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
       password,
       options: {
         emailRedirectTo: authConfirmUrl('/registro/completar'),
-        data: pendingShopToUserMetadata(pending),
+        data: {
+          ...pendingShopToUserMetadata(pending),
+          full_name: ownerName.trim(),
+        },
       },
     })
 
@@ -182,98 +211,119 @@ export function RegisterForm({ referralSlug }: { referralSlug?: string | null })
   }
 
   return (
-    <form onSubmit={onSubmit} className="card mx-auto max-w-lg space-y-4">
-      <h1 className="text-xl font-bold">Crear tu tienda en Mendoshop</h1>
-      <p className="text-sm text-zinc-400">7 días de prueba gratis. Sin tarjeta.</p>
-      {referralSlug?.trim() && (
-        <p className="text-xs text-brand-accent">Te invitó una tienda de Mendoshop — ¡bienvenido!</p>
-      )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+    <form onSubmit={onSubmit}>
+      <RegistrationCard>
+        <RegistrationHeader subtitle="Vamos juntos a crear tu cuenta · 7 días gratis, sin tarjeta" />
+        <div className="registration-card-body">
+          {referralSlug?.trim() && (
+            <p className="rounded-xl border border-brand/30 bg-brand/10 px-3 py-2 text-sm text-brand-accent">
+              Te invitó una tienda de Mendoshop — ¡bienvenido!
+            </p>
+          )}
+          {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <label className="block text-sm">
-        Nombre de tu negocio
-        <input
-          className="input mt-1"
-          required
-          value={shopName}
-          onChange={(e) => onShopNameChange(e.target.value)}
-        />
-      </label>
-      <label className="block text-sm">
-        Link de tu tienda
-        <div className="mt-1 flex items-center gap-1 text-sm">
-          <ShopLinkPrefix />
-          <input
-            className="input flex-1"
-            required
-            value={slug}
-            onChange={(e) => {
-              setSlug(slugify(e.target.value))
+          <div className="space-y-2">
+            <RegistrationStepQuestion>Primero… ¿cómo te llamás?</RegistrationStepQuestion>
+            <RegistrationIconInput icon={<PersonIcon />} label="Nombre y apellido">
+              <input
+                className="input"
+                required
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Mi nombre"
+                autoComplete="name"
+              />
+            </RegistrationIconInput>
+          </div>
+
+          <div className="space-y-2">
+            <RegistrationStepQuestion>Y ahora… ¿cómo se llama tu tienda?</RegistrationStepQuestion>
+            <RegistrationIconInput icon={<StoreIcon />} label="Nombre de tu tienda">
+              <input
+                className="input"
+                required
+                value={shopName}
+                onChange={(e) => onShopNameChange(e.target.value)}
+                placeholder="Mi tienda"
+                autoComplete="organization"
+              />
+            </RegistrationIconInput>
+          </div>
+
+          <RegistrationUrlField
+            slug={slug}
+            slugTaken={slugTaken}
+            slugChecking={slugChecking}
+            cleanSlug={cleanSlug}
+            slugTakenMessage={slugTakenMessage}
+            disabled={loading}
+            onSlugChange={(value) => {
+              setSlug(slugify(value))
               if (error === slugTakenMessage) setError(null)
             }}
-            pattern={'[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?'}
-            aria-invalid={slugTaken}
-            aria-describedby={slugTaken ? 'register-slug-error' : undefined}
           />
+
+          <div className="space-y-2">
+            <RegistrationStepQuestion>¿Dónde te escriben tus clientes?</RegistrationStepQuestion>
+            <RegistrationIconInput
+              icon={<WhatsAppIcon />}
+              label="WhatsApp (con código de país)"
+              hint="Ejemplo: 5492615000000. Solo números, sin espacios."
+            >
+              <input
+                className="input"
+                required
+                inputMode="numeric"
+                placeholder="5492615000000"
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+              />
+            </RegistrationIconInput>
+          </div>
+
+          <label className="block space-y-1.5">
+            <RegistrationFieldHint>Rubro (opcional, para el directorio de tiendas)</RegistrationFieldHint>
+            <RubroField value={rubro} onChange={setRubro} fieldId="register-rubro" />
+          </label>
+
+          <RegistrationSectionDivider>Último paso: tu acceso al panel</RegistrationSectionDivider>
+
+          <RegistrationIconInput icon={<MailIcon />} label="Tu email">
+            <input
+              className="input"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@email.com"
+              autoComplete="email"
+            />
+          </RegistrationIconInput>
+          {emailInvalid && <p className="text-xs text-amber-300">Este no parece un correo válido.</p>}
+
+          <RegistrationIconInput icon={<LockIcon />} label="Contraseña" hint="Mínimo 6 caracteres.">
+            <input
+              className="input"
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+          </RegistrationIconInput>
+
+          <button
+            type="submit"
+            disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
+            className="btn-primary w-full py-3 text-base"
+          >
+            {loading ? 'Creando tu tienda…' : 'Continuar'}
+          </button>
         </div>
-        {slugTaken && (
-          <p id="register-slug-error" className="mt-1 text-sm text-red-400">
-            {slugTakenMessage}
-          </p>
-        )}
-        {slugChecking && cleanSlug.length >= 3 && !slugTaken && (
-          <p className="mt-1 text-xs text-zinc-500">Verificando link…</p>
-        )}
-      </label>
-      <label className="block text-sm">
-        WhatsApp (solo números, con código 54…)
-        <input
-          className="input mt-1"
-          required
-          placeholder="5492615000000"
-          value={whatsapp}
-          onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
-        />
-      </label>
-      <label className="block text-sm">
-        Rubro (opcional, aparece en el directorio)
-        <RubroField value={rubro} onChange={setRubro} fieldId="register-rubro" />
-      </label>
-      <hr className="border-zinc-800" />
-      <label className="block text-sm">
-        Tu email (para entrar al panel)
-        <input
-          className="input mt-1"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </label>
-      <label className="block text-sm">
-        Contraseña
-        <input
-          className="input mt-1"
-          type="password"
-          required
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={loading || slugChecking || slugTaken || cleanSlug.length < 3}
-        className="btn-primary w-full"
-      >
-        {loading ? 'Creando…' : 'Crear mi tienda'}
-      </button>
-      <p className="text-center text-sm text-zinc-500">
-        ¿Ya tenés cuenta?{' '}
-        <Link href="/login" className="text-brand-accent">
-          Entrar
-        </Link>
-      </p>
+        <RegistrationFooterLink text="¿Ya tenés tu cuenta?" linkText="Ingresar acá" href="/login" />
+      </RegistrationCard>
     </form>
   )
 }

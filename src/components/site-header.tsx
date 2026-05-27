@@ -16,6 +16,7 @@ export async function SiteHeader() {
           <div className="site-header-bar__nav-row site-header-bar__nav-row--primary">
             <SiteNavLink href="/">Tiendas</SiteNavLink>
             <SiteNavLink href="/precios">Precios</SiteNavLink>
+            <SiteNavLink href="/promo">Promo</SiteNavLink>
             {loggedIn && hasShop && (
               <Link href="/dashboard" className="caps-nav-btn caps-nav-btn--cta max-sm:hidden">
                 Mi tienda

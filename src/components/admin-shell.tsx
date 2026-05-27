@@ -38,7 +38,7 @@ export function AdminShell({
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pb-6 pt-0 sm:pb-8 sm:pt-0">{children}</main>
     </div>
   )
 }
