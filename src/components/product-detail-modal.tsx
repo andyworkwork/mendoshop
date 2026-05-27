@@ -27,6 +27,7 @@ export function ProductDetailModal({
   onAdd,
 }: Props) {
   const img = getProductImageUrl(product.image_path, 'full')
+  const inStock = product.stock_quantity > 0
   const details = product.product_details?.trim()
   const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')
 
@@ -105,9 +106,15 @@ export function ProductDetailModal({
             ) : (
               <p className="text-sm text-zinc-500">Sin detalles adicionales.</p>
             )}
-            <button type="button" className="btn-accent w-full py-3" onClick={onAdd}>
-              Agregar al carrito
-            </button>
+            {inStock ? (
+              <button type="button" className="btn-accent w-full py-3" onClick={onAdd}>
+                Agregar al carrito
+              </button>
+            ) : (
+              <button type="button" className="btn-accent w-full py-3 cursor-not-allowed opacity-70" disabled>
+                Agotado
+              </button>
+            )}
           </div>
         </div>
       </div>

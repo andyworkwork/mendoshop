@@ -41,10 +41,12 @@ export function StoreProductCard({
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const img = getProductImageUrl(p.image_path, 'thumb')
+  const inStock = p.stock_quantity > 0
   const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark'
   const Tag = embedded ? 'article' : 'li'
 
   const handleAdd = () => {
+    if (!inStock) return
     onAdd()
     setJustAdded(true)
     if (addedTimeoutRef.current) clearTimeout(addedTimeoutRef.current)
@@ -92,16 +94,21 @@ export function StoreProductCard({
           <p className="store-product-card__caption-name">{p.name}</p>
           <p className="store-product-card__caption-price">{formatMoneyArs(Number(p.price))}</p>
         </div>
-        {!isEdit && (
-          <button
-            type="button"
-            className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
-            onClick={handleAdd}
-          >
-            <CartAddIcon />
-            {label}
-          </button>
-        )}
+        {!isEdit &&
+          (inStock ? (
+            <button
+              type="button"
+              className={`btn-store-add${justAdded ? ' btn-store-add--added' : ''}`}
+              onClick={handleAdd}
+            >
+              <CartAddIcon />
+              {label}
+            </button>
+          ) : (
+            <button type="button" className="btn-store-add opacity-70 cursor-not-allowed" disabled>
+              Agotado
+            </button>
+          ))}
       </div>
     </Tag>
   )

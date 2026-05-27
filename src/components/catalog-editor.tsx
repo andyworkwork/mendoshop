@@ -11,6 +11,7 @@ import { getPublicUrlFromPath } from '@/lib/publicUrl'
 import { pathsToRemove, productImagePaths } from '@/lib/product-images'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
+import { SettingsCollapsible } from '@/components/settings-collapsible'
 import { ProductBasicsEditorDialog } from '@/components/product-basics-editor-dialog'
 import { ProductDetailsEditorDialog } from '@/components/product-details-editor-dialog'
 import { updateProductDetails } from '@/app/actions/catalog'
@@ -264,6 +265,19 @@ export function CatalogEditor({
     await publishCatalog()
   }
 
+  async function toggleStockState(productId: string, stockQuantity: number) {
+    setBusy(true)
+    setCatalogError(null)
+    const nextStock = stockQuantity > 0 ? 0 : 1
+    const { error } = await sb.from('products').update({ stock_quantity: nextStock }).eq('id', productId)
+    setBusy(false)
+    if (error) {
+      setCatalogError(error.message)
+      return
+    }
+    await publishCatalog()
+  }
+
   async function deleteProduct(productId: string) {
     if (!confirm('¿Eliminar este producto?')) return
     setBusy(true)
@@ -409,10 +423,11 @@ export function CatalogEditor({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold text-brand">{cat.name}</h2>
             <div className="flex flex-wrap gap-2">
+              {/** Category actions with consistent framed style */}
               <button
                 type="button"
                 disabled={busy}
-                className="text-sm text-brand-accent"
+                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => void editCategoryName(cat.id, cat.name)}
               >
                 Editar
@@ -420,7 +435,7 @@ export function CatalogEditor({
               <button
                 type="button"
                 disabled={busy}
-                className="text-sm text-brand-accent"
+                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => {
                   setCatalogError(null)
                   setAddProductCategoryId((prev) => (prev === cat.id ? null : cat.id))
@@ -433,21 +448,24 @@ export function CatalogEditor({
               <button
                 type="button"
                 disabled={busy}
-                className="text-sm text-red-400"
+                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-red-400 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => void deleteCategory(cat.id, cat.name)}
               >
                 Eliminar categoría
               </button>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <p className="text-xs text-zinc-500">Icono en la tienda ({categoryIconLabel(cat.icon)})</p>
+          <SettingsCollapsible
+            title={`Icono ${cat.name}`}
+            subtitle={categoryIconLabel(cat.icon)}
+            defaultOpen={false}
+          >
             <CategoryIconPicker
               value={cat.icon}
               disabled={busy}
               onChange={(icon) => void setCategoryIcon(cat.id, icon)}
             />
-          </div>
+          </SettingsCollapsible>
 
           {addProductCategoryId === cat.id && (
             <form
@@ -514,6 +532,7 @@ export function CatalogEditor({
             onEditBasics={openBasicsEditor}
             onEditDetails={openDetailsEditor}
             onToggle={toggleActive}
+            onToggleStock={toggleStockState}
             onDelete={deleteProduct}
           />
         </section>
@@ -557,6 +576,7 @@ function ProductList({
   onEditBasics,
   onEditDetails,
   onToggle,
+  onToggleStock,
   onDelete,
 }: {
   products: ProductRow[]
@@ -565,6 +585,7 @@ function ProductList({
   onEditBasics: (id: string, name: string, price: number) => void
   onEditDetails: (id: string, name: string, current: string | null) => void
   onToggle: (id: string, active: boolean) => void
+  onToggleStock: (id: string, stockQuantity: number) => void
   onDelete: (id: string) => void
 }) {
   if (products.length === 0) return null
@@ -572,6 +593,10 @@ function ProductList({
     <ul className="space-y-2">
       {products.map((p) => {
         const img = getPublicUrlFromPath(p.image_path)
+        const inStock = p.stock_quantity > 0
+        const actionBtnClass =
+          'rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60'
+        const actionTextClass = 'text-amber-300'
         return (
           <li
             key={p.id}
@@ -589,7 +614,7 @@ function ProductList({
                   {p.name}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  {formatMoneyArs(Number(p.price))} · Stock {p.stock_quantity}
+                  {formatMoneyArs(Number(p.price))} · {inStock ? 'Disponible' : 'Agotado'}
                 </p>
               </div>
             </div>
@@ -597,12 +622,12 @@ function ProductList({
               <button
                 type="button"
                 disabled={busy}
-                className="text-xs text-brand-accent"
+                className={`${actionBtnClass} ${actionTextClass}`}
                 onClick={() => onEditBasics(p.id, p.name, Number(p.price))}
               >
                 Editar
               </button>
-              <label className="inline-flex shrink-0 cursor-pointer items-center text-xs text-brand-accent">
+              <label className={`inline-flex shrink-0 cursor-pointer items-center ${actionBtnClass} ${actionTextClass}`}>
                 <span>Foto</span>
                 <input
                   type="file"
@@ -615,7 +640,7 @@ function ProductList({
               <button
                 type="button"
                 disabled={busy}
-                className="text-xs text-brand-accent"
+                className={`${actionBtnClass} ${actionTextClass}`}
                 onClick={() => onEditDetails(p.id, p.name, p.product_details)}
               >
                 Detalles{p.product_details?.trim() ? ' ✓' : ''}
@@ -626,7 +651,15 @@ function ProductList({
               <button
                 type="button"
                 disabled={busy}
-                className="text-xs text-zinc-300"
+                className={`${actionBtnClass} ${actionTextClass}`}
+                onClick={() => onToggleStock(p.id, p.stock_quantity)}
+              >
+                {inStock ? 'Disponible' : 'Agotado'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className={`${actionBtnClass} ${actionTextClass}`}
                 onClick={() => onToggle(p.id, p.active)}
               >
                 {p.active ? 'Ocultar' : 'Mostrar'}
@@ -634,7 +667,7 @@ function ProductList({
               <button
                 type="button"
                 disabled={busy}
-                className="text-xs text-red-400"
+                className={`${actionBtnClass} text-red-400`}
                 onClick={() => onDelete(p.id)}
               >
                 Eliminar

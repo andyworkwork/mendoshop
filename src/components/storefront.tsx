@@ -132,6 +132,7 @@ export function Storefront({
 
   const addProduct = useCallback(
     (p: FlatProduct) => {
+      if (p.stock_quantity <= 0) return
       addLine({
         productId: p.id,
         name: p.name,
