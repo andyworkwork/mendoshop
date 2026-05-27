@@ -1,6 +1,7 @@
 'use server'
 
 import { clampFocusPercent } from '@/lib/image-focus'
+import { templateOnboardingCookieName } from '@/lib/first-steps'
 import { createClient } from '@/lib/supabase/server'
 import { consumeRateLimit } from '@/lib/rate-limit'
 import { slugify } from '@/lib/format'
@@ -17,6 +18,7 @@ import { normalizeInstagramUrl, normalizeTikTokUrl, normalizeWebsiteUrl } from '
 import { normalizeCategoryIcon } from '@/lib/category-icons'
 import { maxFeaturedProductsForPlan } from '@/lib/featured-products'
 import type { ShopPlan, ShopTheme } from '@/types/shop'
+import { cookies } from 'next/headers'
 
 export async function updateShopSettings(
   shopId: string,
@@ -116,6 +118,14 @@ export async function updateShopSettings(
     .select('slug')
     .single()
   if (error) return { error: error.message }
+  if (data.theme != null) {
+    const cookieStore = await cookies()
+    cookieStore.set(templateOnboardingCookieName(shopId), '1', {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365 * 5,
+      sameSite: 'lax',
+    })
+  }
   revalidatePath('/')
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/settings')

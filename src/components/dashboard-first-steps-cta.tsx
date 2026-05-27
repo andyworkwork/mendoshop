@@ -1,22 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { DashboardOnboardingStepCard } from '@/components/dashboard-onboarding-step-card'
-import { isFirstStepsDone } from '@/lib/first-steps'
+import { useTemplateOnboardingDone } from '@/hooks/use-template-onboarding-done'
 
 type Props = {
   shopId: string
   productCount: number
+  templateOnboardingDone?: boolean
 }
 
-export function DashboardFirstStepsCta({ shopId, productCount }: Props) {
-  const [visible, setVisible] = useState(false)
+export function DashboardFirstStepsCta({
+  shopId,
+  productCount,
+  templateOnboardingDone = false,
+}: Props) {
+  const { done } = useTemplateOnboardingDone(shopId, templateOnboardingDone)
 
-  useEffect(() => {
-    setVisible(productCount === 0 && !isFirstStepsDone(shopId))
-  }, [shopId, productCount])
-
-  if (!visible) return null
+  if (productCount > 0 || done) return null
 
   return (
     <DashboardOnboardingStepCard

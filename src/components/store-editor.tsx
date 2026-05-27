@@ -64,10 +64,12 @@ export function StoreEditor({
   shop: initialShop,
   categories: initialCategories,
   productCount = 0,
+  templateOnboardingDone = false,
 }: {
   shop: ShopRow
   categories: CategoryRow[]
   productCount?: number
+  templateOnboardingDone?: boolean
 }) {
   const [shop, setShop] = useState(initialShop)
   const [categories, setCategories] = useState(initialCategories)
@@ -169,6 +171,7 @@ export function StoreEditor({
     )
     markFirstStepsDone(shop.id)
     await revalidateStorefront(shop.slug)
+    router.refresh()
     closePanel()
   }
 
@@ -229,7 +232,11 @@ export function StoreEditor({
 
   return (
     <div className="space-y-4">
-      <DashboardNextStepCta shopId={shop.id} productCount={productCount} />
+      <DashboardNextStepCta
+        shopId={shop.id}
+        productCount={productCount}
+        templateOnboardingDone={templateOnboardingDone}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-700 bg-zinc-900/80 px-4 py-3">
         <div>
           <p className="font-semibold text-white">Editar tienda</p>
