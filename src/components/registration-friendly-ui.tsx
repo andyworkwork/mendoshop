@@ -88,7 +88,7 @@ export function RegistrationUrlField({
       <RegistrationFieldHint>La URL de tu tienda será:</RegistrationFieldHint>
       <div className="registration-url-group">
         <span className="registration-url-prefix">
-          https://<ShopLinkPrefix />
+          <ShopLinkPrefix />
         </span>
         <input
           className="registration-url-input"

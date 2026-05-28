@@ -714,14 +714,14 @@ body {
 }
 
 .registration-url-prefix {
-  @apply flex shrink-0 items-center border-r px-2.5 font-medium;
+  @apply flex min-w-0 max-w-[46%] shrink items-center overflow-hidden text-ellipsis whitespace-nowrap border-r px-2 text-xs font-medium sm:max-w-none sm:px-2.5 sm:text-sm;
   border-color: #52525b;
   background-color: color-mix(in srgb, var(--brand-ink) 96%, #27272a);
   color: var(--brand-orange);
 }
 
 .registration-url-input {
-  @apply min-w-0 flex-1 bg-transparent px-3 py-2.5 text-zinc-100 outline-none placeholder:text-zinc-500;
+  @apply min-w-[5.5rem] flex-1 bg-transparent px-3 py-2.5 text-zinc-100 outline-none placeholder:text-zinc-500;
 }
 
 .registration-url-suffix {
