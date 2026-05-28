@@ -357,6 +357,10 @@ body {
   height: 100%;
 }
 
+.featured-products-carousel__slide-placeholder {
+  min-height: 12rem;
+}
+
 .featured-products-carousel__arrow {
   position: absolute;
   top: 42%;

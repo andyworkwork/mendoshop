@@ -28,6 +28,7 @@ export function FeaturedProductsCarousel({
   const [paused, setPaused] = useState(false)
   const [inView, setInView] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const [mountedSlides, setMountedSlides] = useState<Set<number>>(() => new Set([0]))
   const rootRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLUListElement>(null)
   const slideRefs = useRef<(HTMLLIElement | null)[]>([])
@@ -120,6 +121,16 @@ export function FeaturedProductsCarousel({
   }, [index, n])
 
   useEffect(() => {
+    setMountedSlides((prev) => {
+      const next = new Set(prev)
+      next.add(index)
+      if (index > 0) next.add(index - 1)
+      if (index < n - 1) next.add(index + 1)
+      return next
+    })
+  }, [index, n])
+
+  useEffect(() => {
     return () => {
       if (scrollIdleRef.current) clearTimeout(scrollIdleRef.current)
       if (resumeTimeoutRef.current) clearTimeout(resumeTimeoutRef.current)
@@ -183,15 +194,19 @@ export function FeaturedProductsCarousel({
               className={`featured-products-carousel__slide ${i === index ? 'is-active' : ''}`}
               aria-hidden={i !== index}
             >
-              <StoreProductCard
-                embedded
-                product={product}
-                isLight={isLight}
-                accentFrame={accentFrame}
-                isEdit={isEdit}
-                onAdd={() => onAdd(product)}
-                onOpenDetail={() => onOpenDetail(product)}
-              />
+              {mountedSlides.has(i) ? (
+                <StoreProductCard
+                  embedded
+                  product={product}
+                  isLight={isLight}
+                  accentFrame={accentFrame}
+                  isEdit={isEdit}
+                  onAdd={() => onAdd(product)}
+                  onOpenDetail={() => onOpenDetail(product)}
+                />
+              ) : (
+                <div className="featured-products-carousel__slide-placeholder" aria-hidden />
+              )}
             </li>
           ))}
         </ul>

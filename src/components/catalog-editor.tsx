@@ -7,8 +7,7 @@ import { compressImageForUpload } from '@/lib/image-compress'
 import { formatMoneyArs } from '@/lib/format'
 import { countProducts } from '@/lib/fetch-catalog'
 import { PLAN_LIMITS } from '@/lib/plans'
-import { getPublicUrlFromPath } from '@/lib/publicUrl'
-import { pathsToRemove, productImagePaths } from '@/lib/product-images'
+import { getProductImageUrl, pathsToRemove, productImagePaths, withImageCacheBust } from '@/lib/product-images'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
@@ -68,6 +67,8 @@ export function CatalogEditor({
     price: number
   } | null>(null)
   const [basicsError, setBasicsError] = useState<string | null>(null)
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(() => new Set())
+  const [imageRevisions, setImageRevisions] = useState<Record<string, number>>({})
   const sb = createClient()
   const limits = PLAN_LIMITS[shop.plan]
   const productCount = countProducts(categories)
@@ -197,6 +198,12 @@ export function CatalogEditor({
         .maybeSingle()
 
       const { main, thumb } = productImagePaths(shop.id, productId)
+      const toRemove = pathsToRemove(shop.id, productId, existing?.image_path ?? null)
+      if (toRemove.length > 0) {
+        const { error: removeErr } = await sb.storage.from('shop-images').remove(toRemove)
+        if (removeErr) throw removeErr
+      }
+
       const [mainFile, thumbFile] = await Promise.all([
         compressImageForUpload(file, 'main'),
         compressImageForUpload(file, 'thumb'),
@@ -213,19 +220,24 @@ export function CatalogEditor({
       const { error: upThumb } = await sb.storage.from('shop-images').upload(thumb, thumbFile, uploadOpts)
       if (upThumb) throw upThumb
 
-      const toDelete = pathsToRemove(shop.id, productId, existing?.image_path ?? null).filter(
-        (p) => p !== main && p !== thumb,
-      )
-      if (toDelete.length > 0) {
-        await sb.storage.from('shop-images').remove(toDelete)
-      }
+      const { error: dbErr } = await sb.from('products').update({ image_path: main }).eq('id', productId)
+      if (dbErr) throw dbErr
 
-      await sb.from('products').update({ image_path: main }).eq('id', productId)
+      setImageRevisions((prev) => ({ ...prev, [productId]: Date.now() }))
     } catch (e) {
       setCatalogError(e instanceof Error ? e.message : 'Error al subir imagen')
     }
     setBusy(false)
     await publishCatalog()
+  }
+
+  function toggleCategoryExpanded(categoryId: string) {
+    setExpandedCategoryIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) next.delete(categoryId)
+      else next.add(categoryId)
+      return next
+    })
   }
 
   function openDetailsEditor(productId: string, productName: string, current: string | null) {
@@ -415,154 +427,174 @@ export function CatalogEditor({
         <p className="text-zinc-500">Empezá creando una categoría (ej. Ropa, Accesorios, Comida).</p>
       )}
 
-      {categories.map((cat) => (
-        <section key={cat.id} className="card space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold text-brand">{cat.name}</h2>
-            <div className="flex flex-wrap gap-2">
-              {/** Category actions with consistent framed style */}
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => void editCategoryName(cat.id, cat.name)}
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => {
-                  setCatalogError(null)
-                  setAddProductCategoryId((prev) => (prev === cat.id ? null : cat.id))
-                  setNewProductName('')
-                  setNewProductPrice('')
-                }}
-              >
-                + Producto
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-red-400 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => setPendingDeleteCategoryId((prev) => (prev === cat.id ? null : cat.id))}
-              >
-                Eliminar categoría
-              </button>
-            </div>
-          </div>
-          {pendingDeleteCategoryId === cat.id && (
-            <div className="rounded-lg border border-red-900/60 bg-red-950/20 p-3">
-              <p className="text-sm text-red-200">
-                ¿Eliminar la categoría <span className="font-semibold">{cat.name}</span> y todos sus productos?
-                Esta acción no se puede deshacer.
-              </p>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="rounded-md border border-red-700 bg-red-900/40 px-2 py-1 text-xs text-red-200 transition hover:bg-red-900/60 disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={() => {
-                    setPendingDeleteCategoryId(null)
-                    void deleteCategory(cat.id)
-                  }}
-                >
-                  Sí, eliminar categoría
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={() => setPendingDeleteCategoryId(null)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-          <SettingsCollapsible
-            title={`Icono ${cat.name}`}
-            subtitle={categoryIconLabel(cat.icon)}
-            defaultOpen={false}
-          >
-            <CategoryIconPicker
-              value={cat.icon}
-              disabled={busy}
-              onChange={(icon) => void setCategoryIcon(cat.id, icon)}
-            />
-          </SettingsCollapsible>
-
-          {addProductCategoryId === cat.id && (
-            <form
-              className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                void addProduct(cat.id, newProductName, newProductPrice)
-              }}
+      {categories.map((cat) => {
+        const expanded = expandedCategoryIds.has(cat.id)
+        return (
+          <section key={cat.id} className="card space-y-3">
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={() => toggleCategoryExpanded(cat.id)}
+              className="flex w-full items-center justify-between gap-2 text-left"
             >
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block space-y-1">
-                  <span className="text-xs text-zinc-400">Nombre del producto</span>
-                  <input
-                    type="text"
-                    maxLength={SANITIZE_LIMITS.productName}
+              <span className="min-w-0">
+                <span className="block font-semibold text-brand truncate">{cat.name}</span>
+                <span className="mt-0.5 block text-xs text-zinc-500">
+                  {cat.products.length}{' '}
+                  {cat.products.length === 1 ? 'producto' : 'productos'}
+                </span>
+              </span>
+              <CategoryChevron open={expanded} />
+            </button>
+
+            {expanded && (
+              <>
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-zinc-800/80 pt-3">
+                  <button
+                    type="button"
                     disabled={busy}
-                    value={newProductName}
-                    onChange={(e) => setNewProductName(e.target.value)}
-                    placeholder="Ej. Remera básica"
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
-                  />
-                </label>
-                <label className="block space-y-1">
-                  <span className="text-xs text-zinc-400">Precio</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
+                    className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => void editCategoryName(cat.id, cat.name)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
                     disabled={busy}
-                    value={newProductPrice}
-                    onChange={(e) => setNewProductPrice(e.target.value)}
-                    placeholder="0"
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
-                  />
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <button type="submit" disabled={busy} className="btn-primary text-sm">
-                  {busy ? 'Guardando…' : 'Guardar producto'}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setAddProductCategoryId(null)
-                    setNewProductName('')
-                    setNewProductPrice('')
-                  }}
-                  className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
+                    className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-amber-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => {
+                      setCatalogError(null)
+                      setAddProductCategoryId((prev) => (prev === cat.id ? null : cat.id))
+                      setNewProductName('')
+                      setNewProductPrice('')
+                    }}
+                  >
+                    + Producto
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-sm text-red-400 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => setPendingDeleteCategoryId((prev) => (prev === cat.id ? null : cat.id))}
+                  >
+                    Eliminar categoría
+                  </button>
+                </div>
+                {pendingDeleteCategoryId === cat.id && (
+                  <div className="rounded-lg border border-red-900/60 bg-red-950/20 p-3">
+                    <p className="text-sm text-red-200">
+                      ¿Eliminar la categoría <span className="font-semibold">{cat.name}</span> y todos sus productos?
+                      Esta acción no se puede deshacer.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="rounded-md border border-red-700 bg-red-900/40 px-2 py-1 text-xs text-red-200 transition hover:bg-red-900/60 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => {
+                          setPendingDeleteCategoryId(null)
+                          void deleteCategory(cat.id)
+                        }}
+                      >
+                        Sí, eliminar categoría
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => setPendingDeleteCategoryId(null)}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <SettingsCollapsible
+                  title={`Icono ${cat.name}`}
+                  subtitle={categoryIconLabel(cat.icon)}
+                  defaultOpen={false}
                 >
-                  Cancelar
-                </button>
-              </div>
-            </form>
-          )}
+                  <CategoryIconPicker
+                    value={cat.icon}
+                    disabled={busy}
+                    onChange={(icon) => void setCategoryIcon(cat.id, icon)}
+                  />
+                </SettingsCollapsible>
 
-          {cat.products.length === 0 && addProductCategoryId !== cat.id && (
-            <p className="text-xs text-zinc-500">Sin productos. Usá + Producto para cargar el primero.</p>
-          )}
+                {addProductCategoryId === cat.id && (
+                  <form
+                    className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 space-y-3"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      void addProduct(cat.id, newProductName, newProductPrice)
+                    }}
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className="block space-y-1">
+                        <span className="text-xs text-zinc-400">Nombre del producto</span>
+                        <input
+                          type="text"
+                          maxLength={SANITIZE_LIMITS.productName}
+                          disabled={busy}
+                          value={newProductName}
+                          onChange={(e) => setNewProductName(e.target.value)}
+                          placeholder="Ej. Remera básica"
+                          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-xs text-zinc-400">Precio</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          disabled={busy}
+                          value={newProductPrice}
+                          onChange={(e) => setNewProductPrice(e.target.value)}
+                          placeholder="0"
+                          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-brand"
+                        />
+                      </label>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="submit" disabled={busy} className="btn-primary text-sm">
+                        {busy ? 'Guardando…' : 'Guardar producto'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => {
+                          setAddProductCategoryId(null)
+                          setNewProductName('')
+                          setNewProductPrice('')
+                        }}
+                        className="rounded-xl border border-zinc-700 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                )}
 
-          <ProductList
-            products={cat.products}
-            busy={busy}
-            onUpload={uploadProductImage}
-            onEditBasics={openBasicsEditor}
-            onEditDetails={openDetailsEditor}
-            onToggle={toggleActive}
-            onToggleStock={toggleStockState}
-            onDelete={deleteProduct}
-          />
-        </section>
-      ))}
+                {cat.products.length === 0 && addProductCategoryId !== cat.id && (
+                  <p className="text-xs text-zinc-500">Sin productos. Usá + Producto para cargar el primero.</p>
+                )}
+
+                <ProductList
+                  products={cat.products}
+                  busy={busy}
+                  imageRevisions={imageRevisions}
+                  onUpload={uploadProductImage}
+                  onEditBasics={openBasicsEditor}
+                  onEditDetails={openDetailsEditor}
+                  onToggle={toggleActive}
+                  onToggleStock={toggleStockState}
+                  onDelete={deleteProduct}
+                />
+              </>
+            )}
+          </section>
+        )
+      })}
 
       {detailsError && (
         <p className="text-sm text-red-400" role="alert">
@@ -598,6 +630,7 @@ export function CatalogEditor({
 function ProductList({
   products,
   busy,
+  imageRevisions,
   onUpload,
   onEditBasics,
   onEditDetails,
@@ -607,6 +640,7 @@ function ProductList({
 }: {
   products: ProductRow[]
   busy: boolean
+  imageRevisions: Record<string, number>
   onUpload: (id: string, f: File | null) => void
   onEditBasics: (id: string, name: string, price: number) => void
   onEditDetails: (id: string, name: string, current: string | null) => void
@@ -619,7 +653,10 @@ function ProductList({
   return (
     <ul className="space-y-2">
       {products.map((p) => {
-        const img = getPublicUrlFromPath(p.image_path)
+        const img = withImageCacheBust(
+          getProductImageUrl(p.image_path, 'thumb'),
+          imageRevisions[p.id],
+        )
         const inStock = p.stock_quantity > 0
         const actionBtnClass =
           'rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60'
@@ -632,7 +669,13 @@ function ProductList({
             <div className="flex gap-3">
               {img ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={img} alt="" className="h-12 w-12 shrink-0 rounded object-cover" />
+                <img
+                  src={img}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-12 w-12 shrink-0 rounded object-contain bg-zinc-800"
+                />
               ) : (
                 <div className="h-12 w-12 shrink-0 rounded bg-zinc-800" />
               )}
@@ -654,16 +697,11 @@ function ProductList({
               >
                 Editar
               </button>
-              <label className={`inline-flex shrink-0 cursor-pointer items-center ${actionBtnClass} ${actionTextClass}`}>
-                <span>Foto</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(e) => onUpload(p.id, e.target.files?.[0] ?? null)}
-                />
-              </label>
+              <ProductPhotoInput
+                disabled={busy}
+                hasImage={Boolean(p.image_path)}
+                onSelect={(file) => onUpload(p.id, file)}
+              />
               <button
                 type="button"
                 disabled={busy}
@@ -732,5 +770,51 @@ function ProductList({
         )
       })}
     </ul>
+  )
+}
+
+function ProductPhotoInput({
+  disabled,
+  hasImage,
+  onSelect,
+}: {
+  disabled: boolean
+  hasImage: boolean
+  onSelect: (file: File) => void
+}) {
+  const actionBtnClass =
+    'rounded-md border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-xs transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60'
+  return (
+    <label
+      className={`inline-flex shrink-0 cursor-pointer items-center ${actionBtnClass} text-amber-300`}
+    >
+      <span>{hasImage ? 'Cambiar foto' : 'Foto'}</span>
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        disabled={disabled}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) onSelect(file)
+        }}
+      />
+    </label>
+  )
+}
+
+function CategoryChevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-5 w-5 shrink-0 text-zinc-400 transition-transform ${open ? 'rotate-180' : ''}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+    </svg>
   )
 }

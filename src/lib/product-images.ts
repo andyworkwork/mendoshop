@@ -64,6 +64,16 @@ function renderImageUrl(
   return renderStorageImageUrl(path, opts)
 }
 
+/** Evita que el CDN/navegador muestre la versión anterior tras reemplazar en la misma ruta. */
+export function withImageCacheBust(
+  url: string | null,
+  revision?: number | string | null,
+): string | null {
+  if (!url || revision == null) return url
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}v=${encodeURIComponent(String(revision))}`
+}
+
 /** Paths a borrar al reemplazar o eliminar producto. */
 export function pathsToRemove(
   shopId: string,

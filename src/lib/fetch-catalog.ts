@@ -2,8 +2,17 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeImageFocus } from '@/lib/image-focus'
 import type { CategoryRow, ProductRow } from '@/types/catalog'
 
+const CATALOG_LOCALE = 'es-AR'
+
 function sortByOrder<T extends { sort_order: number }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => a.sort_order - b.sort_order)
+}
+
+/** Productos por nombre dentro de cada categoría (editor + vitrina). */
+export function sortProductsByName(products: ProductRow[]): ProductRow[] {
+  return [...products].sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), CATALOG_LOCALE, { sensitivity: 'base' }),
+  )
 }
 
 function normalizeGallery(raw: unknown): string[] {
@@ -28,7 +37,7 @@ export async function fetchCategoriesWithNested(
         'id, category_id, name, description, product_details, detail_view_count, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order',
       )
       .eq('shop_id', shopId)
-      .order('sort_order'),
+      .order('name'),
   ])
 
   if (catRes.error || !catRes.data?.length) return []
@@ -70,7 +79,7 @@ export async function fetchCategoriesWithNested(
   return sortByOrder(cats).map((c) => ({
     ...c,
     icon: (c.icon as string | null) ?? null,
-    products: sortByOrder(productsByCat.get(c.id) ?? []),
+    products: sortProductsByName(productsByCat.get(c.id) ?? []),
   }))
 }
 
