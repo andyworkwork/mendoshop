@@ -40,7 +40,7 @@ export function StoreProductCard({
 }) {
   const [justAdded, setJustAdded] = useState(false)
   const addedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const img = getProductImageUrl(p.image_path, 'thumb')
+  const img = getProductImageUrl(p.image_path, 'thumb', p.updated_at)
   const inStock = p.stock_quantity > 0
   const cardClass = isLight ? 'store-product-card' : 'store-product-card store-product-card--dark'
   const Tag = embedded ? 'article' : 'li'

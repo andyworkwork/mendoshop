@@ -26,7 +26,7 @@ export function ProductDetailModal({
   onClose,
   onAdd,
 }: Props) {
-  const img = getProductImageUrl(product.image_path, 'full')
+  const img = getProductImageUrl(product.image_path, 'full', product.updated_at)
   const inStock = product.stock_quantity > 0
   const details = product.product_details?.trim()
   const frameVar = accentFrame || (isLight ? '#f4f4f5' : '#27272a')

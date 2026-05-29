@@ -86,7 +86,7 @@ export function FeaturedProductsPicker({
         {products.map((p) => {
           const checked = validSelectedIds.includes(p.id)
           const slot = checked ? validSelectedIds.indexOf(p.id) + 1 : null
-          const img = getProductImageUrl(p.image_path, 'thumb')
+          const img = getProductImageUrl(p.image_path, 'thumb', p.updated_at)
           return (
             <li key={p.id}>
               <label

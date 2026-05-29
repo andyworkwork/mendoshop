@@ -7,7 +7,7 @@ import { compressImageForUpload } from '@/lib/image-compress'
 import { formatMoneyArs } from '@/lib/format'
 import { countProducts } from '@/lib/fetch-catalog'
 import { PLAN_LIMITS } from '@/lib/plans'
-import { getProductImageUrl, pathsToRemove, productImagePaths, withImageCacheBust } from '@/lib/product-images'
+import { getProductImageUrl, pathsToRemove, productImagePaths } from '@/lib/product-images'
 import { SHOP_IMAGES_CACHE_CONTROL } from '@/lib/storage-cache'
 import { CategoryIconPicker } from '@/components/category-icon-picker'
 import { SettingsCollapsible } from '@/components/settings-collapsible'
@@ -653,9 +653,10 @@ function ProductList({
   return (
     <ul className="space-y-2">
       {products.map((p) => {
-        const img = withImageCacheBust(
-          getProductImageUrl(p.image_path, 'thumb'),
-          imageRevisions[p.id],
+        const img = getProductImageUrl(
+          p.image_path,
+          'thumb',
+          imageRevisions[p.id] ?? p.updated_at,
         )
         const inStock = p.stock_quantity > 0
         const actionBtnClass =

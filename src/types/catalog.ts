@@ -14,6 +14,8 @@ export type ProductRow = {
   image_gallery: string[]
   active: boolean
   sort_order: number
+  /** Para invalidar caché del CDN tras cambiar la foto (misma ruta con upsert). */
+  updated_at?: string
 }
 
 export type CategoryRow = {

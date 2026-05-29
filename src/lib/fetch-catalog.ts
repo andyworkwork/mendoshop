@@ -34,7 +34,7 @@ export async function fetchCategoriesWithNested(
     supabase
       .from('products')
       .select(
-        'id, category_id, name, description, product_details, detail_view_count, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order',
+        'id, category_id, name, description, product_details, detail_view_count, price, stock_quantity, image_path, image_focus_x, image_focus_y, image_gallery, active, sort_order, updated_at',
       )
       .eq('shop_id', shopId)
       .order('name'),

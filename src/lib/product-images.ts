@@ -2,9 +2,14 @@ import { getPublicUrlFromPath } from '@/lib/publicUrl'
 
 const BUCKET = 'shop-images'
 
+/** Carpeta de storage de un producto (`{shopId}/{productId}/`). */
+export function productStoragePrefix(shopId: string, productId: string): string {
+  return `${shopId}/${productId}/`
+}
+
 /** Rutas fijas por producto (upsert = no acumular archivos viejos). */
 export function productImagePaths(shopId: string, productId: string) {
-  const base = `${shopId}/${productId}`
+  const base = productStoragePrefix(shopId, productId).replace(/\/$/, '')
   return {
     main: `${base}/main.webp`,
     thumb: `${base}/thumb.webp`,
@@ -26,20 +31,24 @@ export function thumbPathFromMain(mainPath: string): string {
 export function getProductImageUrl(
   path: string | null | undefined,
   variant: 'thumb' | 'full' = 'full',
+  cacheKey?: string | number | null,
 ): string | null {
   if (!path) return null
 
+  let url: string | null
   if (variant === 'full') {
-    return getPublicUrlFromPath(path)
+    url = getPublicUrlFromPath(path)
+  } else {
+    const thumbPath = thumbPathFromMain(path)
+    const thumbUrl = getPublicUrlFromPath(thumbPath)
+    if (thumbUrl && thumbPath !== path) {
+      url = thumbUrl
+    } else {
+      url = renderImageUrl(path, { width: 480, quality: 70 })
+    }
   }
 
-  const thumbPath = thumbPathFromMain(path)
-  const thumbUrl = getPublicUrlFromPath(thumbPath)
-  if (thumbUrl && thumbPath !== path) {
-    return thumbUrl
-  }
-
-  return renderImageUrl(path, { width: 480, quality: 70 })
+  return withImageCacheBust(url, cacheKey)
 }
 
 /** URL transformada (menos egress que servir el original en vitrina). */
@@ -74,17 +83,24 @@ export function withImageCacheBust(
   return `${url}${sep}v=${encodeURIComponent(String(revision))}`
 }
 
-/** Paths a borrar al reemplazar o eliminar producto. */
+/**
+ * Paths a borrar al reemplazar o eliminar producto.
+ * Solo archivos bajo `{shopId}/{productId}/` para no borrar imágenes de otro producto
+ * que comparta `image_path` por datos viejos.
+ */
 export function pathsToRemove(
   shopId: string,
   productId: string,
   currentPath: string | null,
 ): string[] {
+  const prefix = productStoragePrefix(shopId, productId)
   const { main, thumb } = productImagePaths(shopId, productId)
   const set = new Set<string>([main, thumb])
-  if (currentPath) set.add(currentPath)
-  if (currentPath?.endsWith('/main.webp')) {
-    set.add(thumbPathFromMain(currentPath))
+  if (currentPath?.startsWith(prefix)) {
+    set.add(currentPath)
+    if (currentPath.endsWith('/main.webp')) {
+      set.add(thumbPathFromMain(currentPath))
+    }
   }
   return [...set]
 }
